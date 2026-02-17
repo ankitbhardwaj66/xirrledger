@@ -147,13 +147,16 @@ export default function Home() {
             </div>
 
             {/* XIRR Ledger */}
-            <div className="bg-primary text-white rounded-2xl p-8 shadow-2xl transform md:scale-105">
+            <div className="rounded-2xl p-8 shadow-2xl transform md:scale-105" style={{
+              backgroundColor: '#1f77b4',
+              color: '#ffffff'
+            }}>
               <div className="text-5xl mb-4">
-                <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#ffffff' }}>
                   <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-center mb-6">XIRR Ledger</h3>
+              <h3 className="text-2xl font-bold text-center mb-6" style={{ color: '#ffffff' }}>XIRR Ledger</h3>
               <ul className="space-y-3">
                 {[
                   'Automated ledger parsing',
@@ -164,10 +167,10 @@ export default function Home() {
                   'Nifty 50 benchmark included'
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-green-300 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#86efac' }}>
                       <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                     </svg>
-                    <span>{item}</span>
+                    <span style={{ color: '#ffffff' }}>{item}</span>
                   </li>
                 ))}
               </ul>
