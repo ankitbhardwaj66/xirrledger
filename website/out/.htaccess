@@ -5,27 +5,11 @@ RewriteEngine On
 # RewriteCond %{HTTPS} off
 # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# Remove trailing slashes (except for directories with index.html)
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_URI} (.+)/$
-RewriteRule ^ %1 [L,R=301]
-
-# Serve index.html for directories
+# Serve index.html for directories (default behavior)
 DirectoryIndex index.html
 
-# Handle clean URLs - serve .html files without extension
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME}.html -f
-RewriteRule ^(.+)$ $1.html [L]
-
-# Handle blog post URLs - serve index.html in subdirectories
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME}/index.html -f
-RewriteRule ^(.+)$ $1/index.html [L]
-
 # Custom 404 page
-ErrorDocument 404 /404.html
+ErrorDocument 404 /404/index.html
 
 # Cache static assets for better performance
 <IfModule mod_expires.c>
