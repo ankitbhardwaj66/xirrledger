@@ -45,6 +45,15 @@ find "$TARGET_DIR" -maxdepth 1 -not -name ".*" -not -name "xirrcalculator" -not 
 echo "📂 Copying files to $TARGET_DIR..."
 cp -r out/* "$TARGET_DIR"
 
+# Copy hidden files (like .htaccess)
+echo "📄 Copying hidden files (.htaccess)..."
+if [ -f "out/.htaccess" ]; then
+    cp out/.htaccess "$TARGET_DIR"
+    echo "   ✓ .htaccess copied"
+else
+    echo "   ⚠ No .htaccess file found in out directory"
+fi
+
 # Set proper permissions (if needed for Hostinger)
 echo "🔐 Setting permissions..."
 find "$TARGET_DIR" -maxdepth 1 -type f -exec chmod 644 {} \;
