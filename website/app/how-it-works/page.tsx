@@ -198,6 +198,18 @@ const steps = [
   {
     title: "Get Your XIRR",
     description: "View detailed analysis with XIRR calculations, Nifty 50 benchmark comparison, and all key metrics. Download a professional PDF report for your records or tax filing.",
-    note: "📄 PDF reports include all metrics and are perfect for sharing with financial advisors or CAs."
+    note: (
+      <span>
+        📄 PDF reports include all metrics and are perfect for sharing with financial advisors or CAs.{' '}
+        <a
+          href="/sample_report.pdf"
+          download="XIRR_Sample_Report.pdf"
+          className="font-semibold hover:underline"
+          style={{ color: '#1f77b4' }}
+        >
+          View sample report →
+        </a>
+      </span>
+    )
   }
 ];
