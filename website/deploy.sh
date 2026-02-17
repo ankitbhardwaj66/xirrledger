@@ -39,7 +39,10 @@ fi
 
 # Remove old files from target directory (except hidden files and specific directories)
 echo "🧹 Cleaning target directory..."
-find "$TARGET_DIR" -maxdepth 1 -not -name ".*" -not -name "xirrcalculator" -not -path "$TARGET_DIR" -exec rm -rf {} + 2>/dev/null || true
+# Delete all non-hidden files and directories except xirrcalculator
+shopt -s extglob
+rm -rf "$TARGET_DIR"/!(.|..|.*|xirrcalculator) 2>/dev/null || true
+shopt -u extglob
 
 # Copy new files to target directory
 echo "📂 Copying files to $TARGET_DIR..."
