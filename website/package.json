@@ -20,6 +20,7 @@
   "author": "Ankit Bhardwaj",
   "license": "ISC",
   "dependencies": {
+    "@tailwindcss/typography": "^0.5.19",
     "autoprefixer": "^10.4.24",
     "gray-matter": "^4.0.3",
     "next": "^16.1.6",
