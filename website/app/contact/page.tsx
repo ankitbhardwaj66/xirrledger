@@ -1,3 +1,5 @@
+'use client';
+
 export default function Contact() {
   return (
     <div className="py-16">
@@ -15,10 +17,21 @@ export default function Contact() {
           {/* Email Card */}
           <a
             href="mailto:contact@xirrledger.com"
-            className="bg-white border-2 border-gray-200 hover:border-primary rounded-2xl p-8 transition group shadow-lg hover:shadow-xl"
+            className="bg-white border-2 border-gray-200 rounded-2xl p-8 transition group shadow-lg hover:shadow-xl"
+            style={{ borderColor: '#e5e7eb' }}
+            onMouseEnter={(e) => e.currentTarget.style.borderColor = '#1f77b4'}
+            onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e5e7eb'}
           >
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-6 group-hover:bg-primary transition">
-              <svg className="w-8 h-8 text-primary group-hover:text-white transition" fill="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mb-6 transition"
+              style={{ backgroundColor: 'rgba(31, 119, 180, 0.1)' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1f77b4'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(31, 119, 180, 0.1)'}
+            >
+              <svg className="w-8 h-8 transition" fill="currentColor" viewBox="0 0 24 24"
+                style={{ color: '#1f77b4' }}
+                onMouseEnter={(e) => e.currentTarget.style.color = '#ffffff'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#1f77b4'}
+              >
                 <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
               </svg>
             </div>
@@ -26,7 +39,7 @@ export default function Contact() {
             <p className="text-gray-600 mb-4">
               For general inquiries, support, or feedback. We typically respond within 24 hours.
             </p>
-            <p className="text-primary font-semibold group-hover:underline">
+            <p className="font-semibold" style={{ color: '#1f77b4' }}>
               contact@xirrledger.com →
             </p>
           </a>
@@ -61,7 +74,8 @@ export default function Contact() {
           </p>
           <a
             href="/faq"
-            className="inline-block bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary-dark transition"
+            className="inline-block px-8 py-3 rounded-lg font-semibold transition"
+            style={{ backgroundColor: '#1f77b4', color: '#ffffff' }}
           >
             View FAQ
           </a>
@@ -72,8 +86,8 @@ export default function Contact() {
           <h2 className="text-3xl font-bold mb-8 text-center">What Can We Help You With?</h2>
           <div className="grid md:grid-cols-3 gap-6">
             <div className="bg-white border border-gray-200 rounded-xl p-6">
-              <div className="text-primary mb-3">
-                <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24">
+              <div className="mb-3">
+                <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#1f77b4' }}>
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
                 </svg>
               </div>
@@ -84,8 +98,8 @@ export default function Contact() {
             </div>
 
             <div className="bg-white border border-gray-200 rounded-xl p-6">
-              <div className="text-primary mb-3">
-                <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24">
+              <div className="mb-3">
+                <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#1f77b4' }}>
                   <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
                 </svg>
               </div>
@@ -96,8 +110,8 @@ export default function Contact() {
             </div>
 
             <div className="bg-white border border-gray-200 rounded-xl p-6">
-              <div className="text-primary mb-3">
-                <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24">
+              <div className="mb-3">
+                <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#1f77b4' }}>
                   <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
                 </svg>
               </div>
@@ -119,7 +133,8 @@ export default function Contact() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
               href="mailto:contact@xirrledger.com"
-              className="inline-block bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary-dark transition"
+              className="inline-block px-8 py-3 rounded-lg font-semibold transition"
+              style={{ backgroundColor: '#1f77b4', color: '#ffffff' }}
             >
               Email Us
             </a>
@@ -127,7 +142,8 @@ export default function Contact() {
               href="https://wa.me/1234567890"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block bg-green-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-600 transition"
+              className="inline-block px-8 py-3 rounded-lg font-semibold transition"
+              style={{ backgroundColor: '#22c55e', color: '#ffffff' }}
             >
               WhatsApp
             </a>
