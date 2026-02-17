@@ -5,6 +5,12 @@ RewriteEngine On
 # RewriteCond %{HTTPS} off
 # RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
+# Add trailing slash to directories
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_URI} !(.*)/$
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^(.*)$ $1/ [L,R=301]
+
 # Serve index.html for directories (default behavior)
 DirectoryIndex index.html
 
