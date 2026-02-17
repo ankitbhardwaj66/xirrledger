@@ -1,25 +1,23 @@
 #!/bin/bash
 
 # XIRR Ledger Website Deployment Script
-# This script builds the website and deploys it to Hostinger's public_html directory
+# This script deploys pre-built website files to Hostinger's public_html directory
 # Usage: ./deploy.sh
+# Note: Run 'npm run build' locally before deploying
 
 set -e  # Exit on any error
 
 echo "🚀 Starting deployment process..."
 echo ""
 
-# Build the website
-echo "📦 Building website..."
-npm run build
-
-# Check if build was successful
+# Check if out directory exists
 if [ ! -d "out" ]; then
-    echo "❌ Error: Build failed - 'out' directory not found"
+    echo "❌ Error: 'out' directory not found"
+    echo "💡 Please run 'npm run build' first to build the website"
     exit 1
 fi
 
-echo "✅ Build completed successfully"
+echo "✅ Found pre-built files in 'out' directory"
 echo ""
 
 # Define target directory (public_html)
