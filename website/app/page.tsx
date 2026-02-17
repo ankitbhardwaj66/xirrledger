@@ -4,7 +4,9 @@ export default function Home() {
   return (
     <>
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-primary to-primary-dark text-white py-20 overflow-hidden">
+      <section className="relative bg-[#1f77b4] text-white py-20 overflow-hidden" style={{
+        background: 'linear-gradient(135deg, #1f77b4 0%, #155a8a 100%)'
+      }}>
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
@@ -15,10 +17,14 @@ export default function Home() {
         <div className="container-custom relative z-10">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight drop-shadow-lg">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight" style={{
+                textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+              }}>
                 The Only Ledger-Based XIRR Calculator
               </h1>
-              <p className="text-xl mb-8 text-white opacity-95 font-medium">
+              <p className="text-xl mb-8 text-white font-normal leading-relaxed" style={{
+                textShadow: '1px 1px 2px rgba(0,0,0,0.2)'
+              }}>
                 Calculate accurate portfolio returns from your actual trading ledger. No manual entry. No spreadsheets. Just upload your broker files and get precise XIRR calculations instantly.
               </p>
 
@@ -60,7 +66,9 @@ export default function Home() {
                 </Link>
               </div>
 
-              <p className="text-sm text-white opacity-90">
+              <p className="text-sm text-white font-medium" style={{
+                textShadow: '1px 1px 2px rgba(0,0,0,0.2)'
+              }}>
                 ✓ Free to use • No registration required • Privacy-focused
               </p>
             </div>
@@ -235,7 +243,9 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="relative bg-gradient-to-br from-primary to-primary-dark text-white py-20 overflow-hidden">
+      <section className="relative bg-[#1f77b4] text-white py-20 overflow-hidden" style={{
+        background: 'linear-gradient(135deg, #1f77b4 0%, #155a8a 100%)'
+      }}>
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
@@ -244,8 +254,12 @@ export default function Home() {
         </div>
 
         <div className="container-custom text-center relative z-10">
-          <h2 className="text-4xl font-bold mb-4 drop-shadow-lg">Ready to Calculate Your Accurate XIRR?</h2>
-          <p className="text-xl mb-8 text-white opacity-95 font-medium">
+          <h2 className="text-4xl font-extrabold mb-4" style={{
+            textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+          }}>Ready to Calculate Your Accurate XIRR?</h2>
+          <p className="text-xl mb-8 text-white font-normal" style={{
+            textShadow: '1px 1px 2px rgba(0,0,0,0.2)'
+          }}>
             Upload your ledger and get precise returns in minutes. No registration required.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
