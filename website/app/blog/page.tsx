@@ -23,7 +23,7 @@ export default async function BlogPage() {
             <p className="text-gray-600 mb-6">
               We're working on creating valuable content for you. Check back soon!
             </p>
-            <Link href="/" className="inline-block bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-dark transition">
+            <Link href="/" className="inline-block px-6 py-3 rounded-lg font-semibold transition" style={{ backgroundColor: '#1f77b4', color: '#ffffff' }}>
               Back to Home
             </Link>
           </div>
@@ -38,7 +38,7 @@ export default async function BlogPage() {
                 <div className="text-sm text-gray-500 mb-2">{post.date}</div>
                 <h2 className="text-2xl font-bold mb-3">{post.title}</h2>
                 <p className="text-gray-600 mb-4">{post.excerpt}</p>
-                <span className="text-primary font-semibold">
+                <span className="font-semibold" style={{ color: '#1f77b4' }}>
                   Read more →
                 </span>
               </Link>
