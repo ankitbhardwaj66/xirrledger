@@ -54,13 +54,18 @@ export default function Home() {
                   href="https://xirrcalculatorr.streamlit.app/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-white text-primary px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition text-center"
+                  className="bg-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition text-center"
+                  style={{ color: '#1f77b4' }}
                 >
                   Try Now - It&apos;s Free
                 </a>
                 <Link
                   href="/how-it-works"
-                  className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-white hover:text-primary transition text-center"
+                  className="bg-transparent border-2 px-8 py-4 rounded-lg font-bold text-lg transition text-center"
+                  style={{
+                    borderColor: '#ffffff',
+                    color: '#ffffff'
+                  }}
                 >
                   See How It Works
                 </Link>
@@ -267,13 +272,18 @@ export default function Home() {
               href="https://xirrcalculatorr.streamlit.app/"
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-white text-primary px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition"
+              className="bg-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition"
+              style={{ color: '#1f77b4' }}
             >
               Launch Calculator Now
             </a>
             <Link
               href="/contact"
-              className="bg-transparent border-2 border-white text-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-white hover:text-primary transition"
+              className="bg-transparent border-2 px-8 py-4 rounded-lg font-bold text-lg transition"
+              style={{
+                borderColor: '#ffffff',
+                color: '#ffffff'
+              }}
             >
               Get in Touch
             </Link>
