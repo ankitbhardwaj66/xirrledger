@@ -250,6 +250,40 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Sample Report Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="container-custom">
+          <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl p-8 border-2 border-gray-200">
+            <div className="flex items-start gap-6">
+              <div className="flex-shrink-0">
+                <div className="w-16 h-16 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#dc2626' }}>
+                  <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#ffffff' }}>
+                    <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/>
+                  </svg>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold mb-3">See a Sample Report</h3>
+                <p className="text-gray-600 mb-6">
+                  Download a sample PDF report to see exactly what kind of analysis and metrics you'll get. Perfect for understanding the calculator's output before you try it.
+                </p>
+                <a
+                  href="/sample_report.pdf"
+                  download="XIRR_Sample_Report.pdf"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition"
+                  style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Download Sample Report (PDF)
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="relative bg-[#1f77b4] text-white py-20 overflow-hidden" style={{
         background: 'linear-gradient(135deg, #1f77b4 0%, #155a8a 100%)'
