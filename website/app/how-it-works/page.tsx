@@ -15,7 +15,10 @@ export default function HowItWorks() {
           {steps.map((step, i) => (
             <div key={i} className="flex gap-8 mb-12 last:mb-0">
               <div className="flex-shrink-0">
-                <div className="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center text-2xl font-bold shadow-lg">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold shadow-lg" style={{
+                  backgroundColor: '#1f77b4',
+                  color: '#ffffff'
+                }}>
                   {i + 1}
                 </div>
               </div>
@@ -153,16 +156,20 @@ export default function HowItWorks() {
         </section>
 
         {/* CTA */}
-        <div className="bg-gradient-to-br from-primary to-primary-dark text-white rounded-2xl p-12 text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
-          <p className="text-xl mb-8 text-blue-100">
+        <div className="rounded-2xl p-12 text-center" style={{
+          background: 'linear-gradient(135deg, #1f77b4 0%, #155a8a 100%)',
+          color: '#ffffff'
+        }}>
+          <h2 className="text-3xl font-bold mb-4" style={{ color: '#ffffff' }}>Ready to Get Started?</h2>
+          <p className="text-xl mb-8" style={{ color: '#ffffff' }}>
             Follow the steps above and calculate your XIRR now!
           </p>
           <a
             href="https://xirrcalculatorr.streamlit.app/"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block bg-white text-primary px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition"
+            className="inline-block bg-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition"
+            style={{ color: '#1f77b4' }}
           >
             Launch Calculator
           </a>
