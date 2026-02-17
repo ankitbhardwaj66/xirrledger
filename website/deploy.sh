@@ -47,8 +47,8 @@ cp -r out/* "$TARGET_DIR"
 
 # Set proper permissions (if needed for Hostinger)
 echo "🔐 Setting permissions..."
-find "$TARGET_DIR" -type f -exec chmod 644 {} \;
-find "$TARGET_DIR" -type d -exec chmod 755 {} \;
+find "$TARGET_DIR" -maxdepth 1 -type f -exec chmod 644 {} \;
+find "$TARGET_DIR" -maxdepth 1 -type d -not -name "xirrcalculator" -exec chmod 755 {} \;
 
 echo ""
 echo "✅ Deployment completed successfully!"
