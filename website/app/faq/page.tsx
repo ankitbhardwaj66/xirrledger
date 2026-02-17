@@ -20,7 +20,7 @@ export default function FAQ() {
         <div className="max-w-4xl mx-auto">
           {faqCategories.map((category, catIndex) => (
             <div key={catIndex} className="mb-12">
-              <h2 className="text-2xl font-bold mb-6 text-primary">{category.title}</h2>
+              <h2 className="text-2xl font-bold mb-6" style={{ color: '#1f77b4' }}>{category.title}</h2>
               <div className="space-y-4">
                 {category.questions.map((faq, faqIndex) => {
                   const index = catIndex * 100 + faqIndex;
@@ -69,7 +69,8 @@ export default function FAQ() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
               href="mailto:contact@xirrledger.com"
-              className="inline-block bg-primary text-white px-8 py-4 rounded-lg font-bold hover:bg-primary-dark transition"
+              className="inline-block px-8 py-4 rounded-lg font-bold transition"
+              style={{ backgroundColor: '#1f77b4', color: '#ffffff' }}
             >
               Email Us
             </a>
@@ -77,7 +78,8 @@ export default function FAQ() {
               href="https://wa.me/1234567890"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block bg-green-500 text-white px-8 py-4 rounded-lg font-bold hover:bg-green-600 transition"
+              className="inline-block px-8 py-4 rounded-lg font-bold transition"
+              style={{ backgroundColor: '#22c55e', color: '#ffffff' }}
             >
               WhatsApp
             </a>
