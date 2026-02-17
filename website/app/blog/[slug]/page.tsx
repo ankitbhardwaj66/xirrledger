@@ -20,9 +20,30 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     };
   }
 
+  const url = `https://xirrledger.com/blog/${slug}`;
+
   return {
     title: `${post.title} | XIRR Ledger Blog`,
     description: post.excerpt,
+    authors: [{ name: 'XIRR Ledger Team' }],
+    keywords: ['XIRR calculator', 'portfolio returns', 'trading ledger', 'investment returns', 'brokerage charges', 'ledger-based XIRR'],
+    openGraph: {
+      title: post.title,
+      description: post.excerpt,
+      url: url,
+      siteName: 'XIRR Ledger',
+      type: 'article',
+      publishedTime: post.date,
+      authors: ['XIRR Ledger Team'],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.excerpt,
+    },
+    alternates: {
+      canonical: url,
+    },
   };
 }
 
