@@ -85,7 +85,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-gray-800 text-center space-y-2">
           <p className="text-gray-400 text-sm">
-            © {currentYear} XIRR Ledger by Ankit Bhardwaj. All rights reserved.
+            © {currentYear} XIRR Ledger by <a href="https://ankitbhardwaj.in" target="_blank" rel="noopener noreferrer" className="text-primary-light hover:text-primary transition">Ankit Bhardwaj</a>. All rights reserved.
           </p>
           <p className="text-gray-500 text-xs">
             Disclaimer: This tool is for informational purposes only. Always verify calculations independently and consult with a financial advisor for investment decisions.
