@@ -1,0 +1,11 @@
+# Blog posts go here
+
+Create MDX files with frontmatter like this:
+
+---
+title: "Welcome to XIRR Ledger"
+date: "2024-02-17"
+excerpt: "Introducing the only ledger-based XIRR calculator"
+---
+
+Your content here...
