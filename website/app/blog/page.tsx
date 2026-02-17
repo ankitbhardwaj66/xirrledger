@@ -28,19 +28,45 @@ export default async function BlogPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
             {posts.map((post) => (
               <Link
                 key={post.slug}
                 href={`/blog/${post.slug}`}
-                className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-primary hover:shadow-lg transition"
+                className="group bg-white rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-2"
+                style={{
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                }}
               >
-                <div className="text-sm text-gray-500 mb-2">{post.date}</div>
-                <h2 className="text-2xl font-bold mb-3">{post.title}</h2>
-                <p className="text-gray-600 mb-4">{post.excerpt}</p>
-                <span className="font-semibold" style={{ color: '#1f77b4' }}>
-                  Read more →
-                </span>
+                <div className="p-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <time className="text-sm font-medium px-3 py-1 rounded-full" style={{ backgroundColor: '#e3f2fd', color: '#1f77b4' }}>
+                      {new Date(post.date).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </time>
+                    <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" style={{ color: '#1f77b4' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                  </div>
+
+                  <h2 className="text-xl font-bold mb-3 text-gray-900 leading-tight group-hover:text-primary transition-colors">
+                    {post.title}
+                  </h2>
+
+                  <p className="text-gray-600 leading-relaxed mb-6" style={{ fontSize: '0.95rem' }}>
+                    {post.excerpt}
+                  </p>
+
+                  <div className="flex items-center gap-2 font-semibold text-sm" style={{ color: '#1f77b4' }}>
+                    <span>Read Article</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
               </Link>
             ))}
           </div>
