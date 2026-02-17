@@ -1,6 +1,9 @@
 'use client';
 
+import { useState } from 'react';
+
 export default function Contact() {
+  const [isEmailHovered, setIsEmailHovered] = useState(false);
   return (
     <div className="py-16">
       <div className="container-custom">
@@ -17,20 +20,16 @@ export default function Contact() {
           {/* Email Card */}
           <a
             href="mailto:contact@xirrledger.com"
-            className="bg-white border-2 border-gray-200 rounded-2xl p-8 transition group shadow-lg hover:shadow-xl"
-            style={{ borderColor: '#e5e7eb' }}
-            onMouseEnter={(e) => e.currentTarget.style.borderColor = '#1f77b4'}
-            onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e5e7eb'}
+            className="bg-white border-2 rounded-2xl p-8 transition group shadow-lg hover:shadow-xl"
+            style={{ borderColor: isEmailHovered ? '#1f77b4' : '#e5e7eb' }}
+            onMouseEnter={() => setIsEmailHovered(true)}
+            onMouseLeave={() => setIsEmailHovered(false)}
           >
             <div className="w-16 h-16 rounded-full flex items-center justify-center mb-6 transition"
-              style={{ backgroundColor: 'rgba(31, 119, 180, 0.1)' }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1f77b4'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(31, 119, 180, 0.1)'}
+              style={{ backgroundColor: isEmailHovered ? '#1f77b4' : 'rgba(31, 119, 180, 0.1)' }}
             >
               <svg className="w-8 h-8 transition" fill="currentColor" viewBox="0 0 24 24"
-                style={{ color: '#1f77b4' }}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#ffffff'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#1f77b4'}
+                style={{ color: isEmailHovered ? '#ffffff' : '#1f77b4' }}
               >
                 <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
               </svg>
