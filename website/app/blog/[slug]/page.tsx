@@ -26,7 +26,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: `${post.title} | XIRR Ledger Blog`,
     description: post.excerpt,
     authors: [{ name: 'XIRR Ledger Team' }],
-    keywords: ['XIRR calculator', 'portfolio returns', 'trading ledger', 'investment returns', 'brokerage charges', 'ledger-based XIRR'],
+    keywords: post.keywords.length > 0
+      ? post.keywords
+      : ['XIRR calculator', 'portfolio returns', 'trading ledger', 'investment returns', 'ledger-based XIRR'],
     openGraph: {
       title: post.title,
       description: post.excerpt,
