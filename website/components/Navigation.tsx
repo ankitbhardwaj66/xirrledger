@@ -39,9 +39,7 @@ export default function Navigation() {
               Contact
             </Link>
             <a
-              href="https://xirrcalculatorr.streamlit.app/"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/calculator"
               className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition font-semibold"
             >
               Launch Calculator
@@ -85,9 +83,7 @@ export default function Navigation() {
               Contact
             </Link>
             <a
-              href="https://xirrcalculatorr.streamlit.app/"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/calculator"
               className="block mt-2 bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition text-center font-semibold"
             >
               Launch Calculator
