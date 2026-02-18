@@ -132,6 +132,8 @@ export default function CalculatorPage() {
 
   // PAN per Groww PDF filename
   const [filePans, setFilePans] = useState<Record<string, string>>({});
+  const [samePanForAll, setSamePanForAll] = useState(false);
+  const [sharedPan, setSharedPan] = useState('');
 
   // Per-account holdings + cash — derived from files+PANs, user edits holdings/cash
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -150,13 +152,26 @@ export default function CalculatorPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Recompute accounts whenever files or PANs change, preserving holdings/cash
-  useEffect(() => {
-    setAccounts(prev => buildAccounts(files, filePans, prev));
-  }, [files, filePans]);
-
   const growwFiles = useMemo(() => files.filter(f => f.broker === 'groww'), [files]);
-  const allGrowwPansEntered = growwFiles.every(f => (filePans[f.file.name] ?? '').trim().length === 10);
+
+  // Effective PAN map — when samePanForAll, all files get sharedPan
+  const effectivePans = useMemo(() => {
+    if (samePanForAll) {
+      return Object.fromEntries(growwFiles.map(f => [f.file.name, sharedPan.toUpperCase()]));
+    }
+    return filePans;
+  }, [samePanForAll, sharedPan, filePans, growwFiles]);
+
+  const allGrowwPansEntered = growwFiles.length === 0 || (
+    samePanForAll
+      ? sharedPan.trim().length === 10
+      : growwFiles.every(f => (filePans[f.file.name] ?? '').trim().length === 10)
+  );
+
+  // Recompute accounts whenever files or effective PANs change, preserving holdings/cash
+  useEffect(() => {
+    setAccounts(prev => buildAccounts(files, effectivePans, prev));
+  }, [files, effectivePans]);
   const allHoldingsEntered = accounts.length > 0 && accounts.every(a => a.holdings.trim() !== '');
 
   // Load Google Identity Services
@@ -307,6 +322,8 @@ export default function CalculatorPage() {
     setStep('auth');
     setFiles([]);
     setFilePans({});
+    setSamePanForAll(false);
+    setSharedPan('');
     setAccounts([]);
     setResults(null);
     setProcessingSteps(PROCESSING_STEPS.map(s => ({ ...s, status: 'pending' as const })));
@@ -508,41 +525,82 @@ export default function CalculatorPage() {
                   Enter the PAN for each Groww PDF. Files with the same PAN will be merged into one account.
                 </p>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {growwFiles.map(f => (
-                    <div key={f.file.name} style={{ background: '#fafafa', borderRadius: 10, padding: '14px 16px', border: '1px solid #e5e7eb' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: 6, background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 700, color: '#d97706', flexShrink: 0 }}>
-                          PDF
-                        </div>
-                        <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {f.file.name}
-                        </p>
-                        <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: '#9ca3af', flexShrink: 0 }}>
-                          {(f.file.size / 1024).toFixed(0)} KB
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', flexShrink: 0 }}>PAN:</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. ABCDE1234F"
-                          value={filePans[f.file.name] ?? ''}
-                          onChange={e => updateFilePan(f.file.name, e.target.value)}
-                          maxLength={10}
-                          style={{
-                            flex: 1, padding: '8px 12px', border: `1.5px solid ${(filePans[f.file.name] ?? '').length === 10 ? '#16a34a' : '#e5e7eb'}`,
-                            borderRadius: 6, fontSize: '0.875rem', outline: 'none', letterSpacing: 2, fontFamily: 'monospace',
-                            background: (filePans[f.file.name] ?? '').length === 10 ? '#f0fdf4' : '#fff',
-                          }}
-                        />
-                        {(filePans[f.file.name] ?? '').length === 10 && (
-                          <span style={{ color: '#16a34a', fontSize: '1rem' }}>✓</span>
-                        )}
-                      </div>
+                {/* Same PAN checkbox */}
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 16, userSelect: 'none' }}>
+                  <input
+                    type="checkbox"
+                    checked={samePanForAll}
+                    onChange={e => setSamePanForAll(e.target.checked)}
+                    style={{ width: 16, height: 16, accentColor: primaryColor, cursor: 'pointer' }}
+                  />
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>
+                    Same PAN for all Groww files
+                  </span>
+                </label>
+
+                {samePanForAll ? (
+                  /* Single shared PAN input */
+                  <div style={{ background: '#fafafa', borderRadius: 10, padding: '16px', border: '1px solid #e5e7eb' }}>
+                    <p style={{ margin: '0 0 10px', fontSize: '0.82rem', color: '#6b7280' }}>
+                      Applies to all {growwFiles.length} Groww file{growwFiles.length > 1 ? 's' : ''}
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', flexShrink: 0 }}>PAN:</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. ABCDE1234F"
+                        value={sharedPan}
+                        onChange={e => setSharedPan(e.target.value.toUpperCase())}
+                        maxLength={10}
+                        style={{
+                          flex: 1, padding: '10px 14px',
+                          border: `1.5px solid ${sharedPan.length === 10 ? '#16a34a' : '#e5e7eb'}`,
+                          borderRadius: 6, fontSize: '0.95rem', outline: 'none', letterSpacing: 3, fontFamily: 'monospace',
+                          background: sharedPan.length === 10 ? '#f0fdf4' : '#fff',
+                        }}
+                      />
+                      {sharedPan.length === 10 && <span style={{ color: '#16a34a', fontSize: '1rem' }}>✓</span>}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ) : (
+                  /* Per-file PAN inputs */
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {growwFiles.map(f => (
+                      <div key={f.file.name} style={{ background: '#fafafa', borderRadius: 10, padding: '14px 16px', border: '1px solid #e5e7eb' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                          <div style={{ width: 32, height: 32, borderRadius: 6, background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 700, color: '#d97706', flexShrink: 0 }}>
+                            PDF
+                          </div>
+                          <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {f.file.name}
+                          </p>
+                          <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: '#9ca3af', flexShrink: 0 }}>
+                            {(f.file.size / 1024).toFixed(0)} KB
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', flexShrink: 0 }}>PAN:</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. ABCDE1234F"
+                            value={filePans[f.file.name] ?? ''}
+                            onChange={e => updateFilePan(f.file.name, e.target.value)}
+                            maxLength={10}
+                            style={{
+                              flex: 1, padding: '8px 12px',
+                              border: `1.5px solid ${(filePans[f.file.name] ?? '').length === 10 ? '#16a34a' : '#e5e7eb'}`,
+                              borderRadius: 6, fontSize: '0.875rem', outline: 'none', letterSpacing: 2, fontFamily: 'monospace',
+                              background: (filePans[f.file.name] ?? '').length === 10 ? '#f0fdf4' : '#fff',
+                            }}
+                          />
+                          {(filePans[f.file.name] ?? '').length === 10 && (
+                            <span style={{ color: '#16a34a', fontSize: '1rem' }}>✓</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <p style={{ fontSize: '0.78rem', color: '#9ca3af', marginTop: 12, marginBottom: 0 }}>
                   Your PAN is used only to unlock the PDF. We never store it.
