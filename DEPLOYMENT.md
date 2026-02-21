@@ -40,7 +40,7 @@
 | File storage | AWS S3 (4 buckets) | ✅ Live |
 | Email | AWS SES | ✅ Verified (domain + DKIM + MAIL FROM) |
 | Nifty 50 cache | S3 daily refresh via EventBridge | ✅ Live (4,500+ rows) |
-| User DB | MySQL on Hostinger via PHP bridge | 🔲 PHP written — MySQL setup pending |
+| User DB | MySQL on Hostinger via PHP bridge | 🔲 PHP deployed — MySQL setup pending |
 | NEXT_PUBLIC_API_URL | Baked into build via `.env.production` | ✅ Done |
 
 ---
@@ -194,5 +194,4 @@ AWS_PROFILE=ankit aws logs tail /aws/lambda/xirr-processor --follow --region ap-
 
 | Branch | Purpose |
 |---|---|
-| `main` | Production — deployed to Hostinger |
-| `feature/calculator-page` | All calculator + Lambda + infra work (in progress) |
+| `main` | Single active branch — all work merged here |
