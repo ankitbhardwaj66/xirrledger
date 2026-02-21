@@ -178,6 +178,7 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
         xirr_pct       = combined_stats.get("xirr_percentage")
         nifty_xirr_pct = combined_stats.get("nifty_xirr_percentage")
 
+        period_years = combined_stats.get("investment_period_years")
         final_status = {
             "status": "done",
             "xirr": round(xirr_pct, 2) if xirr_pct is not None else None,
@@ -186,6 +187,8 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             "total_withdrawn": round(combined_stats["total_withdrawn"], 2),
             "current_value": round(combined_value, 2),
             "net_gain": round(combined_stats["net_gain"], 2),
+            "investment_period_days": combined_stats.get("investment_period_days"),
+            "investment_period_years": round(period_years, 2) if period_years is not None else None,
             "report_url": report_url,
             "completed_at": datetime.now(timezone.utc).isoformat(),
         }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { FaTrophy, FaDumbbell, FaChartLine } from 'react-icons/fa';
 
 const GOOGLE_CLIENT_ID = '1030081614603-onnmmupafevkn0hojoj4qk023tuohius.apps.googleusercontent.com';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
@@ -41,7 +42,46 @@ interface Results {
   total_invested: number;
   current_value: number;
   net_gain: number;
+  investment_period_days: number | null;
+  investment_period_years: number | null;
   report_url: string;
+}
+
+function formatPeriod(years: number | null): string {
+  if (!years) return 'N/A';
+  const y = Math.floor(years);
+  const m = Math.round((years - y) * 12);
+  if (y === 0) return `${m} month${m !== 1 ? 's' : ''}`;
+  if (m === 0) return `${y} year${y !== 1 ? 's' : ''}`;
+  return `${y}yr ${m}mo`;
+}
+
+function getInsight(xirr: number | null, niftyXirr: number | null, years: number | null) {
+  if (xirr == null || niftyXirr == null) return null;
+  const period = years ?? 0;
+  const diff = (xirr - niftyXirr).toFixed(1);
+  if (xirr >= niftyXirr) {
+    return {
+      Icon: FaTrophy,
+      title: `You beat Nifty 50 by ${diff}%!`,
+      body: `Congratulations${period >= 5 ? ` — ${Math.floor(period)} years of disciplined investing is paying off` : ''}! You're outperforming the benchmark that beats most professional fund managers. Keep it up!`,
+      bg: '#dcfce7', border: '#86efac', iconColor: '#15803d', titleColor: '#15803d', bodyColor: '#166534',
+    };
+  }
+  if (period < 5) {
+    return {
+      Icon: FaDumbbell,
+      title: 'Keep building your skills!',
+      body: `You're ${formatPeriod(years)} into your investing journey. Nifty 50 is a tough benchmark — many investors only start beating it after 5+ years of experience. Stay consistent!`,
+      bg: '#fefce8', border: '#fde68a', iconColor: '#a16207', titleColor: '#a16207', bodyColor: '#854d0e',
+    };
+  }
+  return {
+    Icon: FaChartLine,
+    title: 'Consider shifting to index funds.',
+    body: `After ${formatPeriod(years)}, Nifty 50 has consistently outperformed your portfolio by ${Math.abs(parseFloat(diff))}%. Index funds match the market automatically — it may be the smarter long-term move.`,
+    bg: '#fff7ed', border: '#fed7aa', iconColor: '#c2410c', titleColor: '#c2410c', bodyColor: '#9a3412',
+  };
 }
 
 declare global {
@@ -867,11 +907,12 @@ export default function CalculatorPage() {
                 </div>
                 )}
               </div>
-              <div style={{ padding: '28px 40px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+              <div style={{ padding: '28px 40px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, borderBottom: '1px solid #f3f4f6' }}>
                 {[
                   { label: 'Total Invested', value: formatINR(results.total_invested) },
                   { label: 'Current Value', value: formatINR(results.current_value) },
                   { label: 'Net Gain', value: formatINR(results.net_gain), positive: results.net_gain >= 0 },
+                  { label: 'Investment Period', value: formatPeriod(results.investment_period_years) },
                 ].map(stat => (
                   <div key={stat.label} style={{ textAlign: 'center' }}>
                     <p style={{ margin: '0 0 4px', fontSize: '0.78rem', color: '#9ca3af', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{stat.label}</p>
@@ -881,6 +922,27 @@ export default function CalculatorPage() {
                   </div>
                 ))}
               </div>
+              {(() => {
+                const insight = getInsight(results.xirr, results.nifty_xirr, results.investment_period_years);
+                if (!insight) return null;
+                return (
+                  <div style={{
+                    margin: '0', padding: '20px 28px',
+                    background: insight.bg, borderBottom: `3px solid ${insight.border}`,
+                    borderBottomLeftRadius: 16, borderBottomRightRadius: 16,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <insight.Icon size={18} color={insight.iconColor} />
+                      <p style={{ margin: 0, fontWeight: 800, fontSize: '0.95rem', color: insight.titleColor }}>
+                        {insight.title}
+                      </p>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: insight.bodyColor, lineHeight: 1.5 }}>
+                      {insight.body}
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
             <div style={{ display: 'flex', gap: 14 }}>
               <a href={results.report_url} download style={{
