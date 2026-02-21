@@ -353,7 +353,7 @@ export default function CalculatorPage() {
 
       // 3. Save user to Hostinger PHP bridge (non-blocking — fire and forget)
       const detectedBrokers = [...new Set(files.map(f => f.broker).filter(b => b !== 'unknown'))];
-      const detectedBroker = detectedBrokers.length > 1 ? 'both' : (detectedBrokers[0] || 'unknown');
+      const detectedBroker = detectedBrokers.join(',') || 'unknown';
       fetch('/api/save-user.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
