@@ -58,6 +58,28 @@ HOSTINGER_API_SECRET = os.environ.get("HOSTINGER_API_SECRET", "")
 
 
 # ─────────────────────────────────────────────────────────────
+# Cross-file deduplication helper
+# ─────────────────────────────────────────────────────────────
+def _dedup_cross_file(df):
+    """
+    Remove rows where (date, amount) appears in more than one source file.
+    The first file's entries win; duplicates from later files are dropped.
+    Entries within the same file are untouched — even multiple entries on
+    the same date are legitimate if they come from the same file.
+    """
+    if df.empty or "_file_idx" not in df.columns:
+        return df.drop(columns=["_file_idx"], errors="ignore")
+
+    df = df.copy()
+    df["_key"] = df["date"].astype(str) + "|" + df["amount"].astype(str)
+    # For each (date, amount) key, find the lowest file index that contains it
+    min_file = df.groupby("_key")["_file_idx"].transform("min")
+    # Keep only rows whose file index is the minimum for that key
+    result = df[df["_file_idx"] == min_file].drop(columns=["_file_idx", "_key"])
+    return result.reset_index(drop=True)
+
+
+# ─────────────────────────────────────────────────────────────
 # Main entry point
 # ─────────────────────────────────────────────────────────────
 def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket):
@@ -93,7 +115,7 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             account_outflows = []
             account_inflows  = []
 
-            for s3_key in file_keys:
+            for file_idx, s3_key in enumerate(file_keys):
                 logger.info("Downloading s3://%s/%s", uploads_bucket, s3_key)
                 obj = s3_client.get_object(Bucket=uploads_bucket, Key=s3_key)
                 file_bytes = obj["Body"].read()
@@ -107,6 +129,9 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                     logger.warning("Unsupported file type: %s", file_name)
                     continue
 
+                # Tag each row with its source file index (used for cross-file dedup below)
+                out["_file_idx"] = file_idx
+                inf["_file_idx"] = file_idx
                 account_outflows.append(out)
                 account_inflows.append(inf)
 
@@ -115,7 +140,17 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                 continue
 
             acc_out = pd.concat(account_outflows, ignore_index=True)
-            acc_inf = pd.concat(account_inflows, ignore_index=True) if account_inflows else pd.DataFrame(columns=["date", "amount"])
+            acc_inf = pd.concat(account_inflows, ignore_index=True) if account_inflows else pd.DataFrame(columns=["date", "amount", "_file_idx"])
+
+            # For Groww accounts with multiple files: remove cross-file duplicates only.
+            # Entries on the same date within the same file are legitimate and kept.
+            # Zerodha always has one file per account so no dedup needed there.
+            if broker == "groww" and len(account_outflows) > 1:
+                acc_out = _dedup_cross_file(acc_out)
+                acc_inf = _dedup_cross_file(acc_inf)
+            else:
+                acc_out = acc_out.drop(columns=["_file_idx"], errors="ignore")
+                acc_inf = acc_inf.drop(columns=["_file_idx"], errors="ignore")
 
             all_outflows.append(acc_out)
             all_inflows.append(acc_inf)
