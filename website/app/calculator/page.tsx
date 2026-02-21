@@ -973,7 +973,7 @@ export default function CalculatorPage() {
               })()}
             </div>
             <div style={{ display: 'flex', gap: 14 }}>
-              <a href={results.report_url} download style={{
+              <a href={results.report_url} target="_blank" rel="noopener noreferrer" style={{
                 flex: 2, padding: '15px', background: primaryColor, color: '#fff', borderRadius: 10,
                 fontWeight: 700, fontSize: '1rem', textAlign: 'center', textDecoration: 'none',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
