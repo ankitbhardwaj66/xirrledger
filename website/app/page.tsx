@@ -50,15 +50,13 @@ export default function Home() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                <a
-                  href="https://xirrcalculatorr.streamlit.app/"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  href="/calculator"
                   className="bg-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition text-center"
                   style={{ color: '#1f77b4' }}
                 >
                   Try Now - It&apos;s Free
-                </a>
+                </Link>
                 <Link
                   href="/how-it-works"
                   className="bg-transparent border-2 px-8 py-4 rounded-lg font-bold text-lg transition text-center"
@@ -319,15 +317,13 @@ export default function Home() {
             Upload your ledger and get precise returns in minutes. No registration required.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href="https://xirrcalculatorr.streamlit.app/"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/calculator"
               className="bg-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition"
               style={{ color: '#1f77b4' }}
             >
               Launch Calculator Now
-            </a>
+            </Link>
             <Link
               href="/contact"
               className="bg-transparent border-2 px-8 py-4 rounded-lg font-bold text-lg transition"
