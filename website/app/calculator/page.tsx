@@ -348,6 +348,9 @@ export default function CalculatorPage() {
         const res = await fetch(statusUrl, { cache: 'no-store' });
         if (!res.ok) return; // not written yet — keep polling
         const data = await res.json();
+        // Lambda writes status:"pending" initially — not a step key, so skip UI update
+        // to preserve the 'active' state already set on step 1 (Uploading)
+        if (data.status === 'pending') return;
         setProcessingSteps(prev =>
           prev.map(s => ({
             ...s,
