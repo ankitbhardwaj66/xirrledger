@@ -333,7 +333,7 @@ export default function CalculatorPage() {
     setPanValidationStatus(prev => ({ ...prev, [key]: 'validating' }));
     try {
       const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
-      pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
       for (const uf of filesToCheck) {
         const data = await uf.file.arrayBuffer();
         await pdfjsLib.getDocument({ data, password: pan }).promise;
