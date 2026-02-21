@@ -120,8 +120,15 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             all_outflows.append(acc_out)
             all_inflows.append(acc_inf)
 
+            # Extract Zerodha account number from filename: ledger-ACCTNUM.csv
+            zerodha_acct = None
+            if broker == "zerodha" and file_keys:
+                fname = file_keys[0].split("/")[-1]
+                m = re.search(r'ledger[_\-](.+?)\.csv', fname, re.IGNORECASE)
+                zerodha_acct = m.group(1) if m else None
+
             account_stats_list.append({
-                "name": f"Groww ({pan})" if pan else "Zerodha",
+                "name": f"Groww ({pan})" if pan else (f"Zerodha ({zerodha_acct})" if zerodha_acct else "Zerodha"),
                 "outflows": acc_out,
                 "inflows": acc_inf,
                 "current_value": current_value,
