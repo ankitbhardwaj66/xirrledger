@@ -18,6 +18,7 @@ interface User {
 interface UploadedFile {
   file: File;
   broker: 'zerodha' | 'groww' | 'unknown';
+  hash: string;
 }
 
 // One per unique broker account (PAN for Groww, filename for Zerodha)
@@ -106,6 +107,15 @@ const PROCESSING_STEPS = [
   { key: 'done',      label: 'All done!' },
 ];
 
+async function hashFile(file: File): Promise<string> {
+  const buf = await file.arrayBuffer();
+  const digest = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(digest))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 16);
+}
+
 function detectBroker(file: File): 'zerodha' | 'groww' | 'unknown' {
   const name = file.name.toLowerCase();
   if (file.type === 'text/csv' || name.endsWith('.csv')) return 'zerodha';
@@ -177,6 +187,7 @@ export default function CalculatorPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
 
   const [isDragging, setIsDragging] = useState(false);
+  const [duplicateWarning, setDuplicateWarning] = useState('');
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>(
     PROCESSING_STEPS.map(s => ({ ...s, status: 'pending' as const }))
   );
@@ -256,14 +267,25 @@ export default function CalculatorPage() {
     setStep('upload');
   }
 
-  const addFiles = useCallback((incoming: FileList | File[]) => {
-    const newFiles: UploadedFile[] = Array.from(incoming).map(file => ({
-      file,
-      broker: detectBroker(file),
-    }));
+  const addFiles = useCallback(async (incoming: FileList | File[]) => {
+    const withHashes = await Promise.all(
+      Array.from(incoming).map(async file => ({
+        file,
+        broker: detectBroker(file),
+        hash: await hashFile(file),
+      }))
+    );
     setFiles(prev => {
+      const existingHashes = new Set(prev.map(f => f.hash));
       const existingNames = new Set(prev.map(f => f.file.name));
-      return [...prev, ...newFiles.filter(f => !existingNames.has(f.file.name))];
+      const dupes = withHashes.filter(f => existingHashes.has(f.hash));
+      const toAdd = withHashes.filter(f => !existingHashes.has(f.hash) && !existingNames.has(f.file.name));
+      if (dupes.length > 0) {
+        const names = dupes.map(f => `"${f.file.name}"`).join(', ');
+        setDuplicateWarning(`${names} skipped — identical file already added.`);
+        setTimeout(() => setDuplicateWarning(''), 5000);
+      }
+      return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
     });
   }, []);
 
@@ -560,6 +582,12 @@ export default function CalculatorPage() {
                 <input ref={fileInputRef} type="file" multiple accept=".csv,.pdf"
                   onChange={e => e.target.files && addFiles(e.target.files)} style={{ display: 'none' }} />
               </div>
+              {duplicateWarning && (
+                <div style={{ marginTop: 16, padding: '10px 16px', borderRadius: 8, background: '#fef3c7', border: '1px solid #fcd34d', color: '#92400e', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: '1rem' }}>⚠️</span>
+                  <span>{duplicateWarning}</span>
+                </div>
+              )}
               {files.length > 0 && (
                 <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {files.map((f, i) => (
