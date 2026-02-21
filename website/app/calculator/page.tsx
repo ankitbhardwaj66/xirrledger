@@ -256,42 +256,97 @@ export default function CalculatorPage() {
     if (!allHoldingsEntered) return;
     setProcessingError('');
     setStep('processing');
-    simulateProcessing(); // TODO: Replace with real API once Lambda is deployed
-  }
 
-  function simulateProcessing() {
-    let i = 0;
-    function advance() {
-      setProcessingSteps(prev =>
-        prev.map((s, idx) => ({
-          ...s,
-          status: idx < i ? 'done' : idx === i ? 'active' : 'pending',
-        }))
+    // Mark "Uploading" as active immediately
+    setProcessingSteps(prev => prev.map((s, i) => ({
+      ...s, status: i === 0 ? 'active' : 'pending',
+    })));
+
+    try {
+      // 1. Create session + get presigned S3 upload URLs
+      const fileList = files.map(f => ({
+        name: f.file.name,
+        type: f.file.type || 'application/octet-stream',
+      }));
+      const sessionRes = await fetch(`${API_BASE}/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: fileList }),
+      });
+      if (!sessionRes.ok) throw new Error('Failed to create session — please try again.');
+      const { session_id, upload_urls } = await sessionRes.json();
+
+      // 2. Upload files directly to S3 via presigned PUT URLs
+      const keyMap: Record<string, string> = {};
+      await Promise.all(
+        (upload_urls as { name: string; url: string; key: string }[]).map(async ({ name, url, key }) => {
+          const uf = files.find(f => f.file.name === name);
+          if (!uf) return;
+          const putRes = await fetch(url, {
+            method: 'PUT',
+            body: uf.file,
+            headers: { 'Content-Type': uf.file.type || 'application/octet-stream' },
+          });
+          if (!putRes.ok) throw new Error(`Failed to upload ${name}`);
+          keyMap[name] = key;
+        })
       );
-      if (i < PROCESSING_STEPS.length - 1) {
-        i++;
-        pollingRef.current = setTimeout(advance, i === 2 ? 3000 : 2000);
-      } else {
-        setResults({
-          xirr: 16.5,
-          nifty_xirr: 13.8,
-          total_invested: 500000,
-          current_value: 650000,
-          net_gain: 150000,
-          report_url: '#',
-        });
-        setStep('results');
-      }
+
+      // 3. Save user to Hostinger PHP bridge (non-blocking — fire and forget)
+      fetch('/api/save-user.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id,
+          name: user?.name,
+          email: user?.email,
+          broker: broker || (files.some(f => f.broker === 'zerodha') && files.some(f => f.broker === 'groww') ? 'both' : files[0]?.broker),
+          google_token: user?.googleToken,
+        }),
+      }).catch(() => {}); // ignore failures — user data logging is best-effort
+
+      // 4. Build accounts payload for Lambda /process
+      const accountsPayload = accounts.map(acc => {
+        // For Groww accounts grouped by PAN, id === pan (see buildAccounts)
+        const pan = acc.broker === 'groww' ? acc.id : null;
+        return {
+          broker: acc.broker,
+          pan,
+          pan_password: pan, // Groww PDF password = PAN
+          file_keys: acc.fileNames.map(n => keyMap[n]).filter(Boolean),
+          holdings: parseFloat(acc.holdings) || 0,
+          cash: parseFloat(acc.cash) || 0,
+        };
+      });
+
+      // 5. Trigger async Lambda processing
+      const processRes = await fetch(`${API_BASE}/process`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id,
+          name: user?.name,
+          email: user?.email,
+          accounts: accountsPayload,
+        }),
+      });
+      if (!processRes.ok) throw new Error('Failed to start processing — please try again.');
+
+      // 6. Start polling S3 jobs bucket for status updates
+      pollStatus(session_id);
+    } catch (err) {
+      setProcessingError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+      setStep('details');
     }
-    advance();
   }
 
-  // Real polling — replace simulation above once Lambda is deployed
-  async function pollStatus(sid: string) {
-    const statusUrl = `${API_BASE}/status/${sid}.json`;
+  function pollStatus(sid: string) {
+    // Jobs bucket is publicly readable — poll directly without going through API Gateway
+    const statusUrl = `https://xirrledger-jobs.s3.ap-south-1.amazonaws.com/jobs/${sid}/status.json`;
     pollingRef.current = setInterval(async () => {
       try {
-        const res = await fetch(statusUrl);
+        const res = await fetch(statusUrl, { cache: 'no-store' });
+        if (!res.ok) return; // not written yet — keep polling
         const data = await res.json();
         setProcessingSteps(prev =>
           prev.map(s => ({
@@ -310,7 +365,7 @@ export default function CalculatorPage() {
           setProcessingError(data.message || 'Something went wrong. Please try again.');
           setStep('details');
         }
-      } catch {}
+      } catch {} // network hiccup — keep polling
     }, 2000);
   }
 
