@@ -35,8 +35,8 @@ import pandas as pd
 import numpy as np
 from scipy.optimize import newton, brentq
 import pdfplumber
-import yfinance as yf
-yf.set_tz_cache_location('/tmp')  # Lambda /tmp is writable; avoids read-only fs errors
+# yfinance removed — Nifty 50 data is read from the S3 daily cache
+# (populated by the nifty-refresher Lambda, see refresher.py)
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -141,10 +141,10 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
         combined_inflows  = pd.concat(all_inflows, ignore_index=True) if all_inflows else pd.DataFrame(columns=["date", "amount"])
         combined_value    = sum(a["current_value"] for a in account_stats_list)
 
-        # ── Fetch Nifty 50 data ──────────────────────────────
-        update_status({"status": "fetching", "message": "Fetching Nifty 50 benchmark data..."})
+        # ── Fetch Nifty 50 data from S3 cache ────────────────
+        update_status({"status": "fetching", "message": "Loading Nifty 50 benchmark data..."})
         first_date = min(pd.to_datetime(combined_outflows["date"]))
-        nifty_data = fetch_nifty50_data(first_date, datetime.now())
+        nifty_data = fetch_nifty50_data(first_date, datetime.now(), s3_client, jobs_bucket)
 
         # ── Compute XIRR ─────────────────────────────────────
         update_status({"status": "computing", "message": "Computing XIRR..."})
@@ -372,25 +372,37 @@ def parse_groww_pdf(file_bytes, password=None):
 # ─────────────────────────────────────────────────────────────
 # Nifty 50
 # ─────────────────────────────────────────────────────────────
-def fetch_nifty50_data(start_date, end_date):
-    import time
+NIFTY_CACHE_KEY = "nifty50/history.json"
+
+def fetch_nifty50_data(start_date, end_date, s3_client, jobs_bucket):
+    """
+    Read Nifty 50 history from the S3 daily cache (populated by nifty-refresher Lambda).
+    Filters to the relevant date window for this user's investment period.
+    """
+    try:
+        obj = s3_client.get_object(Bucket=jobs_bucket, Key=NIFTY_CACHE_KEY)
+        records = json.loads(obj["Body"].read())
+    except Exception as e:
+        logger.warning("Could not read Nifty 50 cache from S3: %s", e)
+        return None
+
     start = pd.to_datetime(start_date) - timedelta(days=10)
     end   = pd.to_datetime(end_date)   + timedelta(days=5)
-    for attempt in range(3):
-        try:
-            nifty = yf.download("^NSEI", start=start, end=end, progress=False)
-            if nifty.empty:
-                return None
-            nifty_data = nifty[["Close"]].copy()
-            nifty_data.reset_index(inplace=True)
-            nifty_data.columns = ["date", "close"]
-            nifty_data["date"] = pd.to_datetime(nifty_data["date"]).dt.tz_localize(None)
-            return nifty_data
-        except Exception as e:
-            logger.warning("Nifty 50 fetch attempt %d failed: %s", attempt + 1, e)
-            if attempt < 2:
-                time.sleep(2 ** attempt)  # 1s, 2s backoff
-    return None
+
+    rows = [
+        {"date": pd.to_datetime(r["date"]), "close": r["close"]}
+        for r in records
+        if start <= pd.to_datetime(r["date"]) <= end
+    ]
+
+    if not rows:
+        logger.warning("Nifty 50 cache has no data for the requested date range")
+        return None
+
+    df = pd.DataFrame(rows).sort_values("date").reset_index(drop=True)
+    logger.info("Loaded %d Nifty 50 rows from S3 cache (%s → %s)",
+                len(df), df.iloc[0]["date"].date(), df.iloc[-1]["date"].date())
+    return df
 
 
 def compute_nifty_stats(outflows, inflows, nifty_data):
