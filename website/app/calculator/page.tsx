@@ -740,6 +740,7 @@ export default function CalculatorPage() {
                             style={{
                               width: '100%', padding: '10px 12px', border: '1.5px solid #e5e7eb',
                               borderRadius: 8, fontSize: '0.875rem', outline: 'none', boxSizing: 'border-box',
+                              background: '#fff',
                             }}
                           />
                           <p style={{ margin: '4px 0 0', fontSize: '0.72rem', color: '#9ca3af' }}>Cash in broker account</p>
