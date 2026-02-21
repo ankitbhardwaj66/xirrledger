@@ -42,7 +42,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.platypus import (
-    SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+    SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak, HRFlowable
 )
 from reportlab.lib.enums import TA_CENTER
 from reportlab.pdfgen import canvas as rl_canvas
@@ -564,16 +564,18 @@ def _kpi_cell(label, value, sublabel, bg):
     )
 
 
-def _add_watermark(canvas_obj, doc):
-    """Draw diagonal watermark and footer URL on every page."""
-    canvas_obj.saveState()
-    w, h = A4
-    canvas_obj.setFont("Helvetica-Bold", 52)
-    canvas_obj.setFillColor(colors.HexColor("#1a237e"), alpha=0.045)
-    canvas_obj.translate(w / 2, h / 2)
-    canvas_obj.rotate(40)
-    canvas_obj.drawCentredString(0, 0, "xirrledger.com")
-    canvas_obj.restoreState()
+class _WatermarkCanvas(rl_canvas.Canvas):
+    """Custom canvas: draws watermark AFTER page content so it appears in the foreground."""
+    def showPage(self):
+        self.saveState()
+        w, h = A4
+        self.setFont("Helvetica-Bold", 52)
+        self.setFillColor(colors.HexColor("#1a237e"), alpha=0.055)
+        self.translate(w / 2, h / 2)
+        self.rotate(40)
+        self.drawCentredString(0, 0, "xirrledger.com")
+        self.restoreState()
+        super().showPage()
 
 
 def generate_pdf_report(individual_stats, combined_stats, user_name):
@@ -589,10 +591,10 @@ def generate_pdf_report(individual_stats, combined_stats, user_name):
     # ── Shared paragraph styles ───────────────────────────────
     title_s = ParagraphStyle("T", fontSize=22, fontName="Helvetica-Bold",
                               textColor=colors.HexColor("#1a237e"),
-                              alignment=TA_CENTER, spaceAfter=3)
+                              alignment=TA_CENTER, spaceAfter=6)
     sub_s   = ParagraphStyle("S", fontSize=9,  fontName="Helvetica",
                               textColor=colors.HexColor("#666666"),
-                              alignment=TA_CENTER, spaceAfter=14)
+                              alignment=TA_CENTER, spaceAfter=6)
     h2_s    = ParagraphStyle("H2", fontSize=12, fontName="Helvetica-Bold",
                               textColor=colors.HexColor("#1a237e"),
                               spaceBefore=14, spaceAfter=6)
@@ -616,6 +618,9 @@ def generate_pdf_report(individual_stats, combined_stats, user_name):
         f"Prepared for: <b>{user_name}</b>",
         sub_s
     ))
+    elements.append(HRFlowable(width="100%", thickness=1.5,
+                                color=colors.HexColor("#1a237e"),
+                                spaceBefore=6, spaceAfter=16))
 
     # ── KPI Banner (3 boxes) ──────────────────────────────────
     xirr_v   = f"{cs['xirr_percentage']:.2f}%"       if cs.get("xirr_percentage")      is not None else "N/A"
@@ -716,7 +721,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name):
         ["Metric",                 "Your Portfolio",       "Nifty 50"],
         ["Current Value",          _fmt_inr(cs["current_value"]), nifty_val_str],
         ["XIRR (Annualised)",      xirr_v,                 nifty_xirr_str],
-        ["Performance vs Nifty 50", perf_str,              "—"],
+        ["Performance vs Nifty 50", perf_str,              ""],
         ["Value Difference",       val_diff_str,           "—"],
         ["Nifty 50 Units Held",    "—",                    nifty_units_str],
         ["Current Nifty 50 Price", "—",                    nifty_price_str],
@@ -724,9 +729,11 @@ def generate_pdf_report(individual_stats, combined_stats, user_name):
     nt = Table(nifty_rows, colWidths=[col_a, col_b, col_c])
     nt.setStyle(_base_table_style("#283593", num_cols=3))
     nt.setStyle(TableStyle([
+        ("SPAN",       (1, 3), (2, 3)),                     # performance spans both value cols
         ("BACKGROUND", (0, 3), (-1, 3), perf_bg),
-        ("TEXTCOLOR",  (1, 3), (1, 3),  perf_txt_col),
-        ("FONTNAME",   (1, 3), (1, 3),  "Helvetica-Bold"),
+        ("TEXTCOLOR",  (1, 3), (2, 3),  perf_txt_col),
+        ("FONTNAME",   (1, 3), (2, 3),  "Helvetica-Bold"),
+        ("ALIGN",      (1, 3), (2, 3),  "CENTER"),
         ("FONTNAME",   (1, 2), (2, 2),  "Helvetica-Bold"),  # bold XIRR row
         ("FONTSIZE",   (1, 2), (2, 2),  10),
     ]))
@@ -812,7 +819,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name):
         footer_s
     ))
 
-    doc.build(elements, onFirstPage=_add_watermark, onLaterPages=_add_watermark)
+    doc.build(elements, canvasmaker=_WatermarkCanvas)
     return buf.getvalue()
 
 
