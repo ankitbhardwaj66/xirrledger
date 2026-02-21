@@ -60,6 +60,9 @@
 - Auto broker detection from file extension
 - Groww PAN entry: "Same PAN for all" checkbox or per-file
 - Files with same PAN auto-grouped into one Groww account
+- **Real-time PAN validation** — pdfjs-dist attempts to decrypt PDF with entered PAN; shows ✓/✗ after 10 chars typed
+  - Worker: `public/pdf.worker.min.js` (must be `.js` not `.mjs` — Apache on Hostinger serves `.mjs` as `text/plain`)
+  - Calculate button locked until all PANs valid
 - Per-account holdings + cash inputs
 - Async processing with animated progress steps
 - Results: XIRR vs Nifty 50, investment period, contextual insight card
@@ -163,13 +166,17 @@ cd lambda && ./build_layer.sh   # needs Docker running
 cd ../terraform && AWS_PROFILE=ankit terraform apply -auto-approve
 ```
 
-### Build frontend
+### Build & push frontend
 ```bash
 cd website
 rm -rf out/
 npm run build    # NEXT_PUBLIC_API_URL is read from .env.production automatically
+git add out/     # IMPORTANT: always commit the full out/ folder, not just source files
+git commit -m "Rebuild out/"
+git push
 ```
 > Note: `deploy.sh` runs on the **remote Hostinger server** — never run it locally.
+> The server does `git pull` and copies `out/*` to public_html.
 
 ### Apply Terraform changes
 ```bash
