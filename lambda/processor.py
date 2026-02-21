@@ -660,6 +660,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name):
                 ["Investment Period",      acc_period],
                 ["Total Transactions",     acc_txn],
                 ["Total Invested",         _fmt_inr(stats["total_invested"])],
+                ["Total Withdrawn",        _fmt_inr(stats["total_withdrawn"])],
                 ["Current Value",          _fmt_inr(stats["current_value"])],
                 ["Net Gain / Loss",        _fmt_inr(stats["net_gain"])],
                 ["Simple Return",          f"{stats['simple_return']:.2f}%"],
@@ -669,6 +670,36 @@ def generate_pdf_report(individual_stats, combined_stats, user_name):
             acc_t.setStyle(_table_style("#3949ab"))
             elements.append(acc_t)
             elements.append(Spacer(1, 14))
+
+        # Account Comparison summary table
+        elements.append(Paragraph("Account Comparison", h2))
+        cmp_rows = [["Account", "Invested", "Withdrawn", "Current Value", "Gain/Loss"]]
+        for stats in individual_stats:
+            cmp_rows.append([
+                stats.get("account_name", "Account"),
+                _fmt_inr(stats["total_invested"]),
+                _fmt_inr(stats["total_withdrawn"]),
+                _fmt_inr(stats["current_value"]),
+                _fmt_inr(stats["net_gain"]),
+            ])
+        # Combined row
+        cmp_rows.append([
+            "COMBINED",
+            _fmt_inr(combined_stats["total_invested"]),
+            _fmt_inr(combined_stats["total_withdrawn"]),
+            _fmt_inr(combined_stats["current_value"]),
+            _fmt_inr(combined_stats["net_gain"]),
+        ])
+        cw = page_w / 5
+        cmp_t = Table(cmp_rows, colWidths=[cw * 1.4, cw * 0.9, cw * 0.9, cw * 0.9, cw * 0.9])
+        cmp_t.setStyle(_table_style("#283593"))
+        # Bold + slightly different bg for COMBINED row
+        last = len(cmp_rows) - 1
+        cmp_t.setStyle(TableStyle([
+            ("BACKGROUND", (0, last), (-1, last), colors.HexColor("#e8eaf6")),
+            ("FONTNAME",   (0, last), (-1, last), "Helvetica-Bold"),
+        ]))
+        elements.append(cmp_t)
 
     # ── Footer ────────────────────────────────────────────────
     elements.append(Spacer(1, 24))
