@@ -188,6 +188,8 @@ export default function CalculatorPage() {
 
   const [isDragging, setIsDragging] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState('');
+  const [panValidationErrors, setPanValidationErrors] = useState<Record<string, string>>({});
+  const [isValidatingPans, setIsValidatingPans] = useState(false);
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>(
     PROCESSING_STEPS.map(s => ({ ...s, status: 'pending' as const }))
   );
@@ -299,6 +301,7 @@ export default function CalculatorPage() {
 
   function updateFilePan(fileName: string, pan: string) {
     setFilePans(prev => ({ ...prev, [fileName]: pan.toUpperCase() }));
+    setPanValidationErrors(prev => { const next = { ...prev }; delete next[fileName]; return next; });
   }
 
   function updateAccount(id: string, field: 'holdings' | 'cash', value: string) {
@@ -311,9 +314,46 @@ export default function CalculatorPage() {
     addFiles(e.dataTransfer.files);
   }
 
+  async function validateGrowwPasswords(): Promise<Record<string, string>> {
+    const errors: Record<string, string> = {};
+    const pdfjsLib = await import('pdfjs-dist');
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+    await Promise.all(
+      files.filter(f => f.broker === 'groww').map(async uf => {
+        const pan = effectivePans[uf.file.name]?.trim().toUpperCase();
+        if (!pan) return;
+        try {
+          const data = await uf.file.arrayBuffer();
+          await pdfjsLib.getDocument({ data, password: pan }).promise;
+        } catch (e: unknown) {
+          if (e instanceof Error && e.name === 'PasswordException') {
+            const key = samePanForAll ? '__shared__' : uf.file.name;
+            errors[key] = samePanForAll
+              ? `Incorrect PAN — could not open "${uf.file.name}"`
+              : `Incorrect PAN — could not unlock this file`;
+          }
+        }
+      })
+    );
+    return errors;
+  }
+
   async function startProcessing() {
     if (!allHoldingsEntered) return;
     setProcessingError('');
+
+    // Validate Groww PDF passwords before uploading anything
+    if (growwFiles.length > 0) {
+      setIsValidatingPans(true);
+      const errors = await validateGrowwPasswords();
+      setIsValidatingPans(false);
+      if (Object.keys(errors).length > 0) {
+        setPanValidationErrors(errors);
+        return;
+      }
+    }
+    setPanValidationErrors({});
     setStep('processing');
 
     // Mark "Uploading" as active immediately
@@ -666,7 +706,7 @@ export default function CalculatorPage() {
                         type="text"
                         placeholder="e.g. ABCDE1234F"
                         value={sharedPan}
-                        onChange={e => setSharedPan(e.target.value.toUpperCase())}
+                        onChange={e => { setSharedPan(e.target.value.toUpperCase()); setPanValidationErrors({}); }}
                         maxLength={10}
                         style={{
                           flex: 1, padding: '10px 14px',
@@ -677,6 +717,11 @@ export default function CalculatorPage() {
                       />
                       {sharedPan.length === 10 && <span style={{ color: '#16a34a', fontSize: '1rem' }}>✓</span>}
                     </div>
+                    {panValidationErrors['__shared__'] && (
+                      <p style={{ margin: '8px 0 0', fontSize: '0.8rem', color: '#dc2626', fontWeight: 600 }}>
+                        ✗ {panValidationErrors['__shared__']}
+                      </p>
+                    )}
                   </div>
                 ) : (
                   /* Per-file PAN inputs */
@@ -713,6 +758,11 @@ export default function CalculatorPage() {
                             <span style={{ color: '#16a34a', fontSize: '1rem' }}>✓</span>
                           )}
                         </div>
+                        {panValidationErrors[f.file.name] && (
+                          <p style={{ margin: '6px 0 0', fontSize: '0.8rem', color: '#dc2626', fontWeight: 600 }}>
+                            ✗ {panValidationErrors[f.file.name]}
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -832,15 +882,15 @@ export default function CalculatorPage() {
                 {allGrowwPansEntered && (
                   <button
                     onClick={startProcessing}
-                    disabled={!allHoldingsEntered}
+                    disabled={!allHoldingsEntered || isValidatingPans}
                     style={{
                       flex: 2, padding: '13px',
-                      background: allHoldingsEntered ? primaryColor : '#d1d5db',
+                      background: allHoldingsEntered && !isValidatingPans ? primaryColor : '#d1d5db',
                       color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: '1rem',
-                      cursor: allHoldingsEntered ? 'pointer' : 'not-allowed',
+                      cursor: allHoldingsEntered && !isValidatingPans ? 'pointer' : 'not-allowed',
                     }}
                   >
-                    Calculate My XIRR →
+                    {isValidatingPans ? 'Verifying PAN passwords...' : 'Calculate My XIRR →'}
                   </button>
                 )}
               </div>
