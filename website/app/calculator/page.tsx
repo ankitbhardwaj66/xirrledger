@@ -37,8 +37,8 @@ interface ProcessingStep {
 }
 
 interface Results {
-  xirr: number;
-  nifty_xirr: number;
+  xirr: number | null;
+  nifty_xirr: number | null;
   total_invested: number;
   current_value: number;
   net_gain: number;
@@ -841,15 +841,20 @@ export default function CalculatorPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                   <div style={{ textAlign: 'center', padding: '24px 20px', background: '#eff6ff', borderRadius: 12, border: `2px solid ${primaryColor}` }}>
                     <p style={{ margin: '0 0 8px', fontSize: '0.8rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1 }}>Your XIRR</p>
-                    <p style={{ margin: 0, fontSize: '2.8rem', fontWeight: 900, color: primaryColor, lineHeight: 1 }}>{results.xirr.toFixed(1)}%</p>
+                    <p style={{ margin: 0, fontSize: '2.8rem', fontWeight: 900, color: primaryColor, lineHeight: 1 }}>
+                      {results.xirr != null ? `${results.xirr.toFixed(1)}%` : 'N/A'}
+                    </p>
                     <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: '#6b7280' }}>annualised return</p>
                   </div>
                   <div style={{ textAlign: 'center', padding: '24px 20px', background: '#f9fafb', borderRadius: 12, border: '2px solid #e5e7eb' }}>
                     <p style={{ margin: '0 0 8px', fontSize: '0.8rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 1 }}>Nifty 50 XIRR</p>
-                    <p style={{ margin: 0, fontSize: '2.8rem', fontWeight: 900, color: '#374151', lineHeight: 1 }}>{results.nifty_xirr.toFixed(1)}%</p>
+                    <p style={{ margin: 0, fontSize: '2.8rem', fontWeight: 900, color: '#374151', lineHeight: 1 }}>
+                      {results.nifty_xirr != null ? `${results.nifty_xirr.toFixed(1)}%` : 'N/A'}
+                    </p>
                     <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: '#6b7280' }}>same cash flows</p>
                   </div>
                 </div>
+                {results.xirr != null && results.nifty_xirr != null && (
                 <div style={{
                   marginTop: 16, padding: '12px 20px', borderRadius: 10, textAlign: 'center',
                   background: results.xirr >= results.nifty_xirr ? '#dcfce7' : '#fef3c7',
@@ -864,6 +869,7 @@ export default function CalculatorPage() {
                     </p>
                   )}
                 </div>
+                )}
               </div>
               <div style={{ padding: '28px 40px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
                 {[
