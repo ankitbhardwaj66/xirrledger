@@ -45,6 +45,7 @@ from reportlab.platypus import (
     SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
 )
 from reportlab.lib.enums import TA_CENTER
+from reportlab.pdfgen import canvas as rl_canvas
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -502,178 +503,283 @@ def compute_portfolio_stats(outflows, inflows, current_value, nifty_data=None):
 # ─────────────────────────────────────────────────────────────
 # PDF report generation
 # ─────────────────────────────────────────────────────────────
+# PDF helpers
+# ─────────────────────────────────────────────────────────────
 def _fmt_inr(val):
-    """Format a number as Indian comma-separated with 2 decimals."""
+    """Indian number format: -98,72,027.57  (no currency prefix — keeps columns narrow)"""
     if val is None:
         return "N/A"
-    # Indian number system: last 3 digits, then groups of 2
     s = f"{abs(val):.2f}"
     integer, decimal = s.split(".")
-    result = ""
-    integer = integer[::-1]
-    for i, ch in enumerate(integer):
-        if i == 3 and i < len(integer):
-            result += ","
-        elif i > 3 and (i - 3) % 2 == 0 and i < len(integer):
-            result += ","
-        result += ch
-    formatted = result[::-1] + "." + decimal
-    return ("-" if val < 0 else "") + "₹" + formatted
+    rev = integer[::-1]
+    parts = []
+    for i, ch in enumerate(rev):
+        if i == 3 and i < len(rev):
+            parts.append(",")
+        elif i > 3 and (i - 3) % 2 == 0 and i < len(rev):
+            parts.append(",")
+        parts.append(ch)
+    formatted = "".join(parts)[::-1] + "." + decimal
+    return ("-" if val < 0 else "") + formatted
 
 
-def _table_style(header_color="#3f51b5"):
-    return TableStyle([
-        ("BACKGROUND",    (0, 0), (-1, 0), colors.HexColor(header_color)),
+def _base_table_style(header_bg, num_cols=2):
+    """Base TableStyle: coloured header, alternating rows, right-align value columns."""
+    style = [
+        # Header
+        ("BACKGROUND",    (0, 0), (-1, 0), colors.HexColor(header_bg)),
         ("TEXTCOLOR",     (0, 0), (-1, 0), colors.white),
         ("FONTNAME",      (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE",      (0, 0), (-1, 0), 10),
-        ("GRID",          (0, 0), (-1, -1), 0.5, colors.HexColor("#cccccc")),
+        ("FONTSIZE",      (0, 0), (-1, 0), 9),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 9),
+        ("TOPPADDING",    (0, 0), (-1, 0), 9),
+        # Body
         ("FONTNAME",      (0, 1), (-1, -1), "Helvetica"),
         ("FONTSIZE",      (0, 1), (-1, -1), 9),
-        ("ROWBACKGROUNDS",(0, 1), (-1, -1), [colors.white, colors.HexColor("#f5f5f5")]),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
-        ("TOPPADDING",    (0, 0), (-1, -1), 7),
-        ("LEFTPADDING",   (0, 0), (-1, -1), 10),
-    ])
+        ("ROWBACKGROUNDS",(0, 1), (-1, -1), [colors.white, colors.HexColor("#f4f6fb")]),
+        ("BOTTOMPADDING", (0, 1), (-1, -1), 7),
+        ("TOPPADDING",    (0, 1), (-1, -1), 7),
+        # Grid
+        ("LINEBELOW",     (0, 0), (-1, 0), 1,   colors.HexColor("#ffffff")),
+        ("INNERGRID",     (0, 1), (-1, -1), 0.3, colors.HexColor("#dde3ee")),
+        ("BOX",           (0, 0), (-1, -1), 0.5, colors.HexColor("#c5cde8")),
+        # Padding
+        ("LEFTPADDING",   (0, 0), (-1, -1), 12),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 12),
+        # Right-align all non-first columns (numeric data)
+        ("ALIGN",         (1, 0), (-1, -1), "RIGHT"),
+        ("ALIGN",         (0, 0), (0, -1),  "LEFT"),
+    ]
+    return TableStyle(style)
+
+
+def _kpi_cell(label, value, sublabel, bg):
+    """Single KPI banner cell with stacked label / big value / sublabel."""
+    return Paragraph(
+        f'<font name="Helvetica" size="8" color="#a8c4e8">{label}</font><br/>'
+        f'<font name="Helvetica-Bold" size="20" color="white">{value}</font><br/>'
+        f'<font name="Helvetica" size="8" color="#a8c4e8">{sublabel}</font>',
+        ParagraphStyle("KPI", alignment=TA_CENTER, leading=22,
+                       backColor=colors.HexColor(bg), borderPadding=(14, 8, 14, 8))
+    )
+
+
+def _add_watermark(canvas_obj, doc):
+    """Draw diagonal watermark and footer URL on every page."""
+    canvas_obj.saveState()
+    w, h = A4
+    canvas_obj.setFont("Helvetica-Bold", 52)
+    canvas_obj.setFillColor(colors.HexColor("#1a237e"), alpha=0.045)
+    canvas_obj.translate(w / 2, h / 2)
+    canvas_obj.rotate(40)
+    canvas_obj.drawCentredString(0, 0, "xirrledger.com")
+    canvas_obj.restoreState()
 
 
 def generate_pdf_report(individual_stats, combined_stats, user_name):
     buf = io.BytesIO()
+    ML, MR = 36, 36
+    page_w = A4[0] - ML - MR   # usable width ≈ 523 pt
+
     doc = SimpleDocTemplate(buf, pagesize=A4,
-                            rightMargin=40, leftMargin=40,
-                            topMargin=36, bottomMargin=24)
+                            rightMargin=MR, leftMargin=ML,
+                            topMargin=32, bottomMargin=24)
     styles = getSampleStyleSheet()
 
-    title_style = ParagraphStyle("XTitle", parent=styles["Heading1"],
-                                 fontSize=20, textColor=colors.HexColor("#1a237e"),
-                                 spaceAfter=4, alignment=TA_CENTER)
-    sub_style   = ParagraphStyle("XSub", parent=styles["Normal"],
-                                 fontSize=9, textColor=colors.HexColor("#555555"),
-                                 spaceAfter=20, alignment=TA_CENTER)
-    h2          = ParagraphStyle("XH2", parent=styles["Heading2"], fontSize=13,
-                                 textColor=colors.HexColor("#1a237e"),
-                                 spaceAfter=8, spaceBefore=16)
-    note_style  = ParagraphStyle("XNote", parent=styles["Normal"],
-                                 fontSize=8, textColor=colors.HexColor("#777777"),
-                                 spaceAfter=6, spaceBefore=4)
+    # ── Shared paragraph styles ───────────────────────────────
+    title_s = ParagraphStyle("T", fontSize=22, fontName="Helvetica-Bold",
+                              textColor=colors.HexColor("#1a237e"),
+                              alignment=TA_CENTER, spaceAfter=3)
+    sub_s   = ParagraphStyle("S", fontSize=9,  fontName="Helvetica",
+                              textColor=colors.HexColor("#666666"),
+                              alignment=TA_CENTER, spaceAfter=14)
+    h2_s    = ParagraphStyle("H2", fontSize=12, fontName="Helvetica-Bold",
+                              textColor=colors.HexColor("#1a237e"),
+                              spaceBefore=14, spaceAfter=6)
+    note_s  = ParagraphStyle("N", fontSize=7.5, fontName="Helvetica",
+                              textColor=colors.HexColor("#888888"),
+                              spaceBefore=4, spaceAfter=2)
+    acct_h_s = ParagraphStyle("AH", fontSize=10, fontName="Helvetica-Bold",
+                               textColor=colors.HexColor("#283593"),
+                               spaceBefore=12, spaceAfter=4)
+    footer_s = ParagraphStyle("F", fontSize=7.5, fontName="Helvetica",
+                               textColor=colors.HexColor("#bbbbbb"),
+                               alignment=TA_CENTER, spaceBefore=18)
 
     elements = []
+    cs = combined_stats
 
-    # ── Header ────────────────────────────────────────────────
-    elements.append(Paragraph("XIRR Calculator Report", title_style))
+    # ── Page title ────────────────────────────────────────────
+    elements.append(Paragraph("XIRR Calculator Report", title_s))
     elements.append(Paragraph(
-        f"Generated on: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}  |  Prepared for: {user_name}",
-        sub_style
+        f"Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}  |  "
+        f"Prepared for: <b>{user_name}</b>",
+        sub_s
     ))
 
-    # ── Portfolio Summary ─────────────────────────────────────
-    elements.append(Paragraph("Portfolio Summary", h2))
-
-    cs = combined_stats
-    xirr_display  = f"{cs['xirr_percentage']:.2f}%"  if cs.get("xirr_percentage")  is not None else "N/A"
-    period_str = "N/A"
-    if cs.get("investment_period_days") and cs.get("investment_period_years"):
-        period_str = f"{cs['investment_period_days']} days ({cs['investment_period_years']:.2f} years)"
-    txn_str = f"{cs.get('n_investments', 0)} investments, {cs.get('n_withdrawals', 0)} withdrawals"
-
-    summary_rows = [
-        ["Metric", "Value"],
-        ["First Investment Date",   cs.get("first_investment_date") or "N/A"],
-        ["Investment Period",       period_str],
-        ["Total Transactions",      txn_str],
-        ["Total Invested",          _fmt_inr(cs["total_invested"])],
-        ["Total Withdrawn",         _fmt_inr(cs["total_withdrawn"])],
-        ["Current Portfolio Value", _fmt_inr(cs["current_value"])],
-        ["Net Gain / Loss",         _fmt_inr(cs["net_gain"])],
-        ["Simple Return",           f"{cs['simple_return']:.2f}%"],
-        ["XIRR (Annualised)",       xirr_display],
-    ]
-
-    page_w = A4[0] - 80  # leftMargin + rightMargin = 80
-    t = Table(summary_rows, colWidths=[page_w * 0.55, page_w * 0.45])
-    t.setStyle(_table_style("#1a237e"))
-    # Highlight net gain row green/red
-    net_gain_row = 8  # 0-indexed, after header
-    gain_color = colors.HexColor("#e8f5e9") if (cs["net_gain"] or 0) >= 0 else colors.HexColor("#ffebee")
-    t.setStyle(TableStyle([("BACKGROUND", (0, net_gain_row), (-1, net_gain_row), gain_color)]))
-    elements.append(t)
-
-    # ── Nifty 50 Benchmark Comparison ─────────────────────────
-    elements.append(Paragraph("Nifty 50 Benchmark Comparison", h2))
+    # ── KPI Banner (3 boxes) ──────────────────────────────────
+    xirr_v   = f"{cs['xirr_percentage']:.2f}%"       if cs.get("xirr_percentage")      is not None else "N/A"
+    nifty_v  = f"{cs['nifty_xirr_percentage']:.2f}%" if cs.get("nifty_xirr_percentage") is not None else "N/A"
 
     has_nifty = cs.get("nifty_xirr_percentage") is not None
-    nifty_xirr_str  = f"{cs['nifty_xirr_percentage']:.2f}%"   if has_nifty else "N/A"
+    if has_nifty:
+        diff     = cs["xirr_percentage"] - cs["nifty_xirr_percentage"]
+        beat_v   = f"+{diff:.2f}%" if diff > 0 else f"{diff:.2f}%"
+        beat_lbl = "vs Nifty 50"
+        kpi3_bg  = "#1b5e20" if diff > 0 else "#b71c1c"
+    else:
+        beat_v   = _fmt_inr(cs["net_gain"])
+        beat_lbl = "net gain / loss"
+        kpi3_bg  = "#1b5e20" if (cs["net_gain"] or 0) >= 0 else "#b71c1c"
+
+    kpi_row = [[
+        _kpi_cell("YOUR XIRR",    xirr_v,  "annualised return",    "#1565c0"),
+        _kpi_cell("NIFTY 50 XIRR", nifty_v, "benchmark return",    "#283593"),
+        _kpi_cell("PERFORMANCE",   beat_v,  beat_lbl,               kpi3_bg),
+    ]]
+    gap = 4
+    cw  = (page_w - gap * 2) / 3
+    kpi_t = Table(kpi_row, colWidths=[cw, cw, cw], spaceBefore=0,
+                  style=TableStyle([
+                      ("BACKGROUND",    (0, 0), (0, 0), colors.HexColor("#1565c0")),
+                      ("BACKGROUND",    (1, 0), (1, 0), colors.HexColor("#283593")),
+                      ("BACKGROUND",    (2, 0), (2, 0), colors.HexColor(kpi3_bg)),
+                      ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
+                      ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+                      ("TOPPADDING",    (0, 0), (-1, -1), 16),
+                      ("BOTTOMPADDING", (0, 0), (-1, -1), 16),
+                      ("LEFTPADDING",   (0, 0), (-1, -1), 6),
+                      ("RIGHTPADDING",  (0, 0), (-1, -1), 6),
+                      ("LINEAFTER",     (0, 0), (1, 0), 2, colors.white),
+                  ]))
+    elements.append(kpi_t)
+    elements.append(Spacer(1, 14))
+
+    # ── Portfolio Summary ─────────────────────────────────────
+    elements.append(Paragraph("Portfolio Summary", h2_s))
+
+    period_str = "N/A"
+    if cs.get("investment_period_days") and cs.get("investment_period_years"):
+        period_str = f"{cs['investment_period_days']} days  ({cs['investment_period_years']:.2f} years)"
+    txn_str = (f"{cs.get('n_investments', 0)} investments,  "
+               f"{cs.get('n_withdrawals', 0)} withdrawals")
+
+    gain_bg = colors.HexColor("#e8f5e9") if (cs.get("net_gain") or 0) >= 0 else colors.HexColor("#ffebee")
+
+    summary_rows = [
+        ["Metric",                  "Value"],
+        ["First Investment Date",   cs.get("first_investment_date") or "N/A"],
+        ["Investment Period",        period_str],
+        ["Total Transactions",       txn_str],
+        ["Total Invested",           _fmt_inr(cs["total_invested"])],
+        ["Total Withdrawn",          _fmt_inr(cs["total_withdrawn"])],
+        ["Current Portfolio Value",  _fmt_inr(cs["current_value"])],
+        ["Net Gain / Loss",          _fmt_inr(cs["net_gain"])],     # row 7
+        ["Simple Return",            f"{cs['simple_return']:.2f}%"],
+        ["XIRR (Annualised)",        xirr_v],
+    ]
+    st = Table(summary_rows, colWidths=[page_w * 0.56, page_w * 0.44])
+    st.setStyle(_base_table_style("#1a237e"))
+    st.setStyle(TableStyle([
+        ("BACKGROUND",  (0, 7), (-1, 7), gain_bg),          # Net Gain row (index 7)
+        ("FONTNAME",    (1, 7), (1, 7),  "Helvetica-Bold"),  # bold value
+        ("FONTNAME",    (1, 9), (1, 9),  "Helvetica-Bold"),  # bold XIRR value
+        ("FONTSIZE",    (1, 9), (1, 9),  10),
+        ("TEXTCOLOR",   (1, 9), (1, 9),  colors.HexColor("#1a237e")),
+    ]))
+    elements.append(st)
+
+    # ── Nifty 50 Benchmark Comparison ─────────────────────────
+    elements.append(Paragraph("Nifty 50 Benchmark Comparison", h2_s))
+
+    nifty_xirr_str  = f"{cs['nifty_xirr_percentage']:.2f}%" if has_nifty else "N/A"
     nifty_val_str   = _fmt_inr(cs.get("nifty_current_value"))
-    nifty_units_str = f"{cs['nifty_units_held']:.2f}"          if cs.get("nifty_units_held") else "N/A"
+    nifty_units_str = f"{cs['nifty_units_held']:.2f}"        if cs.get("nifty_units_held") else "N/A"
     nifty_price_str = _fmt_inr(cs.get("nifty_current_price"))
 
     if has_nifty:
-        diff = cs["xirr_percentage"] - cs["nifty_xirr_percentage"]
-        perf_str = f"BEAT BY {diff:.2f}%" if diff > 0 else f"UNDERPERFORMED BY {abs(diff):.2f}%"
-        val_diff = cs["current_value"] - cs["nifty_current_value"]
-        val_diff_str = _fmt_inr(val_diff)
+        perf_str     = f"BEAT BY {diff:.2f}%" if diff > 0 else f"UNDERPERFORMED BY {abs(diff):.2f}%"
+        val_diff_str = _fmt_inr(cs["current_value"] - cs["nifty_current_value"])
+        perf_bg      = colors.HexColor("#e8f5e9") if diff > 0 else colors.HexColor("#fff3e0")
+        perf_txt_col = colors.HexColor("#1b5e20") if diff > 0 else colors.HexColor("#e65100")
     else:
-        perf_str = "N/A (Nifty data unavailable)"
+        perf_str     = "Nifty data unavailable"
         val_diff_str = "N/A"
+        perf_bg      = colors.HexColor("#f5f5f5")
+        perf_txt_col = colors.HexColor("#888888")
+
+    col_a = page_w * 0.38
+    col_b = page_w * 0.31
+    col_c = page_w * 0.31
 
     nifty_rows = [
-        ["Metric",                "Your Portfolio",              "Nifty 50"],
-        ["Current Value",         _fmt_inr(cs["current_value"]), nifty_val_str],
-        ["XIRR (Annualised)",     xirr_display,                  nifty_xirr_str],
-        ["Performance vs Nifty",  perf_str,                      "—"],
-        ["Value Difference",      val_diff_str,                  "—"],
-        ["Nifty 50 Units Held",   "—",                           nifty_units_str],
-        ["Current Nifty 50 Price","—",                           nifty_price_str],
+        ["Metric",                 "Your Portfolio",       "Nifty 50"],
+        ["Current Value",          _fmt_inr(cs["current_value"]), nifty_val_str],
+        ["XIRR (Annualised)",      xirr_v,                 nifty_xirr_str],
+        ["Performance vs Nifty 50", perf_str,              "—"],
+        ["Value Difference",       val_diff_str,           "—"],
+        ["Nifty 50 Units Held",    "—",                    nifty_units_str],
+        ["Current Nifty 50 Price", "—",                    nifty_price_str],
     ]
-
-    col3 = page_w / 3
-    nt = Table(nifty_rows, colWidths=[col3 * 1.1, col3 * 0.95, col3 * 0.95])
-    nt.setStyle(_table_style("#283593"))
-    # Colour performance row
-    perf_bg = colors.HexColor("#e8f5e9") if has_nifty and diff > 0 else colors.HexColor("#fff8e1")
+    nt = Table(nifty_rows, colWidths=[col_a, col_b, col_c])
+    nt.setStyle(_base_table_style("#283593", num_cols=3))
     nt.setStyle(TableStyle([
         ("BACKGROUND", (0, 3), (-1, 3), perf_bg),
+        ("TEXTCOLOR",  (1, 3), (1, 3),  perf_txt_col),
         ("FONTNAME",   (1, 3), (1, 3),  "Helvetica-Bold"),
+        ("FONTNAME",   (1, 2), (2, 2),  "Helvetica-Bold"),  # bold XIRR row
+        ("FONTSIZE",   (1, 2), (2, 2),  10),
     ]))
     elements.append(nt)
     elements.append(Paragraph(
-        "Note: Nifty 50 comparison shows how your portfolio would have performed if you had "
-        "invested the same amounts on the same dates in the Nifty 50 index. Withdrawals are also accounted for.",
-        note_style
+        "Note: Nifty 50 comparison simulates investing the same amounts on the same dates "
+        "in the Nifty 50 index. Withdrawals are proportionally accounted for.",
+        note_s
     ))
 
     # ── Individual Account Analysis ───────────────────────────
     if len(individual_stats) > 1:
         elements.append(PageBreak())
-        elements.append(Paragraph("Individual Account Analysis", h2))
+        elements.append(Paragraph("Individual Account Analysis", h2_s))
+
         for stats in individual_stats:
-            account_name  = stats.get("account_name", "Account")
-            acc_xirr      = f"{stats['xirr_percentage']:.2f}%" if stats.get("xirr_percentage") is not None else "N/A"
-            acc_period    = "N/A"
+            acc_xirr   = f"{stats['xirr_percentage']:.2f}%" if stats.get("xirr_percentage") is not None else "N/A"
+            acc_period = "N/A"
             if stats.get("investment_period_days") and stats.get("investment_period_years"):
-                acc_period = f"{stats['investment_period_days']} days ({stats['investment_period_years']:.2f} years)"
-            acc_txn = f"{stats.get('n_investments', 0)} investments, {stats.get('n_withdrawals', 0)} withdrawals"
+                acc_period = (f"{stats['investment_period_days']} days  "
+                              f"({stats['investment_period_years']:.2f} years)")
+            acc_txn = (f"{stats.get('n_investments', 0)} investments,  "
+                       f"{stats.get('n_withdrawals', 0)} withdrawals")
+            acc_gain_bg = colors.HexColor("#e8f5e9") if (stats.get("net_gain") or 0) >= 0 \
+                          else colors.HexColor("#ffebee")
 
-            elements.append(Paragraph(account_name, styles["Heading3"]))
+            elements.append(Paragraph(stats.get("account_name", "Account"), acct_h_s))
             rows = [
-                ["Metric",                "Value"],
-                ["Investment Period",      acc_period],
-                ["Total Transactions",     acc_txn],
-                ["Total Invested",         _fmt_inr(stats["total_invested"])],
-                ["Total Withdrawn",        _fmt_inr(stats["total_withdrawn"])],
-                ["Current Value",          _fmt_inr(stats["current_value"])],
-                ["Net Gain / Loss",        _fmt_inr(stats["net_gain"])],
-                ["Simple Return",          f"{stats['simple_return']:.2f}%"],
-                ["XIRR (Annualised)",      acc_xirr],
+                ["Metric",            "Value"],
+                ["Investment Period",  acc_period],
+                ["Total Transactions", acc_txn],
+                ["Total Invested",     _fmt_inr(stats["total_invested"])],
+                ["Total Withdrawn",    _fmt_inr(stats["total_withdrawn"])],
+                ["Current Value",      _fmt_inr(stats["current_value"])],
+                ["Net Gain / Loss",    _fmt_inr(stats["net_gain"])],    # row 6
+                ["Simple Return",      f"{stats['simple_return']:.2f}%"],
+                ["XIRR (Annualised)",  acc_xirr],
             ]
-            acc_t = Table(rows, colWidths=[page_w * 0.55, page_w * 0.45])
-            acc_t.setStyle(_table_style("#3949ab"))
-            elements.append(acc_t)
-            elements.append(Spacer(1, 14))
+            at = Table(rows, colWidths=[page_w * 0.56, page_w * 0.44])
+            at.setStyle(_base_table_style("#3949ab"))
+            at.setStyle(TableStyle([
+                ("BACKGROUND", (0, 6), (-1, 6), acc_gain_bg),
+                ("FONTNAME",   (1, 6), (1, 6),  "Helvetica-Bold"),
+                ("FONTNAME",   (1, 8), (1, 8),  "Helvetica-Bold"),
+                ("FONTSIZE",   (1, 8), (1, 8),  10),
+                ("TEXTCOLOR",  (1, 8), (1, 8),  colors.HexColor("#283593")),
+            ]))
+            elements.append(at)
+            elements.append(Spacer(1, 10))
 
-        # Account Comparison summary table
-        elements.append(Paragraph("Account Comparison", h2))
-        cmp_rows = [["Account", "Invested", "Withdrawn", "Current Value", "Gain/Loss"]]
+        # ── Account Comparison ────────────────────────────────
+        elements.append(Paragraph("Account Comparison", h2_s))
+        cmp_rows = [["Account", "Invested", "Withdrawn", "Current Value", "Gain / Loss"]]
         for stats in individual_stats:
             cmp_rows.append([
                 stats.get("account_name", "Account"),
@@ -682,7 +788,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name):
                 _fmt_inr(stats["current_value"]),
                 _fmt_inr(stats["net_gain"]),
             ])
-        # Combined row
+        last = len(cmp_rows)  # combined row will be at this index
         cmp_rows.append([
             "COMBINED",
             _fmt_inr(combined_stats["total_invested"]),
@@ -690,26 +796,23 @@ def generate_pdf_report(individual_stats, combined_stats, user_name):
             _fmt_inr(combined_stats["current_value"]),
             _fmt_inr(combined_stats["net_gain"]),
         ])
-        cw = page_w / 5
-        cmp_t = Table(cmp_rows, colWidths=[cw * 1.4, cw * 0.9, cw * 0.9, cw * 0.9, cw * 0.9])
-        cmp_t.setStyle(_table_style("#283593"))
-        # Bold + slightly different bg for COMBINED row
-        last = len(cmp_rows) - 1
-        cmp_t.setStyle(TableStyle([
+        cw5 = page_w / 5
+        cmt = Table(cmp_rows, colWidths=[cw5 * 1.5, cw5 * 0.875, cw5 * 0.875, cw5 * 0.875, cw5 * 0.875])
+        cmt.setStyle(_base_table_style("#283593", num_cols=5))
+        cmt.setStyle(TableStyle([
             ("BACKGROUND", (0, last), (-1, last), colors.HexColor("#e8eaf6")),
             ("FONTNAME",   (0, last), (-1, last), "Helvetica-Bold"),
+            ("LINEABOVE",  (0, last), (-1, last), 1.5, colors.HexColor("#283593")),
         ]))
-        elements.append(cmp_t)
+        elements.append(cmt)
 
     # ── Footer ────────────────────────────────────────────────
-    elements.append(Spacer(1, 24))
     elements.append(Paragraph(
-        "Generated by XIRR Ledger — https://xirrledger.com",
-        ParagraphStyle("Footer", parent=styles["Normal"], fontSize=8,
-                       textColor=colors.HexColor("#aaaaaa"), alignment=TA_CENTER)
+        "Generated by XIRR Ledger — https://xirrledger.com  |  All monetary values in INR",
+        footer_s
     ))
 
-    doc.build(elements)
+    doc.build(elements, onFirstPage=_add_watermark, onLaterPages=_add_watermark)
     return buf.getvalue()
 
 
