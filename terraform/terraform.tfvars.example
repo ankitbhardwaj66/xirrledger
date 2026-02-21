@@ -1,0 +1,11 @@
+# Copy this file to terraform.tfvars and fill in the values.
+# terraform.tfvars is gitignored — never commit secrets.
+
+aws_region           = "ap-south-1"
+environment          = "prod"
+domain_name          = "xirrledger.com"
+ses_from_email       = "reports@xirrledger.com"
+hostinger_api_url    = "https://xirrledger.com/api"
+hostinger_api_secret = "REPLACE_WITH_A_STRONG_RANDOM_SECRET"
+lambda_memory_mb     = 512
+lambda_timeout_seconds = 120
