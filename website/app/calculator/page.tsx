@@ -375,6 +375,11 @@ export default function CalculatorPage() {
     return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, []);
 
+  // Scroll to top whenever the step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
+
   function resetAll() {
     setStep('auth');
     setFiles([]);
@@ -755,18 +760,20 @@ export default function CalculatorPage() {
                 <button onClick={() => setStep('upload')} style={{ flex: 1, padding: '13px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer' }}>
                   ← Back
                 </button>
-                <button
-                  onClick={startProcessing}
-                  disabled={!allHoldingsEntered}
-                  style={{
-                    flex: 2, padding: '13px',
-                    background: allHoldingsEntered ? primaryColor : '#d1d5db',
-                    color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: '1rem',
-                    cursor: allHoldingsEntered ? 'pointer' : 'not-allowed',
-                  }}
-                >
-                  Calculate My XIRR →
-                </button>
+                {allGrowwPansEntered && (
+                  <button
+                    onClick={startProcessing}
+                    disabled={!allHoldingsEntered}
+                    style={{
+                      flex: 2, padding: '13px',
+                      background: allHoldingsEntered ? primaryColor : '#d1d5db',
+                      color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: '1rem',
+                      cursor: allHoldingsEntered ? 'pointer' : 'not-allowed',
+                    }}
+                  >
+                    Calculate My XIRR →
+                  </button>
+                )}
               </div>
             </div>
           </div>
