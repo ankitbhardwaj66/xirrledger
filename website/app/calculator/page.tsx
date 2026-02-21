@@ -6,7 +6,6 @@ const GOOGLE_CLIENT_ID = '1030081614603-onnmmupafevkn0hojoj4qk023tuohius.apps.go
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 type Step = 'auth' | 'upload' | 'details' | 'processing' | 'results';
-type Broker = 'zerodha' | 'groww' | 'both' | '';
 
 interface User {
   name: string;
@@ -127,7 +126,6 @@ function buildAccounts(files: UploadedFile[], filePans: Record<string, string>, 
 export default function CalculatorPage() {
   const [step, setStep] = useState<Step>('auth');
   const [user, setUser] = useState<User | null>(null);
-  const [broker, setBroker] = useState<Broker>('');
   const [files, setFiles] = useState<UploadedFile[]>([]);
 
   // PAN per Groww PDF filename
@@ -213,7 +211,6 @@ export default function CalculatorPage() {
   function handleManualContinue() {
     if (!manualName.trim()) { setAuthError('Please enter your name.'); return; }
     if (!manualEmail.trim() || !manualEmail.includes('@')) { setAuthError('Please enter a valid email.'); return; }
-    if (!broker) { setAuthError('Please select your broker.'); return; }
     setAuthError('');
     setUser({ name: manualName.trim(), email: manualEmail.trim() });
     setStep('upload');
@@ -293,6 +290,8 @@ export default function CalculatorPage() {
       );
 
       // 3. Save user to Hostinger PHP bridge (non-blocking — fire and forget)
+      const detectedBrokers = [...new Set(files.map(f => f.broker).filter(b => b !== 'unknown'))];
+      const detectedBroker = detectedBrokers.length > 1 ? 'both' : (detectedBrokers[0] || 'unknown');
       fetch('/api/save-user.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -300,7 +299,7 @@ export default function CalculatorPage() {
           session_id,
           name: user?.name,
           email: user?.email,
-          broker: broker || (files.some(f => f.broker === 'zerodha') && files.some(f => f.broker === 'groww') ? 'both' : files[0]?.broker),
+          broker: detectedBroker,
           google_token: user?.googleToken,
         }),
       }).catch(() => {}); // ignore failures — user data logging is best-effort
@@ -458,20 +457,6 @@ export default function CalculatorPage() {
                   style={{ padding: '12px 16px', border: '1.5px solid #e5e7eb', borderRadius: 8, fontSize: '0.95rem', outline: 'none' }} />
                 <input type="email" placeholder="Your email" value={manualEmail} onChange={e => setManualEmail(e.target.value)}
                   style={{ padding: '12px 16px', border: '1.5px solid #e5e7eb', borderRadius: 8, fontSize: '0.95rem', outline: 'none' }} />
-                <div>
-                  <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#374151', marginBottom: 8 }}>Your broker</p>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    {(['zerodha', 'groww', 'both'] as Broker[]).map(b => (
-                      <button key={b} onClick={() => setBroker(b)} style={{
-                        flex: 1, padding: '10px 4px', borderRadius: 8, border: `2px solid ${broker === b ? primaryColor : '#e5e7eb'}`,
-                        background: broker === b ? '#eff6ff' : '#fff', color: broker === b ? primaryColor : '#6b7280',
-                        fontWeight: broker === b ? 700 : 400, fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.15s', textTransform: 'capitalize',
-                      }}>
-                        {b === 'both' ? 'Both' : b.charAt(0).toUpperCase() + b.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
                 {authError && <p style={{ color: '#ef4444', fontSize: '0.85rem', margin: 0 }}>{authError}</p>}
                 <button onClick={handleManualContinue} style={{
                   padding: '13px', background: primaryColor, color: '#fff', border: 'none',
