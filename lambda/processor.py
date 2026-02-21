@@ -591,10 +591,10 @@ def generate_pdf_report(individual_stats, combined_stats, user_name):
     # ── Shared paragraph styles ───────────────────────────────
     title_s = ParagraphStyle("T", fontSize=22, fontName="Helvetica-Bold",
                               textColor=colors.HexColor("#1a237e"),
-                              alignment=TA_CENTER, spaceAfter=6)
+                              alignment=TA_CENTER, spaceAfter=16)
     sub_s   = ParagraphStyle("S", fontSize=9,  fontName="Helvetica",
                               textColor=colors.HexColor("#666666"),
-                              alignment=TA_CENTER, spaceAfter=6)
+                              alignment=TA_CENTER, spaceAfter=8)
     h2_s    = ParagraphStyle("H2", fontSize=12, fontName="Helvetica-Bold",
                               textColor=colors.HexColor("#1a237e"),
                               spaceBefore=14, spaceAfter=6)
@@ -633,9 +633,9 @@ def generate_pdf_report(individual_stats, combined_stats, user_name):
         beat_lbl = "vs Nifty 50"
         kpi3_bg  = "#1b5e20" if diff > 0 else "#b71c1c"
     else:
-        beat_v   = _fmt_inr(cs["net_gain"])
-        beat_lbl = "net gain / loss"
-        kpi3_bg  = "#1b5e20" if (cs["net_gain"] or 0) >= 0 else "#b71c1c"
+        beat_v   = "N/A"
+        beat_lbl = "Nifty data unavailable"
+        kpi3_bg  = "#37474f"  # neutral dark grey when no comparison possible
 
     kpi_row = [[
         _kpi_cell("YOUR XIRR",    xirr_v,  "annualised return",    "#1565c0"),
