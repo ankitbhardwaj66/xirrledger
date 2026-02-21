@@ -189,7 +189,7 @@ export default function CalculatorPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState('');
   const [panValidationErrors, setPanValidationErrors] = useState<Record<string, string>>({});
-  const [isValidatingPans, setIsValidatingPans] = useState(false);
+  const [panValidationStatus, setPanValidationStatus] = useState<Record<string, 'idle' | 'validating' | 'valid' | 'invalid'>>({});
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>(
     PROCESSING_STEPS.map(s => ({ ...s, status: 'pending' as const }))
   );
@@ -217,6 +217,14 @@ export default function CalculatorPage() {
     samePanForAll
       ? sharedPan.trim().length === 10
       : growwFiles.every(f => (filePans[f.file.name] ?? '').trim().length === 10)
+  );
+
+  const allGrowwPansValid = growwFiles.length === 0 || (
+    allGrowwPansEntered && (
+      samePanForAll
+        ? panValidationStatus['__shared__'] === 'valid'
+        : growwFiles.every(f => panValidationStatus[f.file.name] === 'valid')
+    )
   );
 
   // Recompute accounts whenever files or effective PANs change, preserving holdings/cash
@@ -300,8 +308,15 @@ export default function CalculatorPage() {
   }
 
   function updateFilePan(fileName: string, pan: string) {
-    setFilePans(prev => ({ ...prev, [fileName]: pan.toUpperCase() }));
-    setPanValidationErrors(prev => { const next = { ...prev }; delete next[fileName]; return next; });
+    const upper = pan.toUpperCase();
+    setFilePans(prev => ({ ...prev, [fileName]: upper }));
+    if (upper.length === 10) {
+      const uf = files.find(f => f.file.name === fileName);
+      if (uf) validateSinglePan(fileName, upper, [uf]);
+    } else {
+      setPanValidationStatus(prev => ({ ...prev, [fileName]: 'idle' }));
+      setPanValidationErrors(prev => { const next = { ...prev }; delete next[fileName]; return next; });
+    }
   }
 
   function updateAccount(id: string, field: 'holdings' | 'cash', value: string) {
@@ -314,46 +329,32 @@ export default function CalculatorPage() {
     addFiles(e.dataTransfer.files);
   }
 
-  async function validateGrowwPasswords(): Promise<Record<string, string>> {
-    const errors: Record<string, string> = {};
-    const pdfjsLib = await import('pdfjs-dist');
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-    await Promise.all(
-      files.filter(f => f.broker === 'groww').map(async uf => {
-        const pan = effectivePans[uf.file.name]?.trim().toUpperCase();
-        if (!pan) return;
-        try {
-          const data = await uf.file.arrayBuffer();
-          await pdfjsLib.getDocument({ data, password: pan }).promise;
-        } catch (e: unknown) {
-          if (e instanceof Error && e.name === 'PasswordException') {
-            const key = samePanForAll ? '__shared__' : uf.file.name;
-            errors[key] = samePanForAll
-              ? `Incorrect PAN — could not open "${uf.file.name}"`
-              : `Incorrect PAN — could not unlock this file`;
-          }
-        }
-      })
-    );
-    return errors;
+  async function validateSinglePan(key: string, pan: string, filesToCheck: UploadedFile[]) {
+    setPanValidationStatus(prev => ({ ...prev, [key]: 'validating' }));
+    try {
+      const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+      for (const uf of filesToCheck) {
+        const data = await uf.file.arrayBuffer();
+        await pdfjsLib.getDocument({ data, password: pan }).promise;
+      }
+      setPanValidationStatus(prev => ({ ...prev, [key]: 'valid' }));
+      setPanValidationErrors(prev => { const next = { ...prev }; delete next[key]; return next; });
+    } catch (e: unknown) {
+      const err = e as { name?: string };
+      if (err?.name === 'PasswordException') {
+        setPanValidationStatus(prev => ({ ...prev, [key]: 'invalid' }));
+        setPanValidationErrors(prev => ({ ...prev, [key]: 'Incorrect PAN — could not unlock this file' }));
+      } else {
+        // Non-password error (corrupt PDF etc.) — let it through
+        setPanValidationStatus(prev => ({ ...prev, [key]: 'valid' }));
+      }
+    }
   }
 
   async function startProcessing() {
     if (!allHoldingsEntered) return;
     setProcessingError('');
-
-    // Validate Groww PDF passwords before uploading anything
-    if (growwFiles.length > 0) {
-      setIsValidatingPans(true);
-      const errors = await validateGrowwPasswords();
-      setIsValidatingPans(false);
-      if (Object.keys(errors).length > 0) {
-        setPanValidationErrors(errors);
-        return;
-      }
-    }
-    setPanValidationErrors({});
     setStep('processing');
 
     // Mark "Uploading" as active immediately
@@ -706,20 +707,29 @@ export default function CalculatorPage() {
                         type="text"
                         placeholder="e.g. ABCDE1234F"
                         value={sharedPan}
-                        onChange={e => { setSharedPan(e.target.value.toUpperCase()); setPanValidationErrors({}); }}
+                        onChange={e => {
+                          const pan = e.target.value.toUpperCase();
+                          setSharedPan(pan);
+                          if (pan.length === 10) {
+                            validateSinglePan('__shared__', pan, growwFiles);
+                          } else {
+                            setPanValidationStatus(prev => ({ ...prev, '__shared__': 'idle' }));
+                            setPanValidationErrors({});
+                          }
+                        }}
                         maxLength={10}
-                        style={{
-                          flex: 1, padding: '10px 14px',
-                          border: `1.5px solid ${sharedPan.length === 10 ? '#16a34a' : '#e5e7eb'}`,
-                          borderRadius: 6, fontSize: '0.95rem', outline: 'none', letterSpacing: 3, fontFamily: 'monospace',
-                          background: sharedPan.length === 10 ? '#f0fdf4' : '#fff',
+                        style={{ flex: 1, padding: '10px 14px', borderRadius: 6, fontSize: '0.95rem', outline: 'none', letterSpacing: 3, fontFamily: 'monospace',
+                          border: `1.5px solid ${panValidationStatus['__shared__'] === 'valid' ? '#16a34a' : panValidationStatus['__shared__'] === 'invalid' ? '#dc2626' : panValidationStatus['__shared__'] === 'validating' ? '#f59e0b' : '#e5e7eb'}`,
+                          background: panValidationStatus['__shared__'] === 'valid' ? '#f0fdf4' : panValidationStatus['__shared__'] === 'invalid' ? '#fef2f2' : '#fff',
                         }}
                       />
-                      {sharedPan.length === 10 && <span style={{ color: '#16a34a', fontSize: '1rem' }}>✓</span>}
+                      {panValidationStatus['__shared__'] === 'validating' && <span style={{ color: '#f59e0b', fontSize: '1.1rem' }}>⏳</span>}
+                      {panValidationStatus['__shared__'] === 'valid'      && <span style={{ color: '#16a34a', fontSize: '1rem' }}>✓</span>}
+                      {panValidationStatus['__shared__'] === 'invalid'    && <span style={{ color: '#dc2626', fontSize: '1rem' }}>✗</span>}
                     </div>
                     {panValidationErrors['__shared__'] && (
                       <p style={{ margin: '8px 0 0', fontSize: '0.8rem', color: '#dc2626', fontWeight: 600 }}>
-                        ✗ {panValidationErrors['__shared__']}
+                        {panValidationErrors['__shared__']}
                       </p>
                     )}
                   </div>
@@ -747,20 +757,18 @@ export default function CalculatorPage() {
                             value={filePans[f.file.name] ?? ''}
                             onChange={e => updateFilePan(f.file.name, e.target.value)}
                             maxLength={10}
-                            style={{
-                              flex: 1, padding: '8px 12px',
-                              border: `1.5px solid ${(filePans[f.file.name] ?? '').length === 10 ? '#16a34a' : '#e5e7eb'}`,
-                              borderRadius: 6, fontSize: '0.875rem', outline: 'none', letterSpacing: 2, fontFamily: 'monospace',
-                              background: (filePans[f.file.name] ?? '').length === 10 ? '#f0fdf4' : '#fff',
+                            style={{ flex: 1, padding: '8px 12px', borderRadius: 6, fontSize: '0.875rem', outline: 'none', letterSpacing: 2, fontFamily: 'monospace',
+                              border: `1.5px solid ${panValidationStatus[f.file.name] === 'valid' ? '#16a34a' : panValidationStatus[f.file.name] === 'invalid' ? '#dc2626' : panValidationStatus[f.file.name] === 'validating' ? '#f59e0b' : '#e5e7eb'}`,
+                              background: panValidationStatus[f.file.name] === 'valid' ? '#f0fdf4' : panValidationStatus[f.file.name] === 'invalid' ? '#fef2f2' : '#fff',
                             }}
                           />
-                          {(filePans[f.file.name] ?? '').length === 10 && (
-                            <span style={{ color: '#16a34a', fontSize: '1rem' }}>✓</span>
-                          )}
+                          {panValidationStatus[f.file.name] === 'validating' && <span style={{ color: '#f59e0b', fontSize: '1.1rem' }}>⏳</span>}
+                          {panValidationStatus[f.file.name] === 'valid'      && <span style={{ color: '#16a34a', fontSize: '1rem' }}>✓</span>}
+                          {panValidationStatus[f.file.name] === 'invalid'    && <span style={{ color: '#dc2626', fontSize: '1rem' }}>✗</span>}
                         </div>
                         {panValidationErrors[f.file.name] && (
                           <p style={{ margin: '6px 0 0', fontSize: '0.8rem', color: '#dc2626', fontWeight: 600 }}>
-                            ✗ {panValidationErrors[f.file.name]}
+                            {panValidationErrors[f.file.name]}
                           </p>
                         )}
                       </div>
@@ -879,18 +887,18 @@ export default function CalculatorPage() {
                 <button onClick={() => setStep('upload')} style={{ flex: 1, padding: '13px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, fontWeight: 600, cursor: 'pointer' }}>
                   ← Back
                 </button>
-                {allGrowwPansEntered && (
+                {allGrowwPansValid && (
                   <button
                     onClick={startProcessing}
-                    disabled={!allHoldingsEntered || isValidatingPans}
+                    disabled={!allHoldingsEntered}
                     style={{
                       flex: 2, padding: '13px',
-                      background: allHoldingsEntered && !isValidatingPans ? primaryColor : '#d1d5db',
+                      background: allHoldingsEntered ? primaryColor : '#d1d5db',
                       color: '#fff', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: '1rem',
-                      cursor: allHoldingsEntered && !isValidatingPans ? 'pointer' : 'not-allowed',
+                      cursor: allHoldingsEntered ? 'pointer' : 'not-allowed',
                     }}
                   >
-                    {isValidatingPans ? 'Verifying PAN passwords...' : 'Calculate My XIRR →'}
+                    Calculate My XIRR →
                   </button>
                 )}
               </div>
