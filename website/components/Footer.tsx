@@ -59,9 +59,9 @@ export default function Footer() {
             <h4 className="font-semibold text-lg mb-4">Resources</h4>
             <ul className="space-y-2">
               <li>
-                <a href="https://xirrcalculatorr.streamlit.app/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition">
-                  Launch App
-                </a>
+                <Link href="/calculator" className="text-gray-400 hover:text-white transition">
+                  Launch Calculator
+                </Link>
               </li>
               <li><Link href="/faq#what-is-xirr" className="text-gray-400 hover:text-white transition">What is XIRR?</Link></li>
               <li><Link href="/how-it-works#zerodha" className="text-gray-400 hover:text-white transition">Zerodha Guide</Link></li>

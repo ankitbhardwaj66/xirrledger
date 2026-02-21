@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function HowItWorks() {
   return (
     <div className="py-16">
@@ -164,15 +166,13 @@ export default function HowItWorks() {
           <p className="text-xl mb-8" style={{ color: '#ffffff' }}>
             Follow the steps above and calculate your XIRR now!
           </p>
-          <a
-            href="https://xirrcalculatorr.streamlit.app/"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/calculator"
             className="inline-block bg-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition"
             style={{ color: '#1f77b4' }}
           >
             Launch Calculator
-          </a>
+          </Link>
         </div>
       </div>
     </div>
