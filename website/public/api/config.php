@@ -17,7 +17,7 @@ if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
     exit;
 }
 
-define('DB_HOST',     'xirrledger.com');
+define('DB_HOST',     'localhost');
 define('DB_NAME',     'u889244618_xirrledger');   // ← replace on Hostinger
 define('DB_USER',     'u889244618_xirrledger');   // ← replace on Hostinger
 define('DB_PASS',     'Q3^zkNwrXb');   // ← replace on Hostinger
