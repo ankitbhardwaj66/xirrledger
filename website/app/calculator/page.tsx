@@ -500,25 +500,6 @@ export default function CalculatorPage() {
     <div style={{ minHeight: '100vh', background: '#0f172a' }}>
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
 
-      {/* ── Page header ── */}
-      <div style={{ background: '#0a1020', borderBottom: '1px solid rgba(255,255,255,0.07)', padding: '20px 0' }}>
-        <div className="container-custom">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: 32, height: 32, background: 'rgba(245,158,11,0.15)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg style={{ width: 18, height: 18, color: GOLD }} fill="currentColor" viewBox="0 0 24 24">
-                <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
-              </svg>
-            </div>
-            <div>
-              <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#ffffff' }}>XIRR Calculator</h1>
-              <p style={{ margin: 0, color: '#475569', fontSize: '0.8rem' }}>
-                Upload your broker ledger and get your true returns in seconds
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* ── Step indicator ── */}
       {step !== 'processing' && step !== 'results' && (
         <div style={{ background: '#0d1526', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '14px 0' }}>
