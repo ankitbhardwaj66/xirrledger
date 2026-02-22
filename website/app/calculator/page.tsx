@@ -813,7 +813,7 @@ export default function CalculatorPage() {
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                         <div>
-                          <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 5 }}>Holdings value (₹) *</label>
+                          <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 5 }}>Current holdings value (₹) *</label>
                           <input
                             type="number" placeholder="e.g. 350000"
                             value={account.holdings}
@@ -824,7 +824,7 @@ export default function CalculatorPage() {
                               background: account.holdings ? 'rgba(245,158,11,0.06)' : 'rgba(255,255,255,0.04)',
                             }}
                           />
-                          <p style={{ margin: '3px 0 0', fontSize: '0.68rem', color: '#334155' }}>Current market value</p>
+                          <p style={{ margin: '3px 0 0', fontSize: '0.68rem', color: '#475569' }}>Today's market value of your holdings — not what you invested</p>
                         </div>
                         <div>
                           <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 5 }}>Available cash (₹)</label>

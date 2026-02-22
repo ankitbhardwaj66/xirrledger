@@ -26,8 +26,8 @@ const steps = [
   {
     icon: <FaWallet size={22} color={GOLD} />,
     title: 'Enter Current Values',
-    description: 'Input your current portfolio values — holdings value and available cash. Separate input fields appear for each account if you have multiple.',
-    note: 'You can find these values on your broker\'s app or website dashboard.',
+    description: 'Enter the current market value of your holdings as of today — not what you originally invested. Also enter available cash in the account. Separate fields appear for each account.',
+    note: 'Find today\'s holdings value on your broker\'s app under Portfolio or Positions. Do not enter the amount you invested.',
   },
   {
     icon: <FaChartLine size={22} color={GOLD} />,
