@@ -1,35 +1,97 @@
 import Link from 'next/link';
+import { FaDownload, FaUpload, FaWallet, FaChartLine, FaCheckCircle, FaExclamationTriangle, FaArrowRight, FaFileCsv, FaFilePdf } from 'react-icons/fa';
+
+const GOLD = '#f59e0b';
+const NAVY = '#0f172a';
+
+const glass = {
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid rgba(255,255,255,0.09)',
+  borderRadius: '16px',
+} as const;
+
+const steps = [
+  {
+    icon: <FaDownload size={22} color={GOLD} />,
+    title: 'Download Your Ledger',
+    description: 'Export your trading ledger from your broker\'s website. For Zerodha, download the CSV from Funds → View Statement. For Groww, download PDF statements for each year.',
+    note: 'Tip: Select the full date range — from your first investment till today — for accurate results.',
+  },
+  {
+    icon: <FaUpload size={22} color={GOLD} />,
+    title: 'Upload Files',
+    description: 'Upload your ledger files to the calculator. You can upload multiple files at once — from the same broker or different brokers. Files from the same account (PAN) are automatically combined.',
+    note: 'Your files are processed securely and never stored on our servers.',
+  },
+  {
+    icon: <FaWallet size={22} color={GOLD} />,
+    title: 'Enter Current Values',
+    description: 'Input your current portfolio values — holdings value and available cash. Separate input fields appear for each account if you have multiple.',
+    note: 'You can find these values on your broker\'s app or website dashboard.',
+  },
+  {
+    icon: <FaChartLine size={22} color={GOLD} />,
+    title: 'Get Your XIRR',
+    description: 'View detailed analysis with XIRR calculation, Nifty 50 benchmark comparison, and all key metrics. Download a professional PDF report for your records or tax filing.',
+    note: 'PDF reports are perfect for sharing with financial advisors or CAs.',
+  },
+];
 
 export default function HowItWorks() {
   return (
-    <div className="py-16">
+    <div style={{ background: NAVY, minHeight: '100vh', paddingTop: '5rem', paddingBottom: '6rem' }}>
       <div className="container-custom">
-        {/* Hero */}
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold mb-6">How It Works</h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Calculate your portfolio XIRR in 4 simple steps. Takes less than 5 minutes!
+
+        {/* ── Hero ── */}
+        <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)',
+            borderRadius: '100px', padding: '5px 14px',
+            fontSize: '12px', fontWeight: 600, color: GOLD,
+            letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '20px',
+          }}>
+            ✦ Simple & Fast
+          </div>
+          <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 800, color: '#ffffff', marginBottom: '1rem', letterSpacing: '-0.02em' }}>
+            How It Works
+          </h1>
+          <p style={{ fontSize: '1.1rem', color: '#94a3b8', maxWidth: '520px', margin: '0 auto', lineHeight: 1.7 }}>
+            Calculate your portfolio XIRR in 4 simple steps. Takes less than 5 minutes.
           </p>
         </div>
 
-        {/* Steps */}
-        <div className="max-w-4xl mx-auto mb-20">
+        {/* ── Steps ── */}
+        <div style={{ maxWidth: '760px', margin: '0 auto 5rem' }}>
           {steps.map((step, i) => (
-            <div key={i} className="flex gap-8 mb-12 last:mb-0">
-              <div className="flex-shrink-0">
-                <div className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold shadow-lg" style={{
-                  backgroundColor: '#1f77b4',
-                  color: '#ffffff'
+            <div key={i} style={{ display: 'flex', gap: '24px', marginBottom: i < steps.length - 1 ? '2.5rem' : 0, position: 'relative' }}>
+              {/* Connector line */}
+              {i < steps.length - 1 && (
+                <div style={{
+                  position: 'absolute', left: '27px', top: '56px',
+                  width: '2px', height: 'calc(100% + 2.5rem - 56px)',
+                  background: 'linear-gradient(to bottom, rgba(245,158,11,0.3), transparent)',
+                }} />
+              )}
+              {/* Icon circle */}
+              <div style={{ flexShrink: 0 }}>
+                <div style={{
+                  width: '56px', height: '56px', borderRadius: '50%',
+                  background: 'rgba(245,158,11,0.1)', border: '2px solid rgba(245,158,11,0.35)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  {i + 1}
+                  {step.icon}
                 </div>
               </div>
-              <div className="flex-1">
-                <h3 className="text-2xl font-bold mb-3">{step.title}</h3>
-                <p className="text-gray-600 mb-4">{step.description}</p>
+              {/* Content */}
+              <div style={{ ...glass, flex: 1, padding: '22px 24px' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#ffffff', marginBottom: '8px' }}>{step.title}</h3>
+                <p style={{ color: '#94a3b8', fontSize: '0.92rem', lineHeight: 1.7, marginBottom: step.note ? '12px' : 0 }}>{step.description}</p>
                 {step.note && (
-                  <div className="bg-blue-50 border-l-4 border-primary p-4 rounded">
-                    <p className="text-sm text-gray-700">{step.note}</p>
+                  <div style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)', borderRadius: '8px', padding: '10px 14px' }}>
+                    <p style={{ fontSize: '0.82rem', color: '#cbd5e1', margin: 0 }}>
+                      <span style={{ color: GOLD, fontWeight: 600 }}>✦ </span>{step.note}
+                    </p>
                   </div>
                 )}
               </div>
@@ -37,179 +99,136 @@ export default function HowItWorks() {
           ))}
         </div>
 
-        {/* Broker Guides */}
-        <section id="broker-guides" className="mb-20">
-          <h2 className="text-3xl font-bold mb-12 text-center">Broker-Specific Guides</h2>
+        {/* ── Broker Guides ── */}
+        <div style={{ marginBottom: '5rem' }}>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#ffffff', textAlign: 'center', marginBottom: '2.5rem', letterSpacing: '-0.01em' }}>
+            Broker-Specific Guides
+          </h2>
 
           <div className="grid md:grid-cols-2 gap-8">
+
             {/* Zerodha */}
-            <div id="zerodha" className="bg-white border-2 border-blue-200 rounded-xl p-8 shadow-lg">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                  Z
-                </div>
+            <div style={{ ...glass, padding: '28px', borderColor: 'rgba(245,158,11,0.18)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
+                <div style={{
+                  width: '48px', height: '48px', borderRadius: '12px',
+                  background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1.2rem', fontWeight: 800, color: GOLD,
+                }}>Z</div>
                 <div>
-                  <h3 className="text-2xl font-bold">Zerodha</h3>
-                  <p className="text-gray-600 text-sm">CSV Format</p>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>Zerodha</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
+                    <FaFileCsv size={13} color='#64748b' />
+                    <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>CSV Format</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <span className="bg-blue-100 text-blue-800 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-1">
-                    1
-                  </span>
-                  <p>Log in to <a href="https://console.zerodha.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Zerodha Console</a></p>
+              {[
+                <>Log in to <a href="https://console.zerodha.com/" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, textDecoration: 'none', fontWeight: 600 }}>Zerodha Console</a></>,
+                <>Go to <strong style={{ color: '#e2e8f0' }}>Funds → View Statement</strong></>,
+                <>Select <strong style={{ color: '#e2e8f0' }}>All Segments</strong> as category</>,
+                <>Set date range <strong style={{ color: '#e2e8f0' }}>(first investment till today)</strong></>,
+                <>Click the <strong style={{ color: '#e2e8f0' }}>blue arrow →</strong> then click the <strong style={{ color: '#e2e8f0' }}>CSV</strong> link</>,
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 4 ? '14px' : 0 }}>
+                  <span style={{
+                    background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)',
+                    color: GOLD, width: '24px', height: '24px', borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.75rem', fontWeight: 700, flexShrink: 0, marginTop: '1px',
+                  }}>{i + 1}</span>
+                  <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0, lineHeight: 1.6 }}>{item}</p>
                 </div>
-                <div className="flex items-start gap-3">
-                  <span className="bg-blue-100 text-blue-800 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-1">
-                    2
-                  </span>
-                  <p>Go to <strong>Funds → View Statement</strong></p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="bg-blue-100 text-blue-800 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-1">
-                    3
-                  </span>
-                  <p>Select <strong>All segment category</strong></p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="bg-blue-100 text-blue-800 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-1">
-                    4
-                  </span>
-                  <p>Select date range <strong>(from first investment till now)</strong></p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="bg-blue-100 text-blue-800 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-1">
-                    5
-                  </span>
-                  <p>Click <strong>Download CSV</strong></p>
-                </div>
-              </div>
+              ))}
 
-              <div className="mt-6 pt-6 border-t space-y-2">
-                <p className="flex items-center gap-2 text-sm">
-                  <span className="text-green-600">✓</span> File type: CSV
+              <div style={{ marginTop: '20px', paddingTop: '18px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                <p style={{ fontSize: '0.82rem', color: '#475569', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FaCheckCircle size={13} color='#10b981' /> File type: CSV
                 </p>
-                <p className="flex items-center gap-2 text-sm">
-                  <span className="text-green-600">✓</span> Password: Not required
+                <p style={{ fontSize: '0.82rem', color: '#475569', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FaCheckCircle size={13} color='#10b981' /> Password: Not required
                 </p>
               </div>
             </div>
 
             {/* Groww */}
-            <div id="groww" className="bg-white border-2 border-green-200 rounded-xl p-8 shadow-lg">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                  G
-                </div>
+            <div style={{ ...glass, padding: '28px', borderColor: 'rgba(16,185,129,0.18)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
+                <div style={{
+                  width: '48px', height: '48px', borderRadius: '12px',
+                  background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1.2rem', fontWeight: 800, color: '#10b981',
+                }}>G</div>
                 <div>
-                  <h3 className="text-2xl font-bold">Groww</h3>
-                  <p className="text-gray-600 text-sm">PDF Format</p>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>Groww</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
+                    <FaFilePdf size={13} color='#64748b' />
+                    <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>PDF Format</p>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <span className="bg-green-100 text-green-800 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-1">
-                    1
-                  </span>
-                  <p>Log in to <a href="https://groww.in/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Groww</a></p>
+              {[
+                <>Log in to <a href="https://groww.in/" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600 }}>Groww</a></>,
+                <>Go to <strong style={{ color: '#e2e8f0' }}>Funds → All Transactions</strong></>,
+                <>Select date &amp; year <strong style={{ color: '#e2e8f0' }}>(max 1 year per PDF)</strong></>,
+                <>Click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
+                <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 4 ? '14px' : 0 }}>
+                  <span style={{
+                    background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)',
+                    color: '#10b981', width: '24px', height: '24px', borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.75rem', fontWeight: 700, flexShrink: 0, marginTop: '1px',
+                  }}>{i + 1}</span>
+                  <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0, lineHeight: 1.6 }}>{item}</p>
                 </div>
-                <div className="flex items-start gap-3">
-                  <span className="bg-green-100 text-green-800 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-1">
-                    2
-                  </span>
-                  <p>Go to <strong>Funds → All Transactions</strong></p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="bg-green-100 text-green-800 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-1">
-                    3
-                  </span>
-                  <p>Select date & year <strong>(max 1 year per PDF)</strong></p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="bg-green-100 text-green-800 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-1">
-                    4
-                  </span>
-                  <p>Click <strong>Download</strong></p>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="bg-green-100 text-green-800 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-1">
-                    5
-                  </span>
-                  <p><strong>Repeat for ALL years</strong> from first investment till now</p>
-                </div>
-              </div>
+              ))}
 
-              <div className="mt-6 pt-6 border-t space-y-2">
-                <p className="flex items-center gap-2 text-sm">
-                  <span className="text-green-600">✓</span> File type: PDF
+              <div style={{ marginTop: '20px', paddingTop: '18px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                <p style={{ fontSize: '0.82rem', color: '#475569', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FaCheckCircle size={13} color='#10b981' /> File type: PDF
                 </p>
-                <p className="flex items-center gap-2 text-sm">
-                  <span className="text-green-600">✓</span> Password: Your PAN (uppercase)
+                <p style={{ fontSize: '0.82rem', color: '#475569', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FaCheckCircle size={13} color='#10b981' /> Password: Your PAN (uppercase)
                 </p>
-                <p className="flex items-center gap-2 text-sm text-amber-600">
-                  <span>⚠</span> Download for entire period (multiple PDFs)
+                <p style={{ fontSize: '0.82rem', color: '#92400e', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FaExclamationTriangle size={13} color={GOLD} /> Download one PDF per year for the full period
                 </p>
               </div>
             </div>
-          </div>
-        </section>
 
-        {/* CTA */}
-        <div className="rounded-2xl p-12 text-center" style={{
-          background: 'linear-gradient(135deg, #1f77b4 0%, #155a8a 100%)',
-          color: '#ffffff'
+          </div>
+        </div>
+
+        {/* ── CTA ── */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.04) 100%)',
+          border: '1px solid rgba(245,158,11,0.2)',
+          borderRadius: '20px', padding: '56px 32px', textAlign: 'center',
         }}>
-          <h2 className="text-3xl font-bold mb-4" style={{ color: '#ffffff' }}>Ready to Get Started?</h2>
-          <p className="text-xl mb-8" style={{ color: '#ffffff' }}>
-            Follow the steps above and calculate your XIRR now!
+          <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ffffff', marginBottom: '12px', letterSpacing: '-0.01em' }}>
+            Ready to Get Started?
+          </h2>
+          <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '32px' }}>
+            Follow the steps above and calculate your true portfolio XIRR now.
           </p>
-          <Link
-            href="/calculator"
-            className="inline-block bg-white px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition"
-            style={{ color: '#1f77b4' }}
-          >
-            Launch Calculator
+          <Link href="/calculator" style={{
+            background: GOLD, color: '#0a1020',
+            padding: '14px 32px', borderRadius: '10px',
+            fontWeight: 700, fontSize: '1rem', textDecoration: 'none',
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+          }}>
+            Calculate Free
+            <FaArrowRight size={15} />
           </Link>
         </div>
+
       </div>
     </div>
   );
 }
-
-const steps = [
-  {
-    title: "Download Your Ledger",
-    description: "Export your trading ledger from your broker's website. For Zerodha, download the CSV file from Console. For Groww, download PDF statements for each year.",
-    note: "💡 Tip: Make sure to select the entire date range from your first investment till today for accurate calculations."
-  },
-  {
-    title: "Upload Files",
-    description: "Upload your ledger files to the calculator. You can upload multiple files at once - from the same broker or different brokers. Files from the same account (PAN) will be automatically combined.",
-    note: "🔒 Your data is processed locally in your browser and never uploaded to any server."
-  },
-  {
-    title: "Enter Current Values",
-    description: "Input your current portfolio values - holdings value and available cash. The calculator will show you separate input fields for each account if you have multiple.",
-    note: "📊 You can find these values in your broker's app or website dashboard."
-  },
-  {
-    title: "Get Your XIRR",
-    description: "View detailed analysis with XIRR calculations, Nifty 50 benchmark comparison, and all key metrics. Download a professional PDF report for your records or tax filing.",
-    note: (
-      <span>
-        📄 PDF reports include all metrics and are perfect for sharing with financial advisors or CAs.{' '}
-        <a
-          href="/sample_report.pdf"
-          download="XIRR_Sample_Report.pdf"
-          className="font-semibold hover:underline"
-          style={{ color: '#1f77b4' }}
-        >
-          View sample report →
-        </a>
-      </span>
-    )
-  }
-];
