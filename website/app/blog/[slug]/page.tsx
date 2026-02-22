@@ -2,6 +2,9 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getPostBySlug, getAllPosts } from '@/lib/blog';
 import { MDXRemote } from 'next-mdx-remote/rsc';
+import { FaArrowLeft, FaDownload, FaArrowRight } from 'react-icons/fa';
+
+const GOLD = '#f59e0b';
 
 export async function generateStaticParams() {
   const posts = await getAllPosts();
@@ -15,9 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const post = await getPostBySlug(slug);
 
   if (!post) {
-    return {
-      title: 'Post Not Found',
-    };
+    return { title: 'Post Not Found' };
   }
 
   const url = `https://xirrledger.com/blog/${slug}`;
@@ -32,7 +33,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     openGraph: {
       title: post.title,
       description: post.excerpt,
-      url: url,
+      url,
       siteName: 'XIRR Ledger',
       type: 'article',
       publishedTime: post.date,
@@ -43,9 +44,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       title: post.title,
       description: post.excerpt,
     },
-    alternates: {
-      canonical: url,
-    },
+    alternates: { canonical: url },
   };
 }
 
@@ -53,83 +52,101 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const post = await getPostBySlug(slug);
 
-  if (!post) {
-    notFound();
-  }
+  if (!post) notFound();
 
   return (
-    <article className="py-16">
+    <article style={{ background: '#0f172a', minHeight: '100vh', paddingTop: '4rem', paddingBottom: '6rem' }}>
       <div className="container-custom">
-        {/* Back Button */}
-        <Link
-          href="/blog"
-          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 transition"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Back to Blog
+
+        {/* ── Back button ── */}
+        <Link href="/blog" style={{
+          display: 'inline-flex', alignItems: 'center', gap: '8px',
+          color: '#475569', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 500,
+          marginBottom: '2.5rem',
+        }}>
+          <FaArrowLeft size={13} /> Back to Blog
         </Link>
 
-        {/* Article Header */}
-        <header className="max-w-4xl mx-auto mb-12">
-          <div className="text-sm text-gray-500 mb-4">{post.date}</div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">{post.title}</h1>
+        {/* ── Article Header ── */}
+        <header style={{ maxWidth: '760px', margin: '0 auto 3rem' }}>
+          <time style={{
+            display: 'inline-block',
+            fontSize: '12px', fontWeight: 600,
+            background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)',
+            color: GOLD, padding: '3px 12px', borderRadius: '100px',
+            marginBottom: '20px',
+          }}>
+            {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+          </time>
+          <h1 style={{
+            fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', fontWeight: 800,
+            color: '#ffffff', lineHeight: 1.2, marginBottom: '1rem',
+            letterSpacing: '-0.02em',
+          }}>
+            {post.title}
+          </h1>
           {post.excerpt && (
-            <p className="text-xl text-gray-600 leading-relaxed">{post.excerpt}</p>
+            <p style={{ fontSize: '1.1rem', color: '#64748b', lineHeight: 1.75 }}>
+              {post.excerpt}
+            </p>
           )}
+          <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', marginTop: '2rem' }} />
         </header>
 
-        {/* Article Content */}
-        <div className="max-w-4xl mx-auto prose prose-lg prose-blue prose-headings:font-bold prose-a:no-underline prose-a:font-semibold hover:prose-a:underline prose-pre:bg-gray-900 prose-pre:text-gray-100">
+        {/* ── Article Content ── */}
+        <div
+          className="max-w-[760px] mx-auto prose prose-invert prose-lg prose-headings:font-bold prose-headings:tracking-tight prose-a:text-amber-400 prose-a:no-underline hover:prose-a:underline prose-strong:text-white prose-li:text-slate-300 prose-p:text-slate-300 prose-headings:text-white prose-pre:bg-slate-800 prose-pre:text-gray-100 prose-blockquote:border-amber-500 prose-blockquote:text-slate-400"
+        >
           <MDXRemote source={post.content} />
         </div>
 
-        {/* Call to Action */}
-        <div className="max-w-4xl mx-auto mt-16 pt-12 border-t-2 border-gray-200">
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 text-center">
-            <h2 className="text-3xl font-bold mb-4">Ready to Calculate Your True XIRR?</h2>
-            <p className="text-lg text-gray-700 mb-6">
+        {/* ── CTA ── */}
+        <div style={{ maxWidth: '760px', margin: '4rem auto 0' }}>
+          <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', marginBottom: '3rem' }} />
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(245,158,11,0.03) 100%)',
+            border: '1px solid rgba(245,158,11,0.2)',
+            borderRadius: '20px', padding: '40px 32px', textAlign: 'center',
+          }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', marginBottom: '10px', letterSpacing: '-0.01em' }}>
+              Ready to Calculate Your True XIRR?
+            </h2>
+            <p style={{ color: '#64748b', marginBottom: '28px', fontSize: '0.95rem' }}>
               Upload your ledger and get accurate returns in minutes
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a
-                href="https://xirrcalculatorr.streamlit.app/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block px-8 py-4 rounded-lg font-bold text-lg transition"
-                style={{ backgroundColor: '#1f77b4', color: '#ffffff' }}
-              >
-                Try Calculator Now
-              </a>
-              <a
-                href="/sample_report.pdf"
-                download="XIRR_Sample_Report.pdf"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-lg font-bold text-lg transition border-2"
-                style={{ borderColor: '#1f77b4', color: '#1f77b4' }}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Sample Report
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link href="/calculator" style={{
+                background: GOLD, color: '#0a1020',
+                padding: '12px 26px', borderRadius: '10px',
+                fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none',
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+              }}>
+                Calculate Free <FaArrowRight size={13} />
+              </Link>
+              <a href="/sample_report.pdf" download="XIRR_Sample_Report.pdf" style={{
+                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                color: '#e2e8f0', padding: '12px 26px', borderRadius: '10px',
+                fontWeight: 600, fontSize: '0.95rem', textDecoration: 'none',
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+              }}>
+                <FaDownload size={13} /> Sample Report
               </a>
             </div>
           </div>
         </div>
 
-        {/* Back to Blog */}
-        <div className="text-center mt-12">
-          <Link
-            href="/blog"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition"
-            style={{ backgroundColor: '#f3f4f6', color: '#374151' }}
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to All Posts
+        {/* ── Back to Blog ── */}
+        <div style={{ textAlign: 'center', marginTop: '3rem' }}>
+          <Link href="/blog" style={{
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)',
+            color: '#94a3b8', padding: '10px 22px', borderRadius: '8px',
+            fontWeight: 500, fontSize: '0.9rem', textDecoration: 'none',
+          }}>
+            <FaArrowLeft size={13} /> Back to All Posts
           </Link>
         </div>
+
       </div>
     </article>
   );
