@@ -110,7 +110,7 @@ export default function Navigation() {
               { href: '/faq', label: 'FAQ' },
               { href: '/contact', label: 'Contact' },
             ].map(({ href, label }) => (
-              <Link key={href} href={href} style={{
+              <Link key={href} href={href} onClick={() => setIsOpen(false)} style={{
                 color: '#94a3b8',
                 textDecoration: 'none',
                 padding: '8px 0',
@@ -122,6 +122,7 @@ export default function Navigation() {
             ))}
             <a
               href="/calculator"
+              onClick={() => setIsOpen(false)}
               style={{
                 marginTop: '8px',
                 background: '#f59e0b',
