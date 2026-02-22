@@ -147,6 +147,19 @@ CREATE TABLE xirr_sessions (
 - Alternative: generate chart as PNG using `matplotlib` (already available in Lambda layer via pandas/numpy) and embed it in the PDF
 - Show: cumulative return curve over the investment period, comparison line for Nifty 50
 
+### 5. Manually Add Fund Transfers by Date (Third-Party Apps & Banks)
+- Allow users to manually enter cash flow entries: amount + exact date, for money moved through third-party apps (Paytm Money, ET Money, INDmoney, bank transfers, etc.) that don't provide downloadable ledgers
+- These entries are treated as cash flows (funds added/withdrawn) in the XIRR calculation alongside the broker ledger data
+- UI: a simple table on the upload/details step — "Add entry" button, date picker, amount (+/-), label/note
+- Useful for: SIPs via bank mandate, lump-sum top-ups, external portfolio transfers not captured in broker files
+- Implementation: frontend collects these as a JSON array; Lambda merges them into the cash flow list before running XIRR
+
+### 4. Edit Holdings on Results Page to Re-generate Report
+- On the results page, allow users to edit their current holding values (e.g. tweak market value of each stock/fund)
+- "Recalculate" button re-runs the XIRR computation with the updated values without re-uploading files
+- Useful for: correcting incorrect valuations, running "what-if" scenarios (e.g. if I sell today at X price), adjusting for unlisted/illiquid assets
+- Implementation: store the parsed holdings in `status.json` alongside XIRR results; frontend renders editable fields from that; on recalculate, POST updated holdings to a new `/recalculate` Lambda endpoint that re-runs only the final XIRR step (skip file parsing)
+
 ### 3. More Benchmark Indices
 - Currently comparing only against Nifty 50 (`^NSEI`)
 - Add support for: Nifty 500 (`^CRSLDX`), Nifty Midcap 150 (`NIFTY_MID_SELECT.NS`), Nifty Smallcap 250, Sensex (`^BSESN`)
