@@ -52,6 +52,14 @@
 - 4 MDX blog posts with per-post SEO meta tags
 - Google Analytics 4 integrated
 - Static export deployed to Hostinger via `deploy.sh` (runs on remote server)
+- **Premium Navy + Gold theme** applied across all pages (inline styles, `#0f172a` bg / `#f59e0b` gold)
+  - Home, How It Works, Features, Blog listing, Blog post, FAQ, Contact — all fully rethemed
+  - `react-icons` v5 used throughout (no SVG inline clutter)
+  - `prose-invert` Tailwind class for MDX blog post body on dark background
+- **Navigation**: active page highlighting via `usePathname()` (gold underline / left border on mobile); mobile menu auto-collapses on tap
+- **Footer**: disclaimer text made visible (`#64748b` + bordered pill style)
+- **Hero section**: green privacy badge — "We never store your financial data — reports are auto-deleted 15 min after creation"
+- **Sample PDF** (`/sample_report.pdf`): replaced with real Lambda-generated report (realistic 2-account data, 19.6% XIRR vs 12.3% Nifty)
 
 ### Calculator (`/calculator`)
 - Google Sign-In (GSI One Tap + button) + manual name/email fallback
@@ -63,10 +71,12 @@
 - **Real-time PAN validation** — pdfjs-dist attempts to decrypt PDF with entered PAN; shows ✓/✗ after 10 chars typed
   - Worker: `public/pdf.worker.min.js` (must be `.js` not `.mjs` — Apache on Hostinger serves `.mjs` as `text/plain`)
   - Calculate button locked until all PANs valid
-- Per-account holdings + cash inputs
+- Per-account holdings + cash inputs — labelled "Current holdings value (₹)" with hint "Today's market value of your holdings — not what you invested"
 - Async processing with animated progress steps
 - Results: XIRR vs Nifty 50, investment period, contextual insight card
+- Results disclaimer: "This report assumes all investments were made exclusively through the provided account statements."
 - PDF report opens in new tab (presigned S3 URL, 7-day expiry)
+- Step 1 subtitle: "We will email you the report too" (concise, no extra header bar)
 
 ### Lambda
 - `handler.py` — routes `POST /session` (presigned URLs) and `POST /process` (async trigger)
