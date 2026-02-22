@@ -134,6 +134,28 @@ CREATE TABLE xirr_sessions (
 
 ---
 
+## Future Ideas 💡
+
+### 1. Explain the XIRR Formula / Methodology
+- Add a "How we calculate your XIRR" section on the website (or inside the PDF report as a footnote)
+- Explain: Newton-Raphson iteration with Brent fallback, what counts as a cash flow (funds added, payouts, quarterly settlements), why idle cash matters, and how the final portfolio value is treated as the last cash inflow
+- Goal: build trust with users who want to verify the math
+
+### 2. Chart / Graph in PDF Report
+- Explore adding a portfolio value vs Nifty 50 line chart inside the generated PDF
+- ReportLab supports drawing SVG-like shapes and lines natively — could draw the chart without external libs
+- Alternative: generate chart as PNG using `matplotlib` (already available in Lambda layer via pandas/numpy) and embed it in the PDF
+- Show: cumulative return curve over the investment period, comparison line for Nifty 50
+
+### 3. More Benchmark Indices
+- Currently comparing only against Nifty 50 (`^NSEI`)
+- Add support for: Nifty 500 (`^CRSLDX`), Nifty Midcap 150 (`NIFTY_MID_SELECT.NS`), Nifty Smallcap 250, Sensex (`^BSESN`)
+- `refresher.py` already downloads from yfinance — extend to download and cache multiple indices daily
+- Frontend: add a dropdown in results to switch benchmark
+- Lambda: compute XIRR for each benchmark using the same cash flows, return all in the `status.json`
+
+---
+
 ## Key Credentials & Config
 
 | Item | Value | Location |
