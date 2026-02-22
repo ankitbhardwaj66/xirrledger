@@ -617,7 +617,7 @@ export default function CalculatorPage() {
               <div style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)', borderRadius: 10, padding: '14px 16px', marginBottom: 22 }}>
                 <p style={{ fontSize: '0.82rem', fontWeight: 700, color: GOLD, margin: '0 0 6px' }}>How to download your ledger:</p>
                 <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '2px 0' }}>
-                  <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Zerodha:</span> Console → Reports → Ledger → Download CSV
+                  <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Zerodha:</span> Console → Funds → View Statement → All Segments → set date range → blue arrow → CSV
                 </p>
                 <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '2px 0' }}>
                   <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Groww:</span> Profile → Reports → Account Statement → Download PDF
