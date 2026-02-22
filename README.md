@@ -16,8 +16,8 @@ XIRR (Extended Internal Rate of Return) is the most accurate way to measure inve
 
 | Broker | File Format | Notes |
 |---|---|---|
-| Zerodha | CSV ledger | Export from Zerodha Console → Reports → Ledger |
-| Groww | PDF ledger | Download from Groww → Profile → Reports → Account Statement (1 year per PDF) |
+| Zerodha | CSV ledger | Funds → View Statement → All Segments → date range → blue arrow → CSV |
+| Groww | PDF ledger | Funds → All Transactions → select year → Download (1 PDF per year, PAN as password) |
 
 ---
 
