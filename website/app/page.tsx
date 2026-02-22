@@ -119,11 +119,15 @@ export default function Home() {
                 <span>✓ No registration</span>
                 <span>✓ Privacy-first</span>
               </div>
-              <div style={{ fontSize: '12px', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <svg style={{ width: '13px', height: '13px', flexShrink: 0, color: '#475569' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: '7px',
+                background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)',
+                borderRadius: '8px', padding: '7px 12px', fontSize: '12px', color: '#86efac',
+              }}>
+                <svg style={{ width: '13px', height: '13px', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11V7a4 4 0 00-8 0v4M5 11h14a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1v-7a1 1 0 011-1z" />
                 </svg>
-                We never store your financial data. Reports are auto-deleted 15 minutes after creation.
+                We never store your financial data — reports are auto-deleted 15 min after creation.
               </div>
             </div>
 
