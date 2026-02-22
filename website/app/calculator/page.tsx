@@ -550,7 +550,7 @@ export default function CalculatorPage() {
               </div>
               <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 6, color: '#ffffff' }}>Get Started</h2>
               <p style={{ color: '#64748b', marginBottom: 28, fontSize: '0.9rem' }}>
-                We'll email your report so you can close this tab any time
+                We will email you the report too
               </p>
 
               {/* Google Sign-In */}
