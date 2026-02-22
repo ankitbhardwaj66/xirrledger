@@ -2,9 +2,14 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+
+  const isActive = (href: string) =>
+    href === '/' ? pathname === '/' : pathname.startsWith(href);
 
   return (
     <nav style={{
@@ -43,20 +48,26 @@ export default function Navigation() {
               { href: '/blog', label: 'Blog' },
               { href: '/faq', label: 'FAQ' },
               { href: '/contact', label: 'Contact' },
-            ].map(({ href, label }) => (
-              <Link key={href} href={href} style={{
-                color: '#94a3b8',
-                textDecoration: 'none',
-                fontWeight: 500,
-                fontSize: '0.9rem',
-                transition: 'color 0.2s',
-              }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#e2e8f0')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}
-              >
-                {label}
-              </Link>
-            ))}
+            ].map(({ href, label }) => {
+              const active = isActive(href);
+              return (
+                <Link key={href} href={href} style={{
+                  color: active ? '#f59e0b' : '#94a3b8',
+                  textDecoration: 'none',
+                  fontWeight: active ? 600 : 500,
+                  fontSize: '0.9rem',
+                  transition: 'color 0.2s',
+                  position: 'relative',
+                  paddingBottom: '2px',
+                  borderBottom: active ? '2px solid #f59e0b' : '2px solid transparent',
+                }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.color = '#e2e8f0'; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.color = '#94a3b8'; }}
+                >
+                  {label}
+                </Link>
+              );
+            })}
             <a
               href="/calculator"
               style={{
@@ -109,17 +120,22 @@ export default function Navigation() {
               { href: '/blog', label: 'Blog' },
               { href: '/faq', label: 'FAQ' },
               { href: '/contact', label: 'Contact' },
-            ].map(({ href, label }) => (
-              <Link key={href} href={href} onClick={() => setIsOpen(false)} style={{
-                color: '#94a3b8',
-                textDecoration: 'none',
-                padding: '8px 0',
-                fontWeight: 500,
-                fontSize: '0.95rem',
-              }}>
-                {label}
-              </Link>
-            ))}
+            ].map(({ href, label }) => {
+              const active = isActive(href);
+              return (
+                <Link key={href} href={href} onClick={() => setIsOpen(false)} style={{
+                  color: active ? '#f59e0b' : '#94a3b8',
+                  textDecoration: 'none',
+                  padding: '8px 0',
+                  fontWeight: active ? 600 : 500,
+                  fontSize: '0.95rem',
+                  borderLeft: active ? '3px solid #f59e0b' : '3px solid transparent',
+                  paddingLeft: '10px',
+                }}>
+                  {label}
+                </Link>
+              );
+            })}
             <a
               href="/calculator"
               onClick={() => setIsOpen(false)}
