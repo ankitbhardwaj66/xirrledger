@@ -1,70 +1,98 @@
 import Link from 'next/link';
 import { getAllPosts } from '@/lib/blog';
+import { FaArrowRight } from 'react-icons/fa';
+
+const GOLD = '#f59e0b';
+const NAVY = '#0f172a';
+
+const glass = {
+  background: 'rgba(255,255,255,0.04)',
+  border: '1px solid rgba(255,255,255,0.09)',
+  borderRadius: '16px',
+} as const;
 
 export default async function BlogPage() {
   const posts = await getAllPosts();
 
   return (
-    <div className="py-16">
+    <div style={{ background: NAVY, minHeight: '100vh', paddingTop: '5rem', paddingBottom: '6rem' }}>
       <div className="container-custom">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold mb-6">Blog & Updates</h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+
+        {/* ── Hero ── */}
+        <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)',
+            borderRadius: '100px', padding: '5px 14px',
+            fontSize: '12px', fontWeight: 600, color: GOLD,
+            letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '20px',
+          }}>
+            ✦ Insights & Updates
+          </div>
+          <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 800, color: '#ffffff', marginBottom: '1rem', letterSpacing: '-0.02em' }}>
+            Blog & Updates
+          </h1>
+          <p style={{ fontSize: '1.1rem', color: '#94a3b8', maxWidth: '520px', margin: '0 auto', lineHeight: 1.7 }}>
             Latest news, features, and tips for using XIRR Ledger
           </p>
         </div>
 
         {posts.length === 0 ? (
-          <div className="max-w-2xl mx-auto bg-gray-50 rounded-2xl p-12 text-center">
-            <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+          <div style={{ ...glass, maxWidth: '520px', margin: '0 auto', padding: '56px 32px', textAlign: 'center' }}>
+            <svg style={{ width: '48px', height: '48px', margin: '0 auto 16px', color: '#334155', display: 'block' }} fill="currentColor" viewBox="0 0 24 24">
+              <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
             </svg>
-            <h2 className="text-2xl font-bold mb-2">No posts yet</h2>
-            <p className="text-gray-600 mb-6">
-              We're working on creating valuable content for you. Check back soon!
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: '#ffffff', marginBottom: '8px' }}>No posts yet</h2>
+            <p style={{ color: '#64748b', marginBottom: '24px', fontSize: '0.9rem' }}>
+              We&apos;re working on creating valuable content for you. Check back soon!
             </p>
-            <Link href="/" className="inline-block px-6 py-3 rounded-lg font-semibold transition" style={{ backgroundColor: '#1f77b4', color: '#ffffff' }}>
+            <Link href="/" style={{
+              background: GOLD, color: '#0a1020',
+              padding: '11px 24px', borderRadius: '8px',
+              fontWeight: 700, fontSize: '0.9rem', textDecoration: 'none',
+              display: 'inline-block',
+            }}>
               Back to Home
             </Link>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {posts.map((post) => (
               <Link
                 key={post.slug}
                 href={`/blog/${post.slug}`}
-                className="group bg-white rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-2"
-                style={{
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                }}
+                style={{ textDecoration: 'none', display: 'block' }}
               >
-                <div className="p-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <time className="text-sm font-medium px-3 py-1 rounded-full" style={{ backgroundColor: '#e3f2fd', color: '#1f77b4' }}>
-                      {new Date(post.date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
+                <div style={{
+                  ...glass,
+                  padding: '28px',
+                  height: '100%',
+                  transition: 'border-color 0.2s, transform 0.2s',
+                  cursor: 'pointer',
+                }}>
+                  {/* Date + arrow row */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <time style={{
+                      fontSize: '12px', fontWeight: 600,
+                      background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)',
+                      color: GOLD, padding: '3px 10px', borderRadius: '100px',
+                    }}>
+                      {new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </time>
-                    <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" style={{ color: '#1f77b4' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
+                    <FaArrowRight size={14} color='#334155' />
                   </div>
 
-                  <h2 className="text-xl font-bold mb-3 text-gray-900 leading-tight group-hover:text-primary transition-colors">
+                  <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#ffffff', marginBottom: '10px', lineHeight: 1.5 }}>
                     {post.title}
                   </h2>
 
-                  <p className="text-gray-600 leading-relaxed mb-6" style={{ fontSize: '0.95rem' }}>
+                  <p style={{ color: '#64748b', fontSize: '0.88rem', lineHeight: 1.7, marginBottom: '20px' }}>
                     {post.excerpt}
                   </p>
 
-                  <div className="flex items-center gap-2 font-semibold text-sm" style={{ color: '#1f77b4' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: GOLD, fontSize: '0.85rem', fontWeight: 600 }}>
                     <span>Read Article</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
+                    <FaArrowRight size={12} />
                   </div>
                 </div>
               </Link>
