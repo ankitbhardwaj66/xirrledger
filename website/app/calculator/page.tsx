@@ -1033,6 +1033,9 @@ export default function CalculatorPage() {
             <p style={{ textAlign: 'center', color: '#334155', fontSize: '0.76rem', marginTop: 14 }}>
               Report also sent to {user?.email}
             </p>
+            <p style={{ textAlign: 'center', color: '#475569', fontSize: '0.73rem', marginTop: 8 }}>
+              * This report assumes all investments were made exclusively through the provided account statements.
+            </p>
           </div>
         )}
 
