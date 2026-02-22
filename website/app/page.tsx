@@ -385,7 +385,7 @@ export default function Home() {
               <div key={i} style={{ ...glass, padding: '28px', position: 'relative' }}>
                 <div style={{
                   position: 'absolute', top: '24px', right: '24px',
-                  fontSize: '3rem', fontWeight: 900, color: 'rgba(245,158,11,0.07)',
+                  fontSize: '3rem', fontWeight: 900, color: 'rgba(245,158,11,0.25)',
                   lineHeight: 1, fontVariantNumeric: 'tabular-nums',
                 }}>
                   {step}
