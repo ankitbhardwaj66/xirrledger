@@ -114,10 +114,16 @@ export default function Home() {
               </div>
 
               {/* Trust */}
-              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '13px', color: '#475569' }}>
+              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '13px', color: '#475569', marginBottom: '10px' }}>
                 <span>✓ Free to use</span>
                 <span>✓ No registration</span>
                 <span>✓ Privacy-first</span>
+              </div>
+              <div style={{ fontSize: '12px', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <svg style={{ width: '13px', height: '13px', flexShrink: 0, color: '#475569' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11V7a4 4 0 00-8 0v4M5 11h14a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1v-7a1 1 0 011-1z" />
+                </svg>
+                We never store your financial data. Reports are auto-deleted 15 minutes after creation.
               </div>
             </div>
 
