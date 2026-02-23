@@ -127,6 +127,9 @@ async function hashFile(file: File): Promise<string> {
 
 function detectBroker(file: File): 'zerodha' | 'groww' | 'fyers' | 'unknown' {
   const name = file.name.toLowerCase();
+  // Fyers Transaction History: _tmp_CLIENTID_transactions_TIMESTAMP.csv
+  if (name.includes('_transactions_') && name.endsWith('.csv')) return 'fyers';
+  // Fyers Ledger (legacy): FYERS_ledger_CLIENTID_...csv
   if (name.startsWith('fyers_')) return 'fyers';
   if (file.type === 'text/csv' || name.endsWith('.csv')) return 'zerodha';
   if (file.type === 'application/pdf' || name.endsWith('.pdf')) return 'groww';
@@ -134,8 +137,13 @@ function detectBroker(file: File): 'zerodha' | 'groww' | 'fyers' | 'unknown' {
 }
 
 function extractFyersClientId(filename: string): string {
-  const m = filename.match(/FYERS_ledger_([^_]+)_/i);
-  return m ? m[1] : filename.replace(/\.csv$/i, '');
+  // New format: _tmp_XS80867_transactions_1771843951.csv
+  const m1 = filename.match(/_tmp_([^_]+)_transactions_/i);
+  if (m1) return m1[1];
+  // Legacy ledger format: FYERS_ledger_XS80867_...csv
+  const m2 = filename.match(/FYERS_ledger_([^_]+)_/i);
+  if (m2) return m2[1];
+  return filename.replace(/\.csv$/i, '');
 }
 
 function formatINR(amount: number): string {
@@ -1246,11 +1254,11 @@ export default function CalculatorPage() {
                 </div>
                 {[
                   <>Log in to <strong style={{ color: '#e2e8f0' }}>Fyers</strong></>,
-                  <>Go to <strong style={{ color: '#e2e8f0' }}>Reports → Ledger</strong></>,
-                  <>Select the <strong style={{ color: '#e2e8f0' }}>Financial Year</strong></>,
-                  <>Click <strong style={{ color: '#e2e8f0' }}>Generate</strong></>,
-                  <>Click <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></>,
-                  <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
+                  <>Go to <strong style={{ color: '#e2e8f0' }}>Funds → Transaction History</strong></>,
+                  <>Click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
+                  <>Select <strong style={{ color: '#e2e8f0' }}>start and end date</strong> (covers up to 3 years)</>,
+                  <>Click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
+                  <>If investing for <strong style={{ color: '#e2e8f0' }}>over 3 years</strong>, repeat for the earlier period</>,
                 ].map((item, i, arr) => (
                   <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 12 : 0 }}>
                     <span style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#818cf8', width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
@@ -1259,7 +1267,7 @@ export default function CalculatorPage() {
                 ))}
                 <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>✓ File type: CSV &nbsp;·&nbsp; Password: not required</p>
-                  <p style={{ fontSize: '0.78rem', color: '#92400e', margin: 0 }}>⚠ Download one CSV per year for the full period</p>
+                  <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>✓ One file covers up to 3 years</p>
                 </div>
               </div>
 

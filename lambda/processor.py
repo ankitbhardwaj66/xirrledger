@@ -452,71 +452,80 @@ def parse_groww_pdf(file_bytes, password=None):
 
 def parse_fyers_csv(file_bytes):
     """
-    Parse Fyers ledger CSV.
-    Format: metadata rows (Client Name, Client ID, PAN, etc.) followed by a blank line,
-    then summary rows, then the data table starting with:
-      Date, Transaction type, Description, Debit amount, Credit amount, Running balance
+    Parse Fyers Transaction History CSV (Funds → Transaction History → Download).
 
-    Outflows  = "Funds added"    rows  → Credit amount (negated)
-    Inflows   = "Funds withdrawn" rows → Debit amount
+    Format: a few metadata header rows (FYERS, Client Name, Client ID, PAN, Date Range)
+    followed by the data table:
+      Type, Status, Amount (₹), Time, Transaction Id, Bank Name, Bank Account Number
+
+    Rules:
+      - Only Status == "Success" rows are counted (Rejected / Cancelled are skipped)
+      - Outflows (investments) : Type == "Deposit"
+      - Inflows  (withdrawals) : Type == "Withdrawal" or "Quarterly"
+    Date format: "12 Jul, 2023"
     """
     text = file_bytes.decode("utf-8-sig", errors="replace")
     lines = text.splitlines()
 
-    # Find the data header row (contains both 'Transaction type' and 'Debit amount')
+    # Find the data header row (contains 'Type', 'Status', and 'Amount')
     header_row_idx = None
     for i, line in enumerate(lines):
-        if "Transaction type" in line and "Debit amount" in line:
+        if "Type" in line and "Status" in line and "Amount" in line:
             header_row_idx = i
             break
 
     if header_row_idx is None:
-        raise ValueError("Could not find data header in Fyers CSV — is this a valid Fyers ledger file?")
+        raise ValueError("Could not find data header in Fyers CSV — is this a valid Fyers Transaction History file?")
 
     data_text = "\n".join(lines[header_row_idx:])
     df = pd.read_csv(io.StringIO(data_text))
     df.columns = [c.strip() for c in df.columns]
 
-    required = ["Date", "Transaction type", "Debit amount", "Credit amount"]
+    # Amount column is named "Amount (₹)" — find it regardless of exact encoding
+    amt_col = next((c for c in df.columns if "Amount" in c), None)
+    if amt_col is None:
+        raise ValueError("Could not find Amount column in Fyers transactions CSV")
+
+    required = ["Type", "Status", "Time"]
     missing = [c for c in required if c not in df.columns]
     if missing:
         raise ValueError(f"Fyers CSV missing columns: {missing}")
 
-    df = df.dropna(subset=["Date"])
-    df = df[df["Date"].astype(str).str.strip() != ""]
+    # Keep only successful transactions
+    df = df[df["Status"].astype(str).str.strip().str.lower() == "success"].copy()
+    df = df.dropna(subset=["Time"])
+    df = df[df["Time"].astype(str).str.strip() != ""]
 
     outflows_list = []
     inflows_list  = []
 
     for _, row in df.iterrows():
-        txn_type = str(row.get("Transaction type", "")).strip().lower()
-        date_raw = str(row.get("Date", "")).strip()
+        txn_type = str(row["Type"]).strip().lower()
+        date_raw = str(row["Time"]).strip()
 
         try:
-            date_str = datetime.strptime(date_raw, "%d %b %Y").strftime("%Y-%m-%d")
+            date_str = datetime.strptime(date_raw, "%d %b, %Y").strftime("%Y-%m-%d")
         except Exception:
             continue
 
-        if txn_type == "funds added":
-            try:
-                amt = float(str(row["Credit amount"]).replace(",", "").strip())
-                if amt > 0:
-                    outflows_list.append({"date": date_str, "amount": -amt})
-            except (ValueError, TypeError):
-                pass
-        elif txn_type == "funds withdrawn":
-            try:
-                amt = float(str(row["Debit amount"]).replace(",", "").strip())
-                if amt > 0:
-                    inflows_list.append({"date": date_str, "amount": amt})
-            except (ValueError, TypeError):
-                pass
+        try:
+            amt = float(str(row[amt_col]).replace(",", "").strip())
+        except (ValueError, TypeError):
+            continue
+
+        if amt <= 0:
+            continue
+
+        if txn_type == "deposit":
+            outflows_list.append({"date": date_str, "amount": -amt})
+        elif txn_type in ("withdrawal", "quarterly"):
+            inflows_list.append({"date": date_str, "amount": amt})
 
     outflows = pd.DataFrame(outflows_list) if outflows_list else pd.DataFrame(columns=["date", "amount"])
     inflows  = pd.DataFrame(inflows_list)  if inflows_list  else pd.DataFrame(columns=["date", "amount"])
 
     if len(outflows) == 0:
-        raise ValueError("No 'Funds added' entries found in Fyers CSV.")
+        raise ValueError("No successful Deposit entries found in Fyers transactions CSV.")
 
     return outflows, inflows
 
