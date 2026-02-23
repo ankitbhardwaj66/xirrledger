@@ -30,6 +30,13 @@ interface Account {
   cash: string;
 }
 
+interface ManualEntry {
+  id: string;
+  label: string;
+  amount: string;
+  date: string;
+}
+
 interface ProcessingStep {
   key: string;
   label: string;
@@ -224,6 +231,7 @@ export default function CalculatorPage() {
   const [manualEmail, setManualEmail] = useState('');
   const [authError, setAuthError] = useState('');
   const [showDownloadGuide, setShowDownloadGuide] = useState(false);
+  const [manualEntries, setManualEntries] = useState<ManualEntry[]>([]);
   const [processingError, setProcessingError] = useState('');
   const googleBtnRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -371,6 +379,16 @@ export default function CalculatorPage() {
     }
   }
 
+  function addManualEntry() {
+    setManualEntries(prev => [...prev, { id: crypto.randomUUID(), label: '', amount: '', date: '' }]);
+  }
+  function removeManualEntry(id: string) {
+    setManualEntries(prev => prev.filter(e => e.id !== id));
+  }
+  function updateManualEntry(id: string, field: keyof Omit<ManualEntry, 'id'>, value: string) {
+    setManualEntries(prev => prev.map(e => e.id === id ? { ...e, [field]: value } : e));
+  }
+
   async function startProcessing() {
     if (!allHoldingsEntered) return;
     setProcessingError('');
@@ -418,10 +436,18 @@ export default function CalculatorPage() {
         cash: parseFloat(acc.cash) || 0,
       }));
 
+      const manualEntriesPayload = manualEntries
+        .filter(e => e.amount.trim() && e.date.trim())
+        .map(e => ({
+          label: e.label.trim() || 'Manual investment',
+          amount: parseFloat(e.amount),
+          date: e.date,
+        }));
+
       const processRes = await fetch(`${API_BASE}/process`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id, name: user?.name, email: user?.email, accounts: accountsPayload }),
+        body: JSON.stringify({ session_id, name: user?.name, email: user?.email, accounts: accountsPayload, manual_entries: manualEntriesPayload }),
       });
       if (!processRes.ok) throw new Error('Failed to start processing — please try again.');
       pollStatus(session_id);
@@ -475,6 +501,7 @@ export default function CalculatorPage() {
     setSamePanForAll(false);
     setSharedPan('');
     setAccounts([]);
+    setManualEntries([]);
     setResults(null);
     setProcessingSteps(PROCESSING_STEPS.map(s => ({ ...s, status: 'pending' as const })));
   }
@@ -836,6 +863,71 @@ export default function CalculatorPage() {
                             style={{ ...inputBase, width: '100%', padding: '9px 11px', fontSize: '0.845rem', boxSizing: 'border-box' }}
                           />
                           <p style={{ margin: '3px 0 0', fontSize: '0.68rem', color: '#334155' }}>Cash in broker account</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+            </div>
+
+            {/* ── Section C: Outside Investments ── */}
+            <div style={{ ...card, padding: 28 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
+                <div>
+                  <h2 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: '#ffffff' }}>Outside Investments</h2>
+                  <p style={{ color: '#64748b', fontSize: '0.78rem', margin: '3px 0 0', fontWeight: 500 }}>Optional</p>
+                </div>
+                {manualEntries.length > 0 && (
+                  <button onClick={addManualEntry} style={{ ...btnSecondary, padding: '6px 12px', fontSize: '0.8rem' }}>+ Add</button>
+                )}
+              </div>
+              <p style={{ color: '#64748b', fontSize: '0.82rem', lineHeight: 1.55, margin: '10px 0 18px' }}>
+                Investments not tracked by your broker — govt bonds, gold bonds, fixed deposits, etc. Include their <strong style={{ color: '#94a3b8' }}>current value in the holdings above</strong>. We only need the purchase amount &amp; date.
+              </p>
+
+              {manualEntries.length === 0 ? (
+                <button
+                  onClick={addManualEntry}
+                  style={{ width: '100%', padding: 14, border: '1.5px dashed rgba(255,255,255,0.1)', borderRadius: 10, color: '#475569', cursor: 'pointer', fontSize: '0.845rem', background: 'rgba(255,255,255,0.02)', textAlign: 'center' }}
+                >
+                  + Add an outside investment
+                </button>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {manualEntries.map((entry, idx) => (
+                    <div key={entry.id} style={{ ...innerCard, padding: '14px 16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#334155', flexShrink: 0 }}>#{idx + 1}</span>
+                        <input
+                          type="text"
+                          placeholder="Description (e.g. RBI Bond 2022)"
+                          value={entry.label}
+                          onChange={e => updateManualEntry(entry.id, 'label', e.target.value)}
+                          style={{ ...inputBase, flex: 1, padding: '7px 10px', fontSize: '0.845rem' }}
+                        />
+                        <button onClick={() => removeManualEntry(entry.id)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '1.2rem', lineHeight: 1, padding: 4, flexShrink: 0 }}>×</button>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <div>
+                          <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 5 }}>Amount invested (₹) *</label>
+                          <input
+                            type="number" placeholder="e.g. 10000"
+                            value={entry.amount}
+                            onChange={e => updateManualEntry(entry.id, 'amount', e.target.value)}
+                            style={{ ...inputBase, width: '100%', padding: '9px 11px', fontSize: '0.845rem', boxSizing: 'border-box' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 5 }}>Date of investment *</label>
+                          <input
+                            type="date"
+                            value={entry.date}
+                            max={new Date().toISOString().split('T')[0]}
+                            onChange={e => updateManualEntry(entry.id, 'date', e.target.value)}
+                            style={{ ...inputBase, width: '100%', padding: '9px 11px', fontSize: '0.845rem', boxSizing: 'border-box', colorScheme: 'dark' }}
+                          />
                         </div>
                       </div>
                     </div>

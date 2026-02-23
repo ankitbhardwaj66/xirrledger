@@ -17,6 +17,13 @@ Called from handler.py with:
         "holdings": float,
         "cash": float
       }
+    ],
+    "manual_entries": [              # optional — outside broker investments
+      {
+        "label": str,                # e.g. "RBI Bond 2022"
+        "amount": float,             # purchase amount (positive)
+        "date": str                  # ISO date "YYYY-MM-DD"
+      }
     ]
   }
 """
@@ -83,10 +90,11 @@ def _dedup_cross_file(df):
 # Main entry point
 # ─────────────────────────────────────────────────────────────
 def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket):
-    session_id = event["session_id"]
-    name       = event.get("name", "Investor")
-    email      = event.get("email", "")
-    accounts   = event.get("accounts", [])
+    session_id     = event["session_id"]
+    name           = event.get("name", "Investor")
+    email          = event.get("email", "")
+    accounts       = event.get("accounts", [])
+    manual_entries = event.get("manual_entries", [])
 
     def update_status(data):
         s3_client.put_object(
@@ -176,6 +184,22 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
         combined_inflows  = pd.concat(all_inflows, ignore_index=True) if all_inflows else pd.DataFrame(columns=["date", "amount"])
         combined_value    = sum(a["current_value"] for a in account_stats_list)
 
+        # ── Inject manual outside-broker investment entries ───
+        manual_rows = []
+        for me in manual_entries:
+            try:
+                amt = float(me.get("amount", 0))
+                dt  = str(me.get("date", "")).strip()
+                if amt > 0 and dt:
+                    manual_rows.append({"date": dt, "amount": -amt})
+            except (ValueError, TypeError):
+                continue
+        if manual_rows:
+            logger.info("Appending %d manual outside-investment entries", len(manual_rows))
+            combined_outflows = pd.concat(
+                [combined_outflows, pd.DataFrame(manual_rows)], ignore_index=True
+            )
+
         # ── Fetch Nifty 50 data from S3 cache ────────────────
         update_status({"status": "fetching", "message": "Loading Nifty 50 benchmark data..."})
         first_date = min(pd.to_datetime(combined_outflows["date"]))
@@ -193,7 +217,7 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
 
         # ── Generate PDF ──────────────────────────────────────
         update_status({"status": "report", "message": "Generating PDF report..."})
-        pdf_bytes = generate_pdf_report(individual_stats, combined_stats, name)
+        pdf_bytes = generate_pdf_report(individual_stats, combined_stats, name, manual_entries=manual_entries)
 
         pdf_key = f"reports/{session_id}/xirr_report.pdf"
         s3_client.put_object(
@@ -635,7 +659,7 @@ class _WatermarkCanvas(rl_canvas.Canvas):
         super().showPage()
 
 
-def generate_pdf_report(individual_stats, combined_stats, user_name):
+def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entries=None):
     buf = io.BytesIO()
     ML, MR = 36, 36
     page_w = A4[0] - ML - MR   # usable width ≈ 523 pt
@@ -750,6 +774,21 @@ def generate_pdf_report(individual_stats, combined_stats, user_name):
         ("TEXTCOLOR",   (1, 9), (1, 9),  colors.HexColor("#1a237e")),
     ]))
     elements.append(st)
+
+    # ── Manual entries note ───────────────────────────────────
+    if manual_entries:
+        valid_entries = [me for me in manual_entries if me.get("amount") and me.get("date")]
+        if valid_entries:
+            total_manual = sum(float(me["amount"]) for me in valid_entries)
+            lines = "  ".join(
+                f"{me.get('label', 'Investment')} — ₹{float(me['amount']):,.0f} on {me['date']}"
+                for me in valid_entries
+            )
+            elements.append(Paragraph(
+                f"Includes {len(valid_entries)} outside investment(s) totalling ₹{total_manual:,.0f} "
+                f"not tracked by the broker:  {lines}",
+                note_s
+            ))
 
     # ── Nifty 50 Benchmark Comparison ─────────────────────────
     elements.append(Paragraph("Nifty 50 Benchmark Comparison", h2_s))
