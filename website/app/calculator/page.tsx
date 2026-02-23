@@ -66,7 +66,7 @@ function formatPeriod(years: number | null): string {
 function getInsight(xirr: number | null, niftyXirr: number | null, years: number | null) {
   if (xirr == null || niftyXirr == null) return null;
   const period = years ?? 0;
-  const diff = (xirr - niftyXirr).toFixed(1);
+  const diff = (xirr - niftyXirr).toFixed(2);
   if (xirr >= niftyXirr) {
     return {
       Icon: FaTrophy,
@@ -1022,14 +1022,14 @@ export default function CalculatorPage() {
                   <div style={{ textAlign: 'center', padding: '22px 16px', background: 'rgba(245,158,11,0.08)', borderRadius: 12, border: `1.5px solid rgba(245,158,11,0.3)` }}>
                     <p style={{ margin: '0 0 6px', fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 1 }}>Your XIRR</p>
                     <p style={{ margin: 0, fontSize: '2.8rem', fontWeight: 900, color: GOLD, lineHeight: 1 }}>
-                      {results.xirr != null ? `${results.xirr.toFixed(1)}%` : 'N/A'}
+                      {results.xirr != null ? `${results.xirr.toFixed(2)}%` : 'N/A'}
                     </p>
                     <p style={{ margin: '5px 0 0', fontSize: '0.72rem', color: '#64748b' }}>annualised return</p>
                   </div>
                   <div style={{ textAlign: 'center', padding: '22px 16px', ...innerCard }}>
                     <p style={{ margin: '0 0 6px', fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 1 }}>Nifty 50 XIRR</p>
                     <p style={{ margin: 0, fontSize: '2.8rem', fontWeight: 900, color: '#64748b', lineHeight: 1 }}>
-                      {results.nifty_xirr != null ? `${results.nifty_xirr.toFixed(1)}%` : 'N/A'}
+                      {results.nifty_xirr != null ? `${results.nifty_xirr.toFixed(2)}%` : 'N/A'}
                     </p>
                     <p style={{ margin: '5px 0 0', fontSize: '0.72rem', color: '#475569' }}>same cash flows</p>
                   </div>
@@ -1043,11 +1043,11 @@ export default function CalculatorPage() {
                   }}>
                     {results.xirr >= results.nifty_xirr ? (
                       <p style={{ margin: 0, fontWeight: 700, color: '#10b981', fontSize: '0.9rem' }}>
-                        You beat Nifty 50 by {(results.xirr - results.nifty_xirr).toFixed(1)}% 🎉
+                        You beat Nifty 50 by {(results.xirr - results.nifty_xirr).toFixed(2)}% 🎉
                       </p>
                     ) : (
                       <p style={{ margin: 0, fontWeight: 700, color: GOLD, fontSize: '0.9rem' }}>
-                        Nifty 50 beat you by {(results.nifty_xirr - results.xirr).toFixed(1)}% — consider index funds
+                        Nifty 50 beat you by {(results.nifty_xirr - results.xirr).toFixed(2)}% — consider index funds
                       </p>
                     )}
                   </div>
