@@ -10,9 +10,9 @@ Called from handler.py with:
     "email": str,
     "accounts": [
       {
-        "broker": "zerodha" | "groww",
+        "broker": "zerodha" | "groww" | "fyers",
         "pan": str | None,
-        "pan_password": str | None,   # for Groww PDFs
+        "pan_password": str | None,   # for Groww PDFs (Fyers doesn't need this)
         "file_keys": [str],           # S3 keys in uploads bucket
         "holdings": float,
         "cash": float
@@ -122,6 +122,7 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
 
             account_outflows = []
             account_inflows  = []
+            fyers_client_id  = None
 
             for file_idx, s3_key in enumerate(file_keys):
                 logger.info("Downloading s3://%s/%s", uploads_bucket, s3_key)
@@ -129,10 +130,19 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                 file_bytes = obj["Body"].read()
                 file_name  = s3_key.split("/")[-1].lower()
 
-                if file_name.endswith(".csv"):
-                    out, inf = parse_zerodha_csv(file_bytes)
+                if broker == "fyers":
+                    if file_idx == 0:
+                        # Extract Client ID from CSV header (row 4: "Client ID,XS80867")
+                        for line in file_bytes.decode("utf-8-sig", errors="replace").splitlines()[:10]:
+                            parts = line.split(",", 1)
+                            if len(parts) == 2 and parts[0].strip() == "Client ID":
+                                fyers_client_id = parts[1].strip()
+                                break
+                    out, inf = parse_fyers_csv(file_bytes)
                 elif file_name.endswith(".pdf"):
                     out, inf = parse_groww_pdf(file_bytes, password=pan_password)
+                elif file_name.endswith(".csv"):
+                    out, inf = parse_zerodha_csv(file_bytes)
                 else:
                     logger.warning("Unsupported file type: %s", file_name)
                     continue
@@ -150,10 +160,10 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             acc_out = pd.concat(account_outflows, ignore_index=True)
             acc_inf = pd.concat(account_inflows, ignore_index=True) if account_inflows else pd.DataFrame(columns=["date", "amount", "_file_idx"])
 
-            # For Groww accounts with multiple files: remove cross-file duplicates only.
+            # For Groww/Fyers accounts with multiple files: remove cross-file duplicates only.
             # Entries on the same date within the same file are legitimate and kept.
             # Zerodha always has one file per account so no dedup needed there.
-            if broker == "groww" and len(account_outflows) > 1:
+            if broker in ("groww", "fyers") and len(account_outflows) > 1:
                 acc_out = _dedup_cross_file(acc_out)
                 acc_inf = _dedup_cross_file(acc_inf)
             else:
@@ -170,8 +180,17 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                 m = re.search(r'ledger[_\-](.+?)\.csv', fname, re.IGNORECASE)
                 zerodha_acct = m.group(1) if m else None
 
+            if broker == "fyers":
+                acct_name = f"Fyers ({fyers_client_id})" if fyers_client_id else "Fyers"
+            elif pan:
+                acct_name = f"Groww ({pan})"
+            elif zerodha_acct:
+                acct_name = f"Zerodha ({zerodha_acct})"
+            else:
+                acct_name = broker.capitalize() if broker else "Unknown"
+
             account_stats_list.append({
-                "name": f"Groww ({pan})" if pan else (f"Zerodha ({zerodha_acct})" if zerodha_acct else "Zerodha"),
+                "name": acct_name,
                 "outflows": acc_out,
                 "inflows": acc_inf,
                 "current_value": current_value,
@@ -428,6 +447,77 @@ def parse_groww_pdf(file_bytes, password=None):
 
     outflows = pd.DataFrame(all_deposits) if all_deposits else pd.DataFrame(columns=["date", "amount"])
     inflows  = pd.DataFrame(all_withdrawals) if all_withdrawals else pd.DataFrame(columns=["date", "amount"])
+    return outflows, inflows
+
+
+def parse_fyers_csv(file_bytes):
+    """
+    Parse Fyers ledger CSV.
+    Format: metadata rows (Client Name, Client ID, PAN, etc.) followed by a blank line,
+    then summary rows, then the data table starting with:
+      Date, Transaction type, Description, Debit amount, Credit amount, Running balance
+
+    Outflows  = "Funds added"    rows  → Credit amount (negated)
+    Inflows   = "Funds withdrawn" rows → Debit amount
+    """
+    text = file_bytes.decode("utf-8-sig", errors="replace")
+    lines = text.splitlines()
+
+    # Find the data header row (contains both 'Transaction type' and 'Debit amount')
+    header_row_idx = None
+    for i, line in enumerate(lines):
+        if "Transaction type" in line and "Debit amount" in line:
+            header_row_idx = i
+            break
+
+    if header_row_idx is None:
+        raise ValueError("Could not find data header in Fyers CSV — is this a valid Fyers ledger file?")
+
+    data_text = "\n".join(lines[header_row_idx:])
+    df = pd.read_csv(io.StringIO(data_text))
+    df.columns = [c.strip() for c in df.columns]
+
+    required = ["Date", "Transaction type", "Debit amount", "Credit amount"]
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        raise ValueError(f"Fyers CSV missing columns: {missing}")
+
+    df = df.dropna(subset=["Date"])
+    df = df[df["Date"].astype(str).str.strip() != ""]
+
+    outflows_list = []
+    inflows_list  = []
+
+    for _, row in df.iterrows():
+        txn_type = str(row.get("Transaction type", "")).strip().lower()
+        date_raw = str(row.get("Date", "")).strip()
+
+        try:
+            date_str = datetime.strptime(date_raw, "%d %b %Y").strftime("%Y-%m-%d")
+        except Exception:
+            continue
+
+        if txn_type == "funds added":
+            try:
+                amt = float(str(row["Credit amount"]).replace(",", "").strip())
+                if amt > 0:
+                    outflows_list.append({"date": date_str, "amount": -amt})
+            except (ValueError, TypeError):
+                pass
+        elif txn_type == "funds withdrawn":
+            try:
+                amt = float(str(row["Debit amount"]).replace(",", "").strip())
+                if amt > 0:
+                    inflows_list.append({"date": date_str, "amount": amt})
+            except (ValueError, TypeError):
+                pass
+
+    outflows = pd.DataFrame(outflows_list) if outflows_list else pd.DataFrame(columns=["date", "amount"])
+    inflows  = pd.DataFrame(inflows_list)  if inflows_list  else pd.DataFrame(columns=["date", "amount"])
+
+    if len(outflows) == 0:
+        raise ValueError("No 'Funds added' entries found in Fyers CSV.")
+
     return outflows, inflows
 
 

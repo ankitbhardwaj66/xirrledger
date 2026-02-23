@@ -17,14 +17,14 @@ interface User {
 
 interface UploadedFile {
   file: File;
-  broker: 'zerodha' | 'groww' | 'unknown';
+  broker: 'zerodha' | 'groww' | 'fyers' | 'unknown';
   hash: string;
 }
 
 interface Account {
   id: string;
   name: string;
-  broker: 'zerodha' | 'groww';
+  broker: 'zerodha' | 'groww' | 'fyers';
   fileNames: string[];
   holdings: string;
   cash: string;
@@ -125,11 +125,17 @@ async function hashFile(file: File): Promise<string> {
     .slice(0, 16);
 }
 
-function detectBroker(file: File): 'zerodha' | 'groww' | 'unknown' {
+function detectBroker(file: File): 'zerodha' | 'groww' | 'fyers' | 'unknown' {
   const name = file.name.toLowerCase();
+  if (name.startsWith('fyers_')) return 'fyers';
   if (file.type === 'text/csv' || name.endsWith('.csv')) return 'zerodha';
   if (file.type === 'application/pdf' || name.endsWith('.pdf')) return 'groww';
   return 'unknown';
+}
+
+function extractFyersClientId(filename: string): string {
+  const m = filename.match(/FYERS_ledger_([^_]+)_/i);
+  return m ? m[1] : filename.replace(/\.csv$/i, '');
 }
 
 function formatINR(amount: number): string {
@@ -148,6 +154,25 @@ function buildAccounts(files: UploadedFile[], filePans: Record<string, string>, 
       name: `Zerodha — ${f.file.name.replace(/\.csv$/i, '')}`,
       broker: 'zerodha',
       fileNames: [f.file.name],
+      holdings: prev?.holdings ?? '',
+      cash: prev?.cash ?? '',
+    });
+  });
+
+  // Fyers: group by Client ID extracted from filename
+  const fyersByClientId: Record<string, string[]> = {};
+  files.filter(f => f.broker === 'fyers').forEach(f => {
+    const clientId = extractFyersClientId(f.file.name);
+    if (!fyersByClientId[clientId]) fyersByClientId[clientId] = [];
+    fyersByClientId[clientId].push(f.file.name);
+  });
+  Object.entries(fyersByClientId).forEach(([clientId, fileNames]) => {
+    const prev = existingMap.get(clientId);
+    accounts.push({
+      id: clientId,
+      name: `Fyers — ${clientId} (${fileNames.length} file${fileNames.length > 1 ? 's' : ''})`,
+      broker: 'fyers',
+      fileNames,
       holdings: prev?.holdings ?? '',
       cash: prev?.cash ?? '',
     });
@@ -624,7 +649,7 @@ export default function CalculatorPage() {
 
               {/* Download guide link */}
               <div style={{ marginBottom: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569' }}>Zerodha CSV &amp; Groww PDF files supported</p>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569' }}>Zerodha CSV, Groww PDF &amp; Fyers CSV supported</p>
                 <button
                   onClick={() => setShowDownloadGuide(true)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: GOLD, fontSize: '0.82rem', fontWeight: 600, padding: 0 }}
@@ -654,7 +679,7 @@ export default function CalculatorPage() {
                   Drop files here or click to browse
                 </p>
                 <p style={{ color: '#334155', fontSize: '0.78rem', margin: 0 }}>
-                  Zerodha CSV and Groww PDF files supported
+                  Zerodha CSV, Groww PDF and Fyers CSV supported
                 </p>
                 <input ref={fileInputRef} type="file" multiple accept=".csv,.pdf"
                   onChange={e => e.target.files && addFiles(e.target.files)} style={{ display: 'none' }} />
@@ -673,16 +698,16 @@ export default function CalculatorPage() {
                       <div style={{
                         width: 32, height: 32, borderRadius: 7, flexShrink: 0,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: f.broker === 'zerodha' ? 'rgba(16,185,129,0.15)' : f.broker === 'groww' ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.06)',
+                        background: f.broker === 'zerodha' ? 'rgba(16,185,129,0.15)' : f.broker === 'groww' ? 'rgba(245,158,11,0.15)' : f.broker === 'fyers' ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.06)',
                         fontSize: '0.65rem', fontWeight: 700,
-                        color: f.broker === 'zerodha' ? '#10b981' : f.broker === 'groww' ? GOLD : '#64748b',
+                        color: f.broker === 'zerodha' ? '#10b981' : f.broker === 'groww' ? GOLD : f.broker === 'fyers' ? '#818cf8' : '#64748b',
                       }}>
-                        {f.broker === 'zerodha' ? 'CSV' : f.broker === 'groww' ? 'PDF' : '?'}
+                        {f.broker === 'zerodha' ? 'CSV' : f.broker === 'groww' ? 'PDF' : f.broker === 'fyers' ? 'CSV' : '?'}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.file.name}</p>
                         <p style={{ margin: 0, fontSize: '0.75rem', color: '#475569', textTransform: 'capitalize' }}>
-                          {f.broker === 'unknown' ? 'Unknown file type' : `${f.broker} · ${(f.file.size / 1024).toFixed(0)} KB`}
+                          {f.broker === 'unknown' ? 'Unknown file type' : f.broker === 'fyers' ? `Fyers · ${(f.file.size / 1024).toFixed(0)} KB` : `${f.broker} · ${(f.file.size / 1024).toFixed(0)} KB`}
                         </p>
                       </div>
                       <button onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: 4, fontSize: '1.2rem', lineHeight: 1 }}>×</button>
@@ -825,13 +850,13 @@ export default function CalculatorPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                         <div style={{
                           padding: '2px 9px', borderRadius: 20, fontSize: '0.68rem', fontWeight: 700,
-                          background: account.broker === 'zerodha' ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)',
-                          color: account.broker === 'zerodha' ? '#10b981' : GOLD,
+                          background: account.broker === 'zerodha' ? 'rgba(16,185,129,0.12)' : account.broker === 'fyers' ? 'rgba(99,102,241,0.12)' : 'rgba(245,158,11,0.12)',
+                          color: account.broker === 'zerodha' ? '#10b981' : account.broker === 'fyers' ? '#818cf8' : GOLD,
                         }}>
-                          {account.broker === 'zerodha' ? 'ZERODHA' : 'GROWW'}
+                          {account.broker === 'zerodha' ? 'ZERODHA' : account.broker === 'fyers' ? 'FYERS' : 'GROWW'}
                         </div>
                         <p style={{ margin: 0, fontWeight: 700, fontSize: '0.875rem', color: '#e2e8f0' }}>
-                          {account.name.replace(/^(Zerodha|Groww) — /, '')}
+                          {account.name.replace(/^(Zerodha|Groww|Fyers) — /, '')}
                         </p>
                         {account.fileNames.length > 1 && (
                           <span style={{ marginLeft: 'auto', fontSize: '0.72rem', color: '#334155' }}>
@@ -1207,6 +1232,34 @@ export default function CalculatorPage() {
                 <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>✓ File type: PDF &nbsp;·&nbsp; Password: your PAN (uppercase)</p>
                   <p style={{ fontSize: '0.78rem', color: '#92400e', margin: 0 }}>⚠ Download one PDF per year for the full period</p>
+                </div>
+              </div>
+
+              {/* Fyers */}
+              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(99,102,241,0.18)', borderRadius: 14, padding: '22px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 800, color: '#818cf8' }}>F</div>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 700, color: '#ffffff', fontSize: '0.95rem' }}>Fyers</p>
+                    <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>CSV format · one per year</p>
+                  </div>
+                </div>
+                {[
+                  <>Log in to <strong style={{ color: '#e2e8f0' }}>Fyers</strong></>,
+                  <>Go to <strong style={{ color: '#e2e8f0' }}>Reports → Ledger</strong></>,
+                  <>Select the <strong style={{ color: '#e2e8f0' }}>Financial Year</strong></>,
+                  <>Click <strong style={{ color: '#e2e8f0' }}>Generate</strong></>,
+                  <>Click <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></>,
+                  <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
+                ].map((item, i, arr) => (
+                  <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 12 : 0 }}>
+                    <span style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#818cf8', width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
+                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0, lineHeight: 1.6 }}>{item}</p>
+                  </div>
+                ))}
+                <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>✓ File type: CSV &nbsp;·&nbsp; Password: not required</p>
+                  <p style={{ fontSize: '0.78rem', color: '#92400e', margin: 0 }}>⚠ Download one CSV per year for the full period</p>
                 </div>
               </div>
 
