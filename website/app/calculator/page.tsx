@@ -869,9 +869,9 @@ export default function CalculatorPage() {
                         <div>
                           <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 5 }}>Current holdings value (₹) *</label>
                           <input
-                            type="number" placeholder="e.g. 350000"
+                            type="number" placeholder="e.g. 350000" min="0"
                             value={account.holdings}
-                            onChange={e => updateAccount(account.id, 'holdings', e.target.value)}
+                            onChange={e => updateAccount(account.id, 'holdings', e.target.value.replace('-', ''))}
                             style={{
                               ...inputBase, width: '100%', padding: '9px 11px', fontSize: '0.845rem', boxSizing: 'border-box',
                               border: account.holdings ? `1.5px solid rgba(245,158,11,0.4)` : '1.5px solid rgba(255,255,255,0.1)',
@@ -883,9 +883,9 @@ export default function CalculatorPage() {
                         <div>
                           <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 5 }}>Available cash (₹)</label>
                           <input
-                            type="number" placeholder="e.g. 12000"
+                            type="number" placeholder="e.g. 12000" min="0"
                             value={account.cash}
-                            onChange={e => updateAccount(account.id, 'cash', e.target.value)}
+                            onChange={e => updateAccount(account.id, 'cash', e.target.value.replace('-', ''))}
                             style={{ ...inputBase, width: '100%', padding: '9px 11px', fontSize: '0.845rem', boxSizing: 'border-box' }}
                           />
                           <p style={{ margin: '3px 0 0', fontSize: '0.68rem', color: '#334155' }}>Cash in broker account</p>
