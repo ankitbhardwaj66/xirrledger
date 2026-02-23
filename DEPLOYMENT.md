@@ -17,7 +17,7 @@
 │                   S3                                        │
 │             ├── xirrledger-uploads/   (ledger files, 24h)   │
 │             ├── xirrledger-jobs/      (status.json + Nifty) │
-│             └── xirrledger-reports/   (PDF reports, 7d URL) │
+│             └── xirrledger-reports/   (PDF reports, 24h URL) │
 │                    ↕                                        │
 │                   SES  (email report on completion)         │
 └─────────────────────────────────────────────────────────────┘
@@ -58,7 +58,7 @@
   - `prose-invert` Tailwind class for MDX blog post body on dark background
 - **Navigation**: active page highlighting via `usePathname()` (gold underline / left border on mobile); mobile menu auto-collapses on tap
 - **Footer**: disclaimer text made visible (`#64748b` + bordered pill style)
-- **Hero section**: green privacy badge — "We never store your financial data — reports are auto-deleted 15 min after creation"
+- **Hero section**: green privacy badge — "We never store your financial data."
 - **Sample PDF** (`/sample_report.pdf`): replaced with real Lambda-generated report (realistic 2-account data, 19.6% XIRR vs 12.3% Nifty)
 
 ### Calculator (`/calculator`)
@@ -80,9 +80,13 @@
   - **To revert if removed:** `git revert 78c464b` then redeploy Lambda
 - "How to download?" link opens a modal with full Groww + Zerodha step-by-step guide (replaces old cluttered text box)
 - Async processing with animated progress steps
-- Results: XIRR vs Nifty 50, investment period, contextual insight card
+- Results: XIRR vs Nifty 50, portfolio stats (total invested, current value, net gain, investment period), contextual insight card
 - Results disclaimer: "This report assumes all investments were made exclusively through the provided account statements."
-- PDF report opens in new tab (presigned S3 URL, 7-day expiry)
+- **Edit Holdings button** on results page — returns to Step 3 with all data preserved (files, PANs, values); user edits and recalculates
+- **Stop & Edit Holdings button** on processing page — cancels polling, returns to Step 3 with all data preserved
+- XIRR / Nifty figures shown to 2 decimal places (`.toFixed(2)`) matching email precision
+- FaTrophy icon replaces 🎉 emoji on "beat Nifty" line
+- PDF report opens in new tab (presigned S3 URL, **24-hour** expiry)
 - Step 1 subtitle: "We will email you the report too" (concise, no extra header bar)
 
 ### Lambda
@@ -96,7 +100,7 @@
   - Nifty 50 comparison (reads from S3 daily cache — no yfinance on user requests)
   - PDF report generation (ReportLab) with watermark, KPI banner, Nifty comparison, outside investments note
   - Status polling via S3 jobs bucket (public read)
-  - Email via SES on completion
+  - Email via SES on completion — full results in email (XIRR, Nifty, stats grid, insight card)
   - PHP bridge notification on completion
 - `refresher.py` — downloads full `^NSEI` history from yfinance, saves to S3
   - Triggered daily by EventBridge at 6:00 AM IST (00:30 UTC)
@@ -111,7 +115,7 @@
 - 4 S3 buckets with lifecycle rules
 - IAM role with S3 + SES + self-invoke permissions
 - EventBridge rule for daily Nifty refresh
-- SES domain identity (verified), email template `xirrledger-report-ready`
+- SES domain identity (verified), email template `xirrledger-report-ready` (Navy + Gold theme, full results data)
 - CloudWatch log groups (7-day retention)
 
 ---
@@ -144,12 +148,6 @@
 - UI: a simple table on the upload/details step — "Add entry" button, date picker, amount (+/-), label/note
 - Useful for: SIPs via bank mandate, lump-sum top-ups, external portfolio transfers not captured in broker files
 - Implementation: frontend collects these as a JSON array; Lambda merges them into the cash flow list before running XIRR
-
-### 4. Edit Holdings on Results Page to Re-generate Report
-- On the results page, allow users to edit their current holding values (e.g. tweak market value of each stock/fund)
-- "Recalculate" button re-runs the XIRR computation with the updated values without re-uploading files
-- Useful for: correcting incorrect valuations, running "what-if" scenarios (e.g. if I sell today at X price), adjusting for unlisted/illiquid assets
-- Implementation: store the parsed holdings in `status.json` alongside XIRR results; frontend renders editable fields from that; on recalculate, POST updated holdings to a new `/recalculate` Lambda endpoint that re-runs only the final XIRR step (skip file parsing)
 
 ### 3. More Benchmark Indices
 - Currently comparing only against Nifty 50 (`^NSEI`)
@@ -236,3 +234,5 @@ AWS_PROFILE=ankit aws logs tail /aws/lambda/xirr-processor --follow --region ap-
 |---|---|---|
 | Outside Investments (manual entries) | `78c464b` | `git revert 78c464b` + redeploy Lambda |
 | Download guide modal (Step 2) | `aee2138` | `git revert aee2138` |
+| Edit Holdings / Stop & Edit buttons | `ae7d792` | `git revert ae7d792` |
+| Full results data in email | `d20e8fb` | `git revert d20e8fb` + update SES template |
