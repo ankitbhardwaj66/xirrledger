@@ -924,25 +924,121 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
 # ─────────────────────────────────────────────────────────────
 def send_report_email(name, email, stats, report_url):
     try:
-        xirr  = f"{stats['xirr']:.2f}" if stats.get("xirr") is not None else "N/A"
-        nifty = f"{stats['nifty_xirr']:.2f}" if stats.get("nifty_xirr") is not None else "N/A"
+        xirr_val  = stats.get("xirr")
+        nifty_val = stats.get("nifty_xirr")
+        xirr  = f"{xirr_val:.2f}"  if xirr_val  is not None else "N/A"
+        nifty = f"{nifty_val:.2f}" if nifty_val is not None else "N/A"
 
-        if stats.get("xirr") is not None and stats.get("nifty_xirr") is not None:
-            diff = stats["xirr"] - stats["nifty_xirr"]
-            vs_nifty = f"Beat Nifty 50 by {diff:.2f}%" if diff > 0 else f"Missed Nifty 50 by {abs(diff):.2f}%"
+        # ── vs Nifty ──────────────────────────────────────────
+        diff = (xirr_val - nifty_val) if (xirr_val is not None and nifty_val is not None) else None
+        if diff is not None and diff > 0:
+            vs_nifty        = f"Beat Nifty 50 by {diff:.2f}%"
+            vs_nifty_color  = "#10b981"
+            vs_nifty_bg     = "#0b2418"
+            vs_nifty_border = "#10b981"
+        elif diff is not None:
+            vs_nifty        = f"Missed Nifty 50 by {abs(diff):.2f}%"
+            vs_nifty_color  = "#f59e0b"
+            vs_nifty_bg     = "#1c1400"
+            vs_nifty_border = "#f59e0b"
         else:
-            vs_nifty = "N/A"
+            vs_nifty        = "N/A"
+            vs_nifty_color  = "#64748b"
+            vs_nifty_bg     = "#1e293b"
+            vs_nifty_border = "#334155"
+
+        # ── Format INR (Indian grouping, ₹ prefix, no decimals) ──
+        def _e_inr(val):
+            s = str(round(abs(float(val or 0))))
+            if len(s) <= 3:
+                return f"\u20b9{s}"
+            result, s = s[-3:], s[:-3]
+            while s:
+                result, s = s[-2:] + "," + result, s[:-2]
+            return f"\u20b9{result}"
+
+        total_invested = _e_inr(stats.get("total_invested", 0))
+        current_value  = _e_inr(stats.get("current_value",  0))
+        net_gain_val   = stats.get("net_gain", 0)
+        net_gain       = ("+" if net_gain_val >= 0 else "-") + _e_inr(net_gain_val)
+        net_gain_color = "#10b981" if net_gain_val >= 0 else "#ef4444"
+
+        # ── Investment period ─────────────────────────────────
+        years = stats.get("investment_period_years")
+        if years:
+            y, m = int(years), round((years - int(years)) * 12)
+            period = (f"{m}mo" if y == 0 else f"{y}yr" if m == 0 else f"{y}yr {m}mo")
+        else:
+            period = "N/A"
+
+        # ── Insight card ──────────────────────────────────────
+        period_yrs = years or 0
+        if xirr_val is not None and nifty_val is not None:
+            if xirr_val >= nifty_val:
+                suffix = (f" \u2014 {int(period_yrs)} years of disciplined investing is paying off"
+                          if period_yrs >= 5 else "")
+                insight_icon        = "\U0001f3c6"   # 🏆
+                insight_title       = f"You beat Nifty 50 by {diff:.2f}%!"
+                insight_body        = (f"Congratulations{suffix}! You're outperforming the benchmark "
+                                       "that beats most professional fund managers. Keep it up!")
+                insight_bg          = "#0b2418"
+                insight_border      = "#10b981"
+                insight_title_color = "#10b981"
+                insight_body_color  = "#6ee7b7"
+            elif period_yrs < 5:
+                insight_icon        = "\U0001f4aa"   # 💪
+                insight_title       = "Keep building your skills!"
+                insight_body        = (f"You're {period} into your investing journey. Nifty 50 is a tough "
+                                       "benchmark \u2014 many investors only start beating it after 5+ years "
+                                       "of experience. Stay consistent!")
+                insight_bg          = "#1c1400"
+                insight_border      = "#f59e0b"
+                insight_title_color = "#f59e0b"
+                insight_body_color  = "#fcd34d"
+            else:
+                insight_icon        = "\U0001f4c8"   # 📈
+                insight_title       = "Consider shifting to index funds."
+                insight_body        = (f"After {period}, Nifty 50 has consistently outperformed your "
+                                       f"portfolio by {abs(diff):.2f}%. Index funds match the market "
+                                       "automatically \u2014 it may be the smarter long-term move.")
+                insight_bg          = "#1a0a0a"
+                insight_border      = "#ef4444"
+                insight_title_color = "#ef4444"
+                insight_body_color  = "#fca5a5"
+        else:
+            insight_icon        = "\u2139\ufe0f"  # ℹ️
+            insight_title       = "Analysis complete."
+            insight_body        = "Open your PDF report for the full breakdown."
+            insight_bg          = "#1e293b"
+            insight_border      = "#1e3a5f"
+            insight_title_color = "#94a3b8"
+            insight_body_color  = "#64748b"
 
         ses.send_templated_email(
             Source=SES_FROM_EMAIL,
             Destination={"ToAddresses": [email]},
             Template="xirrledger-report-ready",
             TemplateData=json.dumps({
-                "name":       name,
-                "xirr":       xirr,
-                "nifty_xirr": nifty,
-                "vs_nifty":   vs_nifty,
-                "report_url": report_url,
+                "name":               name,
+                "xirr":               xirr,
+                "nifty_xirr":         nifty,
+                "vs_nifty":           vs_nifty,
+                "vs_nifty_color":     vs_nifty_color,
+                "vs_nifty_bg":        vs_nifty_bg,
+                "vs_nifty_border":    vs_nifty_border,
+                "report_url":         report_url,
+                "total_invested":     total_invested,
+                "current_value":      current_value,
+                "net_gain":           net_gain,
+                "net_gain_color":     net_gain_color,
+                "investment_period":  period,
+                "insight_icon":       insight_icon,
+                "insight_title":      insight_title,
+                "insight_body":       insight_body,
+                "insight_bg":         insight_bg,
+                "insight_border":     insight_border,
+                "insight_title_color": insight_title_color,
+                "insight_body_color":  insight_body_color,
             }),
         )
         logger.info("Email sent to %s", email)
