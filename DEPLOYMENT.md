@@ -40,7 +40,7 @@
 | File storage | AWS S3 (4 buckets) | ✅ Live |
 | Email | AWS SES | ✅ Verified (domain + DKIM + MAIL FROM) |
 | Nifty 50 cache | S3 daily refresh via EventBridge | ✅ Live (4,500+ rows) |
-| User DB | MySQL on Hostinger via PHP bridge | 🔲 PHP deployed — MySQL setup pending |
+| User DB | MySQL on Hostinger via PHP bridge | ✅ Live |
 | NEXT_PUBLIC_API_URL | Baked into build via `.env.production` | ✅ Done |
 
 ---
@@ -117,33 +117,6 @@
 ---
 
 ## What's Pending 🔲
-
-### MySQL Setup on Hostinger
-1. Create a MySQL database in Hostinger control panel
-2. SSH/FTP to Hostinger and edit `/public_html/api/config.php`:
-```php
-define('DB_NAME', 'your_db_name');
-define('DB_USER', 'your_db_user');
-define('DB_PASS', 'your_db_password');
-define('API_SECRET', 'same_as_hostinger_api_secret_in_tfvars');
-```
-3. Run the schema:
-```sql
-CREATE TABLE xirr_sessions (
-  id            INT AUTO_INCREMENT PRIMARY KEY,
-  session_id    VARCHAR(64) UNIQUE NOT NULL,
-  google_id     VARCHAR(128),
-  name          VARCHAR(100),
-  email         VARCHAR(100),
-  broker        VARCHAR(20),
-  status        VARCHAR(20) DEFAULT 'pending',
-  xirr          DECIMAL(8,4),
-  nifty_xirr    DECIMAL(8,4),
-  report_url    TEXT,
-  created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
-  completed_at  DATETIME
-);
-```
 
 ### Phase 6 — Returning Users
 - Look up user by `google_id` or `email` on sign-in
