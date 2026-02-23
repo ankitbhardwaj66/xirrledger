@@ -601,7 +601,7 @@ export default function CalculatorPage() {
                   <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Zerodha:</span> Funds → View Statement → All Segments → set date range → blue arrow → CSV
                 </p>
                 <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '2px 0' }}>
-                  <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Groww:</span> Profile → Reports → Account Statement → Download PDF
+                  <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Groww:</span> Profile icon → Stocks, F&O balance → All Transactions → Download statement → select date range → Download
                 </p>
                 <p style={{ fontSize: '0.78rem', color: '#475569', marginTop: 6 }}>You can upload multiple files — across brokers and years</p>
               </div>
