@@ -998,6 +998,14 @@ export default function CalculatorPage() {
                   </div>
                 ))}
               </div>
+
+              <button onClick={() => {
+                if (pollingRef.current) clearInterval(pollingRef.current);
+                setProcessingSteps(PROCESSING_STEPS.map(s => ({ ...s, status: 'pending' as const })));
+                setStep('details');
+              }} style={{ ...btnSecondary, width: '100%', padding: '11px', marginTop: 24, fontSize: '0.85rem' }}>
+                ← Stop &amp; Edit Holdings
+              </button>
             </div>
           </div>
         )}
