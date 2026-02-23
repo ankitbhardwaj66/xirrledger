@@ -223,6 +223,7 @@ export default function CalculatorPage() {
   const [manualName, setManualName] = useState('');
   const [manualEmail, setManualEmail] = useState('');
   const [authError, setAuthError] = useState('');
+  const [showDownloadGuide, setShowDownloadGuide] = useState(false);
   const [processingError, setProcessingError] = useState('');
   const googleBtnRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -594,16 +595,16 @@ export default function CalculatorPage() {
                 </div>
               </div>
 
-              {/* Info box */}
-              <div style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)', borderRadius: 10, padding: '14px 16px', marginBottom: 22 }}>
-                <p style={{ fontSize: '0.82rem', fontWeight: 700, color: GOLD, margin: '0 0 6px' }}>How to download your ledger:</p>
-                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '2px 0' }}>
-                  <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Zerodha:</span> Funds → View Statement → All Segments → set date range → blue arrow → CSV
-                </p>
-                <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '2px 0' }}>
-                  <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Groww:</span> Profile icon → Stocks, F&O balance → All Transactions → Download statement → select date range → Download
-                </p>
-                <p style={{ fontSize: '0.78rem', color: '#475569', marginTop: 6 }}>You can upload multiple files — across brokers and years</p>
+              {/* Download guide link */}
+              <div style={{ marginBottom: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569' }}>Zerodha CSV &amp; Groww PDF files supported</p>
+                <button
+                  onClick={() => setShowDownloadGuide(true)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: GOLD, fontSize: '0.82rem', fontWeight: 600, padding: 0 }}
+                >
+                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                  How to download?
+                </button>
               </div>
 
               {/* Drop zone */}
@@ -1021,6 +1022,86 @@ export default function CalculatorPage() {
         )}
 
       </div>
+
+      {/* ── Download Guide Modal ── */}
+      {showDownloadGuide && (
+        <div
+          onClick={() => setShowDownloadGuide(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backdropFilter: 'blur(4px)' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, width: '100%', maxWidth: 720, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}
+          >
+            {/* Modal header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+              <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>How to download your ledger</h2>
+              <button onClick={() => setShowDownloadGuide(false)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', cursor: 'pointer', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 300 }}>×</button>
+            </div>
+
+            {/* Modal body */}
+            <div style={{ padding: '24px 28px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+
+              {/* Zerodha */}
+              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: 14, padding: '22px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 800, color: GOLD }}>Z</div>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 700, color: '#ffffff', fontSize: '0.95rem' }}>Zerodha</p>
+                    <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>CSV format</p>
+                  </div>
+                </div>
+                {[
+                  <>Log in to <strong style={{ color: '#e2e8f0' }}>Zerodha Console</strong></>,
+                  <>Go to <strong style={{ color: '#e2e8f0' }}>Funds → View Statement</strong></>,
+                  <>Select <strong style={{ color: '#e2e8f0' }}>All Segments</strong> as category</>,
+                  <>Set date range <strong style={{ color: '#e2e8f0' }}>(first investment till today)</strong></>,
+                  <>Click the <strong style={{ color: '#e2e8f0' }}>blue arrow →</strong> then click <strong style={{ color: '#e2e8f0' }}>CSV</strong></>,
+                ].map((item, i, arr) => (
+                  <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 12 : 0 }}>
+                    <span style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', color: GOLD, width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
+                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0, lineHeight: 1.6 }}>{item}</p>
+                  </div>
+                ))}
+                <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>✓ File type: CSV &nbsp;·&nbsp; Password: not required</p>
+                </div>
+              </div>
+
+              {/* Groww */}
+              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(16,185,129,0.18)', borderRadius: 14, padding: '22px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 800, color: '#10b981' }}>G</div>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 700, color: '#ffffff', fontSize: '0.95rem' }}>Groww</p>
+                    <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>PDF format · one per year</p>
+                  </div>
+                </div>
+                {[
+                  <>Log in to <strong style={{ color: '#e2e8f0' }}>Groww</strong></>,
+                  <>Click your <strong style={{ color: '#e2e8f0' }}>profile icon</strong> (top right)</>,
+                  <>Click <strong style={{ color: '#e2e8f0' }}>Stocks, F&amp;O balance</strong></>,
+                  <>Click <strong style={{ color: '#e2e8f0' }}>All Transactions</strong></>,
+                  <>Click <strong style={{ color: '#e2e8f0' }}>Download statement</strong> (top right button)</>,
+                  <>Select <strong style={{ color: '#e2e8f0' }}>date range</strong> (max 1 year) → click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
+                  <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
+                ].map((item, i, arr) => (
+                  <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 12 : 0 }}>
+                    <span style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#10b981', width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
+                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0, lineHeight: 1.6 }}>{item}</p>
+                  </div>
+                ))}
+                <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>✓ File type: PDF &nbsp;·&nbsp; Password: your PAN (uppercase)</p>
+                  <p style={{ fontSize: '0.78rem', color: '#92400e', margin: 0 }}>⚠ Download one PDF per year for the full period</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
