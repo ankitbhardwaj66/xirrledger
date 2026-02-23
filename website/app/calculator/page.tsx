@@ -1088,9 +1088,9 @@ export default function CalculatorPage() {
             </div>
 
             {/* Action buttons */}
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <a href={results.report_url} target="_blank" rel="noopener noreferrer" style={{
-                flex: 2, padding: '14px', background: GOLD, color: '#0a1020', borderRadius: 10,
+                padding: '14px', background: GOLD, color: '#0a1020', borderRadius: 10,
                 fontWeight: 700, fontSize: '0.95rem', textAlign: 'center', textDecoration: 'none',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               }}>
@@ -1099,9 +1099,21 @@ export default function CalculatorPage() {
                 </svg>
                 Download PDF Report
               </a>
-              <button onClick={resetAll} style={{ ...btnSecondary, flex: 1, padding: 14, fontSize: '0.9rem' }}>
-                New Calculation
-              </button>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => {
+                  setProcessingSteps(PROCESSING_STEPS.map(s => ({ ...s, status: 'pending' as const })));
+                  setResults(null);
+                  setStep('details');
+                }} style={{ ...btnSecondary, flex: 1, padding: 14, fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit Holdings
+                </button>
+                <button onClick={resetAll} style={{ ...btnSecondary, flex: 1, padding: 14, fontSize: '0.9rem' }}>
+                  New Calculation
+                </button>
+              </div>
             </div>
 
             <p style={{ textAlign: 'center', color: '#334155', fontSize: '0.76rem', marginTop: 14 }}>
