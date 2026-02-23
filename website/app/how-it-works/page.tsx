@@ -16,7 +16,7 @@ const steps = [
   {
     icon: <FaDownload size={22} color={GOLD} />,
     title: 'Download Your Ledger',
-    description: 'Export your trading ledger from your broker\'s website. For Zerodha, download the CSV from Funds → View Statement. For Groww, download PDF statements for each year. For Fyers, go to Funds → Transaction History and download CSV (covers up to 3 years per file).',
+    description: 'Export your trading ledger from your broker\'s website. For Zerodha, download the CSV from Funds → View Statement. For Groww, download PDF statements for each year. For Fyers, go to Reports → Ledger and download one CSV per financial year.',
     note: 'Tip: Select the full date range — from your first investment till today — for accurate results.',
   },
   {
@@ -226,11 +226,11 @@ export default function HowItWorks() {
 
               {[
                 <>Log in to <strong style={{ color: '#e2e8f0' }}>Fyers</strong></>,
-                <>Go to <strong style={{ color: '#e2e8f0' }}>Funds → Transaction History</strong></>,
-                <>Click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
-                <>Select <strong style={{ color: '#e2e8f0' }}>start and end date</strong> (up to 3 years per file)</>,
-                <>Click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
-                <>If investing for <strong style={{ color: '#e2e8f0' }}>over 3 years</strong>, repeat for the earlier period</>,
+                <>Go to <strong style={{ color: '#e2e8f0' }}>Reports → Ledger</strong></>,
+                <>Select the <strong style={{ color: '#e2e8f0' }}>Financial Year</strong></>,
+                <>Click <strong style={{ color: '#e2e8f0' }}>Generate</strong></>,
+                <>Click <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></>,
+                <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
               ].map((item, i) => (
                 <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 5 ? '14px' : 0 }}>
                   <span style={{
@@ -250,8 +250,8 @@ export default function HowItWorks() {
                 <p style={{ fontSize: '0.82rem', color: '#475569', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <FaCheckCircle size={13} color='#10b981' /> Password: Not required
                 </p>
-                <p style={{ fontSize: '0.82rem', color: '#475569', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FaCheckCircle size={13} color='#10b981' /> One file covers up to 3 years
+                <p style={{ fontSize: '0.82rem', color: '#92400e', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FaExclamationTriangle size={13} color={GOLD} /> Download one CSV per year for the full period
                 </p>
               </div>
             </div>
