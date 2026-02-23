@@ -884,7 +884,7 @@ export default function CalculatorPage() {
                 )}
               </div>
               <p style={{ color: '#64748b', fontSize: '0.82rem', lineHeight: 1.55, margin: '10px 0 18px' }}>
-                Investments not tracked by your broker — govt bonds, gold bonds, fixed deposits, etc. Include their <strong style={{ color: '#94a3b8' }}>current value in the holdings above</strong>. We only need the purchase amount &amp; date.
+                For investments your broker doesn&apos;t track — sovereign gold bonds, unlisted stocks, etc. — add their original purchase details here. Their <strong style={{ color: '#94a3b8' }}>current value should already be included</strong> in your holdings amount above.
               </p>
 
               {manualEntries.length === 0 ? (
