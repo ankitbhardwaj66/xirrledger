@@ -83,7 +83,7 @@ export default function Home() {
                 lineHeight: 1.75, marginBottom: '2rem',
                 maxWidth: '480px',
               }}>
-                Upload your broker ledger and get your precise XIRR — including all charges, idle cash, and timing. Compare against Nifty 50 instantly. Currently supports Zerodha, Groww &amp; Fyers — more brokers coming soon.
+                Upload your broker ledger and get your precise XIRR — including all charges, idle cash, and timing. Compare against Nifty 50 instantly. Currently supports <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Zerodha</span>, <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Groww</span> &amp; <span style={{ color: '#e2e8f0', fontWeight: 600 }}>Fyers</span> — more brokers coming soon.
               </p>
 
               {/* CTAs */}
