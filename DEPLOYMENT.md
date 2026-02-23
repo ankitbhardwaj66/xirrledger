@@ -72,6 +72,13 @@
   - Worker: `public/pdf.worker.min.js` (must be `.js` not `.mjs` — Apache on Hostinger serves `.mjs` as `text/plain`)
   - Calculate button locked until all PANs valid
 - Per-account holdings + cash inputs — labelled "Current holdings value (₹)" with hint "Today's market value of your holdings — not what you invested"
+- **Outside Investments (manual entries)** — optional card in Step 3 (commit `78c464b`)
+  - Add any number of investments not tracked by broker (govt bonds, gold bonds, FDs, etc.)
+  - Each entry: description (optional), amount (₹), date
+  - Sent to Lambda as `manual_entries` array; treated as additional cash outflows in XIRR calculation
+  - Current value of these investments should be included in broker holdings field
+  - **To revert if removed:** `git revert 78c464b` then redeploy Lambda
+- "How to download?" link opens a modal with full Groww + Zerodha step-by-step guide (replaces old cluttered text box)
 - Async processing with animated progress steps
 - Results: XIRR vs Nifty 50, investment period, contextual insight card
 - Results disclaimer: "This report assumes all investments were made exclusively through the provided account statements."
@@ -84,9 +91,10 @@
   - Zerodha CSV parser (Funds added, Payouts, Quarterly settlements)
   - Groww PDF parser (pdfplumber, PAN as password)
   - Cross-file duplicate detection for Groww (same date+amount across files = skip)
+  - **Manual entries** (`manual_entries` in event) — injected as additional cash outflows before XIRR (commit `78c464b`)
   - XIRR calculation (Newton-Raphson + Brent fallback)
   - Nifty 50 comparison (reads from S3 daily cache — no yfinance on user requests)
-  - PDF report generation (ReportLab) with watermark, KPI banner, Nifty comparison
+  - PDF report generation (ReportLab) with watermark, KPI banner, Nifty comparison, outside investments note
   - Status polling via S3 jobs bucket (public read)
   - Email via SES on completion
   - PHP bridge notification on completion
@@ -247,3 +255,11 @@ AWS_PROFILE=ankit aws logs tail /aws/lambda/xirr-processor --follow --region ap-
 | Branch | Purpose |
 |---|---|
 | `main` | Single active branch — all work merged here |
+| `feature/manual-entries` | Merged into main (2026-02-23) — kept for reference |
+
+### Feature Revert Reference
+
+| Feature | Commit | How to revert |
+|---|---|---|
+| Outside Investments (manual entries) | `78c464b` | `git revert 78c464b` + redeploy Lambda |
+| Download guide modal (Step 2) | `aee2138` | `git revert aee2138` |
