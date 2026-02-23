@@ -1050,8 +1050,9 @@ export default function CalculatorPage() {
                     border: `1px solid ${results.xirr >= results.nifty_xirr ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)'}`,
                   }}>
                     {results.xirr >= results.nifty_xirr ? (
-                      <p style={{ margin: 0, fontWeight: 700, color: '#10b981', fontSize: '0.9rem' }}>
-                        You beat Nifty 50 by {(results.xirr - results.nifty_xirr).toFixed(2)}% 🎉
+                      <p style={{ margin: 0, fontWeight: 700, color: '#10b981', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <FaTrophy size={14} color="#f59e0b" />
+                        You beat Nifty 50 by {(results.xirr - results.nifty_xirr).toFixed(2)}%
                       </p>
                     ) : (
                       <p style={{ margin: 0, fontWeight: 700, color: GOLD, fontSize: '0.9rem' }}>
