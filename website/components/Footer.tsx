@@ -48,7 +48,7 @@ export default function Footer() {
                 </svg>
               </a>
               <a
-                href="https://wa.me/1234567890"
+                href="https://wa.me/916239618150"
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{

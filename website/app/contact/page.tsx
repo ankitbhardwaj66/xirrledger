@@ -66,7 +66,7 @@ export default function Contact() {
           </a>
 
           {/* WhatsApp */}
-          <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+          <a href="https://wa.me/916239618150" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
             <div style={{
               ...glass,
               padding: '32px',
@@ -167,7 +167,7 @@ export default function Contact() {
             }}>
               <FaEnvelope size={15} /> Email Us
             </a>
-            <a href="https://wa.me/1234567890" target="_blank" rel="noopener noreferrer" style={{
+            <a href="https://wa.me/916239618150" target="_blank" rel="noopener noreferrer" style={{
               background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)',
               color: '#4ade80', padding: '12px 26px', borderRadius: '10px',
               fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none',
