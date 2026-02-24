@@ -709,13 +709,13 @@ def _base_table_style(header_bg, num_cols=2):
         # Body
         ("FONTNAME",      (0, 1), (-1, -1), "Helvetica"),
         ("FONTSIZE",      (0, 1), (-1, -1), 9),
-        ("ROWBACKGROUNDS",(0, 1), (-1, -1), [colors.white, colors.HexColor("#f4f6fb")]),
+        ("ROWBACKGROUNDS",(0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
         ("BOTTOMPADDING", (0, 1), (-1, -1), 7),
         ("TOPPADDING",    (0, 1), (-1, -1), 7),
         # Grid
-        ("LINEBELOW",     (0, 0), (-1, 0), 1,   colors.HexColor("#ffffff")),
-        ("INNERGRID",     (0, 1), (-1, -1), 0.3, colors.HexColor("#dde3ee")),
-        ("BOX",           (0, 0), (-1, -1), 0.5, colors.HexColor("#c5cde8")),
+        ("LINEBELOW",     (0, 0), (-1, 0), 1,   colors.HexColor("#f59e0b")),
+        ("INNERGRID",     (0, 1), (-1, -1), 0.3, colors.HexColor("#e2e8f0")),
+        ("BOX",           (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
         # Padding
         ("LEFTPADDING",   (0, 0), (-1, -1), 12),
         ("RIGHTPADDING",  (0, 0), (-1, -1), 12),
@@ -729,9 +729,9 @@ def _base_table_style(header_bg, num_cols=2):
 def _kpi_cell(label, value, sublabel, bg):
     """Single KPI banner cell with stacked label / big value / sublabel."""
     return Paragraph(
-        f'<font name="Helvetica" size="8" color="#a8c4e8">{label}</font><br/>'
-        f'<font name="Helvetica-Bold" size="20" color="white">{value}</font><br/>'
-        f'<font name="Helvetica" size="8" color="#a8c4e8">{sublabel}</font>',
+        f'<font name="Helvetica" size="8" color="#94a3b8">{label}</font><br/>'
+        f'<font name="Helvetica-Bold" size="20" color="#f59e0b">{value}</font><br/>'
+        f'<font name="Helvetica" size="8" color="#94a3b8">{sublabel}</font>',
         ParagraphStyle("KPI", alignment=TA_CENTER, leading=22,
                        backColor=colors.HexColor(bg), borderPadding=(14, 8, 14, 8))
     )
@@ -743,7 +743,7 @@ class _WatermarkCanvas(rl_canvas.Canvas):
         self.saveState()
         w, h = A4
         self.setFont("Helvetica-Bold", 52)
-        self.setFillColor(colors.HexColor("#1a237e"), alpha=0.055)
+        self.setFillColor(colors.HexColor("#0f172a"), alpha=0.06)
         self.translate(w / 2, h / 2)
         self.rotate(40)
         self.drawCentredString(0, 0, "xirrledger.com")
@@ -763,22 +763,22 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
 
     # ── Shared paragraph styles ───────────────────────────────
     title_s = ParagraphStyle("T", fontSize=22, fontName="Helvetica-Bold",
-                              textColor=colors.HexColor("#1a237e"),
+                              textColor=colors.HexColor("#0f172a"),
                               alignment=TA_CENTER, spaceAfter=16)
     sub_s   = ParagraphStyle("S", fontSize=9,  fontName="Helvetica",
-                              textColor=colors.HexColor("#666666"),
+                              textColor=colors.HexColor("#64748b"),
                               alignment=TA_CENTER, spaceAfter=8)
     h2_s    = ParagraphStyle("H2", fontSize=12, fontName="Helvetica-Bold",
-                              textColor=colors.HexColor("#1a237e"),
+                              textColor=colors.HexColor("#f59e0b"),
                               spaceBefore=14, spaceAfter=6)
     note_s  = ParagraphStyle("N", fontSize=7.5, fontName="Helvetica",
-                              textColor=colors.HexColor("#888888"),
+                              textColor=colors.HexColor("#64748b"),
                               spaceBefore=4, spaceAfter=2)
     acct_h_s = ParagraphStyle("AH", fontSize=10, fontName="Helvetica-Bold",
-                               textColor=colors.HexColor("#283593"),
+                               textColor=colors.HexColor("#f59e0b"),
                                spaceBefore=12, spaceAfter=4)
     footer_s = ParagraphStyle("F", fontSize=7.5, fontName="Helvetica",
-                               textColor=colors.HexColor("#bbbbbb"),
+                               textColor=colors.HexColor("#64748b"),
                                alignment=TA_CENTER, spaceBefore=18)
 
     elements = []
@@ -792,7 +792,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         sub_s
     ))
     elements.append(HRFlowable(width="100%", thickness=1.5,
-                                color=colors.HexColor("#1a237e"),
+                                color=colors.HexColor("#f59e0b"),
                                 spaceBefore=6, spaceAfter=16))
 
     # ── KPI Banner (3 boxes) ──────────────────────────────────
@@ -811,16 +811,16 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         kpi3_bg  = "#37474f"  # neutral dark grey when no comparison possible
 
     kpi_row = [[
-        _kpi_cell("YOUR XIRR",    xirr_v,  "annualised return",    "#1565c0"),
-        _kpi_cell("NIFTY 50 XIRR", nifty_v, "benchmark return",    "#283593"),
+        _kpi_cell("YOUR XIRR",    xirr_v,  "annualised return",    "#0f172a"),
+        _kpi_cell("NIFTY 50 XIRR", nifty_v, "benchmark return",   "#1e293b"),
         _kpi_cell("PERFORMANCE",   beat_v,  beat_lbl,               kpi3_bg),
     ]]
     gap = 4
     cw  = (page_w - gap * 2) / 3
     kpi_t = Table(kpi_row, colWidths=[cw, cw, cw], spaceBefore=0,
                   style=TableStyle([
-                      ("BACKGROUND",    (0, 0), (0, 0), colors.HexColor("#1565c0")),
-                      ("BACKGROUND",    (1, 0), (1, 0), colors.HexColor("#283593")),
+                      ("BACKGROUND",    (0, 0), (0, 0), colors.HexColor("#0f172a")),
+                      ("BACKGROUND",    (1, 0), (1, 0), colors.HexColor("#1e293b")),
                       ("BACKGROUND",    (2, 0), (2, 0), colors.HexColor(kpi3_bg)),
                       ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
                       ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
@@ -828,7 +828,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                       ("BOTTOMPADDING", (0, 0), (-1, -1), 16),
                       ("LEFTPADDING",   (0, 0), (-1, -1), 6),
                       ("RIGHTPADDING",  (0, 0), (-1, -1), 6),
-                      ("LINEAFTER",     (0, 0), (1, 0), 2, colors.white),
+                      ("LINEAFTER",     (0, 0), (1, 0), 2, colors.HexColor("#f59e0b")),
                   ]))
     elements.append(kpi_t)
     elements.append(Spacer(1, 14))
@@ -857,13 +857,13 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         ["XIRR (Annualised)",        xirr_v],
     ]
     st = Table(summary_rows, colWidths=[page_w * 0.56, page_w * 0.44])
-    st.setStyle(_base_table_style("#1a237e"))
+    st.setStyle(_base_table_style("#0f172a"))
     st.setStyle(TableStyle([
         ("BACKGROUND",  (0, 7), (-1, 7), gain_bg),          # Net Gain row (index 7)
         ("FONTNAME",    (1, 7), (1, 7),  "Helvetica-Bold"),  # bold value
         ("FONTNAME",    (1, 9), (1, 9),  "Helvetica-Bold"),  # bold XIRR value
         ("FONTSIZE",    (1, 9), (1, 9),  10),
-        ("TEXTCOLOR",   (1, 9), (1, 9),  colors.HexColor("#1a237e")),
+        ("TEXTCOLOR",   (1, 9), (1, 9),  colors.HexColor("#f59e0b")),
     ]))
     elements.append(st)
 
@@ -915,7 +915,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         ["Current Nifty 50 Price", "—",                    nifty_price_str],
     ]
     nt = Table(nifty_rows, colWidths=[col_a, col_b, col_c])
-    nt.setStyle(_base_table_style("#283593", num_cols=3))
+    nt.setStyle(_base_table_style("#0f172a", num_cols=3))
     nt.setStyle(TableStyle([
         ("SPAN",       (1, 3), (2, 3)),                     # performance spans both value cols
         ("BACKGROUND", (0, 3), (-1, 3), perf_bg),
@@ -961,13 +961,13 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                 ["XIRR (Annualised)",  acc_xirr],
             ]
             at = Table(rows, colWidths=[page_w * 0.56, page_w * 0.44])
-            at.setStyle(_base_table_style("#3949ab"))
+            at.setStyle(_base_table_style("#1e293b"))
             at.setStyle(TableStyle([
                 ("BACKGROUND", (0, 6), (-1, 6), acc_gain_bg),
                 ("FONTNAME",   (1, 6), (1, 6),  "Helvetica-Bold"),
                 ("FONTNAME",   (1, 8), (1, 8),  "Helvetica-Bold"),
                 ("FONTSIZE",   (1, 8), (1, 8),  10),
-                ("TEXTCOLOR",  (1, 8), (1, 8),  colors.HexColor("#283593")),
+                ("TEXTCOLOR",  (1, 8), (1, 8),  colors.HexColor("#f59e0b")),
             ]))
             elements.append(at)
             elements.append(Spacer(1, 10))
@@ -993,11 +993,12 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         ])
         cw5 = page_w / 5
         cmt = Table(cmp_rows, colWidths=[cw5 * 1.5, cw5 * 0.875, cw5 * 0.875, cw5 * 0.875, cw5 * 0.875])
-        cmt.setStyle(_base_table_style("#283593", num_cols=5))
+        cmt.setStyle(_base_table_style("#0f172a", num_cols=5))
         cmt.setStyle(TableStyle([
-            ("BACKGROUND", (0, last), (-1, last), colors.HexColor("#e8eaf6")),
+            ("BACKGROUND", (0, last), (-1, last), colors.HexColor("#0f172a")),
+            ("TEXTCOLOR",  (0, last), (-1, last), colors.HexColor("#f59e0b")),
             ("FONTNAME",   (0, last), (-1, last), "Helvetica-Bold"),
-            ("LINEABOVE",  (0, last), (-1, last), 1.5, colors.HexColor("#283593")),
+            ("LINEABOVE",  (0, last), (-1, last), 1.5, colors.HexColor("#f59e0b")),
         ]))
         elements.append(cmt)
 
