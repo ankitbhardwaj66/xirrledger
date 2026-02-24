@@ -995,7 +995,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         elements.append(PageBreak())
         elements.append(Paragraph("Individual Account Analysis", h2_s))
 
-        # ── Portfolio Composition (Pie + Bar side-by-side) ────
+        # ── Portfolio Composition Charts (stacked) ────────────
         SLICE_COLORS = ["#f59e0b", "#3b82f6", "#10b981", "#8b5cf6", "#f43f5e", "#06b6d4"]
         total_inv = combined_stats["total_invested"] or 1
         pie_vals  = [max(s["total_invested"], 0) for s in individual_stats]
@@ -1003,18 +1003,17 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         pie_pcts  = [v / total_inv * 100 for v in pie_vals]
         gain_vals = [round(s.get("net_gain") or 0, 2) for s in individual_stats]
 
-        chart_h = 210
-        left_w  = page_w * 0.44
-        right_w = page_w * 0.56
+        n = len(individual_stats)
 
-        # ── Left: Pie chart + legend ───────────────────────────
-        pie_r  = 55
-        pie_cx = left_w / 2
-        pie_cy = chart_h - pie_r - 10    # top-aligned, y from bottom
+        # ── Pie chart (full width, pie left + legend right) ────
+        pie_h  = 180
+        pie_r  = 70
+        pie_cx = pie_r + 20
+        pie_cy = pie_h / 2
 
-        pie_d = Drawing(left_w, chart_h)
-        pie_d.add(GStr(pie_cx, chart_h - 6, "Capital Distribution",
-                       fontName="Helvetica-Bold", fontSize=8,
+        pie_d = Drawing(page_w, pie_h)
+        pie_d.add(GStr(page_w / 2, pie_h - 14, "Capital Distribution",
+                       fontName="Helvetica-Bold", fontSize=9,
                        textAnchor="middle", fillColor=colors.HexColor("#f59e0b")))
 
         pc = Pie()
@@ -1026,33 +1025,38 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         pc.labels = [""] * len(pie_vals)
         pc.slices.strokeColor = colors.HexColor("#ffffff")
         pc.slices.strokeWidth = 1.5
-        for i, col in enumerate(SLICE_COLORS[:len(pie_vals)]):
+        for i, col in enumerate(SLICE_COLORS[:n]):
             pc.slices[i].fillColor = colors.HexColor(col)
         pie_d.add(pc)
 
-        # Legend below pie
-        leg_y = pie_cy - pie_r - 10
+        # Legend to the right of the pie
+        lx    = pie_cx + pie_r + 24
+        ly    = pie_cy + (n * 18) / 2   # vertically centred
         for i, (name, pct) in enumerate(zip(pie_names, pie_pcts)):
             col   = SLICE_COLORS[i % len(SLICE_COLORS)]
-            y_pos = leg_y - i * 16
-            pie_d.add(Rect(4, y_pos - 6, 9, 9,
+            y_pos = ly - i * 20
+            pie_d.add(Rect(lx, y_pos - 6, 10, 10,
                            fillColor=colors.HexColor(col), strokeColor=None))
-            pie_d.add(GStr(17, y_pos,
+            pie_d.add(GStr(lx + 16, y_pos,
                            f"{name}  {pct:.1f}%",
-                           fontName="Helvetica", fontSize=7,
+                           fontName="Helvetica", fontSize=8,
                            fillColor=colors.HexColor("#0f172a")))
 
-        # ── Right: Bar chart (Profit / Loss by account) ───────
-        bar_d = Drawing(right_w, chart_h)
-        bar_d.add(GStr(right_w / 2, chart_h - 6, "Profit / Loss by Account",
-                       fontName="Helvetica-Bold", fontSize=8,
+        elements.append(pie_d)
+        elements.append(Spacer(1, 4))
+
+        # ── Bar chart (full width) ─────────────────────────────
+        bar_h = 180
+        bar_d = Drawing(page_w, bar_h)
+        bar_d.add(GStr(page_w / 2, bar_h - 14, "Profit / Loss by Account",
+                       fontName="Helvetica-Bold", fontSize=9,
                        textAnchor="middle", fillColor=colors.HexColor("#f59e0b")))
 
         bc = VerticalBarChart()
-        bc.x      = 46
-        bc.y      = 36
-        bc.width  = right_w - 58
-        bc.height = chart_h - 52
+        bc.x      = 52
+        bc.y      = 30
+        bc.width  = page_w - 68
+        bc.height = bar_h - 52
 
         bc.data = [gain_vals]
 
@@ -1063,7 +1067,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         def _lakh_fmt(v):
             if v == 0:
                 return "0"
-            l = v / 100000
+            l    = v / 100000
             sign = "+" if l > 0 else ""
             return f"{sign}{l:.1f}L"
 
@@ -1077,37 +1081,24 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         bc.valueAxis.strokeColor      = colors.HexColor("#cbd5e1")
         bc.valueAxis.gridStrokeColor  = colors.HexColor("#e2e8f0")
 
-        # Short X labels: "Zerodha (GZW478)" → "GZW478"
         short_names = []
         for s in individual_stats:
             name = s.get("account_name", "Account")
             short_names.append(name.split("(")[1].rstrip(")") if "(" in name else name[:10])
         bc.categoryAxis.categoryNames    = short_names
-        bc.categoryAxis.labels.fontSize  = 7
+        bc.categoryAxis.labels.fontSize  = 8
         bc.categoryAxis.labels.fontName  = "Helvetica"
         bc.categoryAxis.labels.fillColor = colors.HexColor("#0f172a")
         bc.categoryAxis.strokeColor      = colors.HexColor("#cbd5e1")
 
-        bc.groupSpacing     = 10
+        bc.groupSpacing     = 16
         bc.barSpacing       = 2
         bc.bars.strokeColor = None
-        for i, col in enumerate(SLICE_COLORS[:len(gain_vals)]):
+        for i, col in enumerate(SLICE_COLORS[:n]):
             bc.bars[0, i].fillColor = colors.HexColor(col)
 
         bar_d.add(bc)
-
-        # ── Side-by-side table ─────────────────────────────────
-        charts_t = Table([[pie_d, bar_d]], colWidths=[left_w, right_w])
-        charts_t.setStyle(TableStyle([
-            ("VALIGN",        (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING",   (0, 0), (-1, -1), 0),
-            ("RIGHTPADDING",  (0, 0), (-1, -1), 0),
-            ("TOPPADDING",    (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-            ("BOX",           (0, 0), (0, 0), 0.5, colors.HexColor("#e2e8f0")),
-            ("BOX",           (1, 0), (1, 0), 0.5, colors.HexColor("#e2e8f0")),
-        ]))
-        elements.append(charts_t)
+        elements.append(bar_d)
         elements.append(Spacer(1, 8))
 
         for stats in individual_stats:
