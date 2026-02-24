@@ -1,0 +1,179 @@
+---
+title: "XIRR vs CAGR: Why the Return % on Your Portfolio App Is Lying to You"
+date: "2026-02-24"
+author: "XIRR Ledger Team"
+excerpt: "CAGR looks clean and simple, but it only works if you invested all your money in one shot. If you've ever added money over time — monthly SIPs, fresh capital, top-ups — CAGR is silently giving you the wrong number. XIRR is the fix."
+category: "Investment Insights"
+keywords:
+  - XIRR vs CAGR
+  - CAGR limitations
+  - XIRR for SIP investors
+  - real returns from investments
+  - how to calculate XIRR
+  - XIRR multiple accounts India
+  - portfolio return calculation India
+  - XIRR Zerodha Groww
+  - annualized returns India
+  - CAGR wrong for multiple investments
+  - XIRR ledger based returns
+  - combine XIRR multiple brokers
+---
+
+You open your portfolio app. It says **"28% CAGR since inception."**
+
+Sounds great. But here's the question no one asks: *CAGR of what, exactly?*
+
+If you've been investing for more than a year — doing monthly SIPs, adding fresh capital when markets dip, moving money across brokers — that number is almost certainly wrong. Not wrong because the app made a mistake. Wrong because **CAGR is the wrong formula for the way real people invest.**
+
+## What CAGR Actually Measures
+
+CAGR stands for Compound Annual Growth Rate. The formula is simple:
+
+```
+CAGR = (Final Value / Initial Value) ^ (1 / Years) - 1
+```
+
+You put in ₹1,00,000. Three years later it's ₹1,50,000. That's a CAGR of 14.5% per year. Clean, easy, intuitive.
+
+**The catch: it only works if you invested once and never touched the money again.**
+
+CAGR treats your entire investment as a single lump sum made on Day 1. It has no concept of when individual rupees entered your account. It doesn't care that some of your money was invested at the market peak and some at the bottom. It just looks at the starting pile and the ending pile.
+
+That's fine for a fixed deposit or a single stock purchase. It completely falls apart for how most people actually invest.
+
+## The Problem: You Keep Adding Money
+
+Think about how you actually invest:
+
+- You start with ₹50,000 in January
+- Add ₹10,000 in March when you get a bonus
+- Add ₹5,000 every month via SIP
+- Withdraw ₹20,000 in October for an emergency
+- End December with ₹1,10,000
+
+What's your return?
+
+CAGR would look at ₹50,000 → ₹1,10,000 in one year and say **120% CAGR**. That's obviously wrong — you added ₹75,000 of new money along the way. The growth didn't come from returns; most of it came from fresh deposits.
+
+Alternatively, if an app tries to adjust for "total invested", it might add up all deposits (₹50,000 + ₹10,000 + 12×₹5,000 = ₹1,20,000), compare that to ₹1,10,000, and tell you **you lost money** — which also isn't quite right, because you withdrew ₹20,000 midway.
+
+None of these approaches capture what actually happened. **The money you invested in January had 12 months to grow. The money you invested in December had 1 month. CAGR treats both as if they were the same.**
+
+## What XIRR Actually Measures
+
+XIRR — Extended Internal Rate of Return — solves this by treating each cash flow individually.
+
+Instead of looking at a start and an end, XIRR looks at every single transaction:
+
+- Each deposit: when you put money in, and how much
+- Each withdrawal: when you took money out, and how much
+- Final portfolio value: what everything is worth today
+
+XIRR finds the single annualized rate that makes all those cash flows work out to zero — the rate at which your money would have grown to produce exactly the outcome you got.
+
+**In other words: XIRR is the actual annualized return your money earned, accounting for exactly when each rupee was invested.**
+
+## A Side-by-Side Example
+
+Let's make this concrete.
+
+**Priya's investment history over 2 years:**
+
+```
+Jan 2023: Invested ₹2,00,000 (lump sum)
+Jul 2023: Invested ₹1,00,000 (added more)
+Jan 2024: Invested ₹1,00,000 (added more)
+Jul 2024: Withdrew ₹50,000 (emergency)
+Dec 2024: Portfolio value = ₹5,00,000
+```
+
+Total invested: ₹4,00,000. Total withdrawn: ₹50,000. Net invested: ₹3,50,000.
+
+**What does CAGR say?**
+
+If you use CAGR naively on ₹2,00,000 → ₹5,00,000 over 2 years, you get **58% CAGR**. Spectacular — but wrong, because it ignores the ₹2,00,000 she added later.
+
+If you use "total invested" CAGR on ₹3,50,000 → ₹5,00,000, you get **19.5% CAGR**. But this ignores the fact that her first ₹2,00,000 had a full 2 years to compound, while her last ₹1,00,000 only had 1 year.
+
+**What does XIRR say?**
+
+XIRR accounts for each investment's actual time in the market. In this case, **XIRR is approximately 24.3%** — higher than the naive CAGR because her earliest money (which had the longest time) performed well, pulling up the blended rate.
+
+These are completely different numbers. You can't act on CAGR here because it isn't telling you what you think it is.
+
+## Why Calculating XIRR Manually Is a Nightmare
+
+The theory of XIRR is straightforward. The math is not.
+
+XIRR doesn't have a closed-form solution. It's solved iteratively — a computer makes an initial guess at the rate, checks how close the result is to zero, adjusts, and repeats hundreds of times until it converges. Excel has this built in. But first you need to get the data in.
+
+For someone with 2–3 years of investing history, that means:
+
+1. **Exporting every transaction** from every broker account — hundreds of rows
+2. **Cleaning the data**: standardizing date formats, removing noise rows (statement fees, other entries that aren't actual cash flows)
+3. **Identifying actual cash flows**: not every transaction is a deposit or withdrawal — dividends, charges, corporate actions all need to be classified correctly
+4. **Handling partial withdrawals**: if you moved money from Zerodha to Groww, did that show up as a withdrawal in one ledger and a deposit in another? You can't double-count it.
+5. **Adding the current portfolio value** as a positive cash flow on today's date
+6. **Running the XIRR formula** — and hoping Excel doesn't return a `#NUM!` error because your cash flows are structured in a way it can't converge on
+
+Do this wrong at any step and your XIRR is garbage. Do it right and you've spent an afternoon on a spreadsheet.
+
+And that's for *one* broker account. Most people use two or three.
+
+## The Multi-Account Problem
+
+Here's where things get really messy.
+
+You have a Zerodha account for long-term stocks. A Groww account for mutual funds and ETFs. Maybe you added Fyers for F&O. Each account has its own ledger, its own deposits, its own history.
+
+**What is your actual combined return across all of them?**
+
+You can't average the XIRRs — that's mathematically wrong. A 20% XIRR on ₹10 lakh and a 10% XIRR on ₹1 lakh is not a 15% combined return.
+
+To get the real combined XIRR, you need to:
+- Pool all cash flows from all accounts into one timeline
+- Treat deposits to any account as outflows
+- Treat withdrawals from any account as inflows
+- Use the total current value across all accounts as the terminal value
+- Run XIRR on the merged dataset
+
+In practice, this means merging spreadsheets, resolving overlapping date formats, handling account transfers that appear as withdrawals in one ledger and deposits in another — without double-counting anything.
+
+Most investors never do this. So they never know their actual combined return.
+
+## What XIRR Ledger Does
+
+XIRR Ledger is built specifically for this problem.
+
+You upload your broker ledger files — Zerodha CSV, Groww PDF, Fyers CSV — one or more, from different brokers. Enter your current holdings value and available cash for each account.
+
+XIRR Ledger then:
+
+- Parses each ledger format automatically
+- Identifies actual deposits and withdrawals (strips out noise)
+- Deduplicates transactions if the same file appears twice
+- Merges all cash flows into one timeline
+- Runs XIRR on the combined data
+- Compares your result against what the same money would have earned in Nifty 50
+
+The output is a single XIRR number representing your real annualized return — across all your accounts, accounting for every rupee and exactly when it was invested.
+
+And right next to it: the Nifty 50 XIRR calculated on the same cash flows, so you know whether your combined portfolio is actually beating the index.
+
+## The Number That Changes Everything
+
+Here's what happens when investors see their actual XIRR for the first time.
+
+Some find out they're doing better than they thought — their early investments compounded well, and the XIRR is higher than what any CAGR approximation suggested.
+
+Others discover the opposite. Their portfolio app showed a flattering CAGR because it was measuring the wrong thing. Their actual XIRR, accounting for all the top-ups they made at market highs and the withdrawals they had to make at lows, is significantly lower.
+
+Both outcomes are valuable. You can't improve what you don't measure. And you can't measure correctly if you're using a metric that wasn't designed for the way you invest.
+
+CAGR is a fine number for a fixed deposit. For a real portfolio, with real cash flows, across multiple accounts, over multiple years — **XIRR is the only number that tells you the truth.**
+
+---
+
+**Ready to see your actual combined returns across all brokers?** [Calculate Your XIRR →](/calculator)
+
+**Want to see what the full report looks like?** [Download Sample Report →](/sample_report.pdf)
