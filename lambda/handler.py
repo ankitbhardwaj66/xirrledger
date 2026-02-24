@@ -3,8 +3,9 @@ XIRR Ledger — Lambda Handler
 Routes API Gateway requests and manages async processing lifecycle.
 
 Routes:
-  POST /session  — create session, return presigned S3 upload URLs
-  POST /process  — write pending status, trigger async self-invocation
+  POST /session   — create session, return presigned S3 upload URLs
+  POST /validate  — validate an uploaded file (broker format check + transaction count)
+  POST /process   — write pending status, trigger async self-invocation
 
 Async mode (InvocationType=Event):
   event contains {"async_mode": true, "session_id": ..., ...}
@@ -44,6 +45,9 @@ def lambda_handler(event, context):
 
     if path == "/session" and method == "POST":
         return handle_create_session(event)
+
+    if path == "/validate" and method == "POST":
+        return handle_validate(event)
 
     if path == "/process" and method == "POST":
         return handle_process(event, context)
@@ -146,6 +150,64 @@ def handle_process(event, context):
     except Exception as e:
         logger.exception("Error in handle_process")
         return _response(500, {"error": str(e)})
+
+
+# ─────────────────────────────────────────────────────────────
+# POST /validate
+# Body: { "session_id": "...", "file_key": "uploads/.../file.csv",
+#         "broker": "zerodha"|"groww"|"fyers", "pan": "ABCDE1234F" (Groww only) }
+# Returns: { "valid": true, "transactions_found": 42 }
+#       or { "valid": false, "error": "human-readable reason" }
+# ─────────────────────────────────────────────────────────────
+def handle_validate(event):
+    try:
+        body = json.loads(event.get("body") or "{}")
+        file_key = body.get("file_key", "")
+        broker   = body.get("broker", "").lower()
+        pan      = body.get("pan")
+
+        if not file_key:
+            return _response(400, {"error": "file_key is required"})
+        if broker not in ("zerodha", "groww", "fyers"):
+            return _response(400, {"error": f"Unknown broker: {broker}"})
+        if broker == "groww" and not pan:
+            return _response(200, {"valid": False, "error": "PAN required to validate Groww PDF"})
+
+        # Download file from S3
+        obj = s3.get_object(Bucket=UPLOADS_BUCKET, Key=file_key)
+        file_bytes = obj["Body"].read()
+
+        # Import parsers
+        from processor import parse_zerodha_csv, parse_groww_pdf, parse_fyers_csv
+
+        if broker == "zerodha":
+            outflows, _ = parse_zerodha_csv(file_bytes)
+            return _response(200, {"valid": True, "transactions_found": len(outflows)})
+
+        if broker == "fyers":
+            outflows, _ = parse_fyers_csv(file_bytes)
+            return _response(200, {"valid": True, "transactions_found": len(outflows)})
+
+        if broker == "groww":
+            outflows, _ = parse_groww_pdf(file_bytes, password=pan)
+            return _response(200, {"valid": True, "transactions_found": len(outflows)})
+
+    except ValueError as e:
+        friendly = str(e)
+        # Make common parser errors more user-friendly
+        if "missing columns" in friendly.lower():
+            friendly = f"Wrong file format — {friendly}. Please download the correct statement from your broker."
+        elif "no 'funds added'" in friendly.lower():
+            friendly = "No fund transfer transactions found in this file. Make sure to download the full ledger statement, not a trade/order history."
+        return _response(200, {"valid": False, "error": friendly})
+
+    except Exception as e:
+        logger.exception("Error in handle_validate")
+        # Catch PDF password errors and generic failures
+        err_str = str(e).lower()
+        if "password" in err_str or "encrypted" in err_str or "pdfread" in err_str:
+            return _response(200, {"valid": False, "error": "Incorrect PAN — could not open this PDF. Please check your PAN and try again."})
+        return _response(200, {"valid": False, "error": "Could not read this file — please check it is the correct format for your broker."})
 
 
 # ─────────────────────────────────────────────────────────────

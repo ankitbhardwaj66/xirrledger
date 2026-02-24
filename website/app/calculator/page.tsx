@@ -19,6 +19,7 @@ interface UploadedFile {
   file: File;
   broker: 'zerodha' | 'groww' | 'fyers' | 'unknown';
   hash: string;
+  formatError?: string;
 }
 
 interface Account {
@@ -123,6 +124,37 @@ async function hashFile(file: File): Promise<string> {
     .map(b => b.toString(16).padStart(2, '0'))
     .join('')
     .slice(0, 16);
+}
+
+async function validateFileFormat(file: File, broker: UploadedFile['broker']): Promise<string | undefined> {
+  if (broker === 'unknown') {
+    return 'Unrecognized file. Please upload a Zerodha CSV, Groww PDF, or Fyers Ledger CSV.';
+  }
+  try {
+    if (broker === 'zerodha') {
+      const text = await file.slice(0, 4096).text();
+      const firstLine = text.split('\n')[0]?.toLowerCase() ?? '';
+      if (!firstLine.includes('particulars')) {
+        return 'Not a Zerodha statement — "particulars" column not found. Download from Zerodha Console → Funds → View Statement → CSV.';
+      }
+    }
+    if (broker === 'fyers') {
+      const text = await file.slice(0, 8192).text();
+      if (!text.includes('Transaction type') || !text.includes('Debit amount')) {
+        return 'Not a Fyers Ledger CSV — expected columns not found. Download from Fyers → Reports → Ledger → CSV.';
+      }
+    }
+    if (broker === 'groww') {
+      const bytes = await file.slice(0, 8).arrayBuffer();
+      const sig = new TextDecoder().decode(new Uint8Array(bytes));
+      if (!sig.startsWith('%PDF')) {
+        return 'Not a valid PDF file. Please upload your Groww Balance Statement PDF.';
+      }
+    }
+  } catch {
+    // unreadable file — let the Lambda catch it later
+  }
+  return undefined;
 }
 
 function detectBroker(file: File): 'zerodha' | 'groww' | 'fyers' | 'unknown' {
@@ -260,6 +292,10 @@ export default function CalculatorPage() {
   const [activeGuideTab, setActiveGuideTab] = useState<'zerodha' | 'groww' | 'fyers'>('zerodha');
   const [manualEntries, setManualEntries] = useState<ManualEntry[]>([]);
   const [processingError, setProcessingError] = useState('');
+  const [uploadedSession, setUploadedSession] = useState<{ sessionId: string; keyMap: Record<string, string> } | null>(null);
+  const [fileValidationStatus, setFileValidationStatus] = useState<Record<string, 'validating' | 'valid' | 'invalid'>>({});
+  const [fileValidationErrors, setFileValidationErrors] = useState<Record<string, string>>({});
+  const [isUploading, setIsUploading] = useState(false);
   const googleBtnRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
@@ -336,9 +372,11 @@ export default function CalculatorPage() {
 
   const addFiles = useCallback(async (incoming: FileList | File[]) => {
     const withHashes = await Promise.all(
-      Array.from(incoming).map(async file => ({
-        file, broker: detectBroker(file), hash: await hashFile(file),
-      }))
+      Array.from(incoming).map(async file => {
+        const broker = detectBroker(file);
+        const [hash, formatError] = await Promise.all([hashFile(file), validateFileFormat(file, broker)]);
+        return { file, broker, hash, formatError };
+      })
     );
     setFiles(prev => {
       const existingHashes = new Set(prev.map(f => f.hash));
@@ -391,10 +429,48 @@ export default function CalculatorPage() {
       pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
       for (const uf of filesToCheck) {
         const data = await uf.file.arrayBuffer();
-        await pdfjsLib.getDocument({ data, password: pan }).promise;
+        const pdfDoc = await pdfjsLib.getDocument({ data, password: pan }).promise;
+        // Check first page text contains "groww" to confirm it's the right file type
+        const page1 = await pdfDoc.getPage(1);
+        const tc = await page1.getTextContent();
+        const pageText = (tc.items as Array<{ str: string }>).map(i => i.str).join(' ');
+        if (!/groww/i.test(pageText)) {
+          setPanValidationStatus(prev => ({ ...prev, [key]: 'invalid' }));
+          setPanValidationErrors(prev => ({ ...prev, [key]: 'This does not appear to be a Groww Balance Statement — please upload the correct file.' }));
+          return;
+        }
       }
       setPanValidationStatus(prev => ({ ...prev, [key]: 'valid' }));
       setPanValidationErrors(prev => { const next = { ...prev }; delete next[key]; return next; });
+
+      // Deep validate via Lambda if files are already uploaded to S3
+      if (uploadedSession) {
+        for (const uf of filesToCheck) {
+          const fileKey = uploadedSession.keyMap[uf.file.name];
+          if (!fileKey) continue;
+          setFileValidationStatus(prev => ({ ...prev, [uf.file.name]: 'validating' }));
+          try {
+            const res = await fetch(`${API_BASE}/validate`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ session_id: uploadedSession.sessionId, file_key: fileKey, broker: 'groww', pan }),
+            });
+            const result = await res.json();
+            if (result.valid) {
+              setFileValidationStatus(prev => ({ ...prev, [uf.file.name]: 'valid' }));
+              setFileValidationErrors(prev => { const next = { ...prev }; delete next[uf.file.name]; return next; });
+            } else {
+              setFileValidationStatus(prev => ({ ...prev, [uf.file.name]: 'invalid' }));
+              setFileValidationErrors(prev => ({ ...prev, [uf.file.name]: result.error || 'No transactions found in this PDF.' }));
+              setPanValidationStatus(prev => ({ ...prev, [key]: 'invalid' }));
+              setPanValidationErrors(prev => ({ ...prev, [key]: result.error || 'No transactions found in this PDF.' }));
+            }
+          } catch {
+            // Network error — don't block on this
+            setFileValidationStatus(prev => ({ ...prev, [uf.file.name]: 'valid' }));
+          }
+        }
+      }
     } catch (e: unknown) {
       const err = e as { name?: string };
       if (err?.name === 'PasswordException') {
@@ -416,20 +492,19 @@ export default function CalculatorPage() {
     setManualEntries(prev => prev.map(e => e.id === id ? { ...e, [field]: value } : e));
   }
 
-  async function startProcessing() {
-    if (!allHoldingsEntered) return;
-    setProcessingError('');
-    setStep('processing');
-    setProcessingSteps(prev => prev.map((s, i) => ({ ...s, status: i === 0 ? 'active' : 'pending' })));
-
+  async function handleContinueToDetails() {
+    const hasFormatErrors = files.some(f => f.formatError);
+    if (hasFormatErrors) return;
+    setIsUploading(true);
     try {
+      // Upload files to S3
       const fileList = files.map(f => ({ name: f.file.name, type: f.file.type || 'application/octet-stream' }));
       const sessionRes = await fetch(`${API_BASE}/session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ files: fileList }),
       });
-      if (!sessionRes.ok) throw new Error('Failed to create session — please try again.');
+      if (!sessionRes.ok) throw new Error('Upload failed — please try again.');
       const { session_id, upload_urls } = await sessionRes.json();
 
       const keyMap: Record<string, string> = {};
@@ -445,6 +520,87 @@ export default function CalculatorPage() {
           keyMap[name] = key;
         })
       );
+      setUploadedSession({ sessionId: session_id, keyMap });
+
+      // Deep-validate non-Groww files via Lambda immediately
+      const nonGrowwFiles = files.filter(f => f.broker !== 'groww');
+      const newStatuses: Record<string, 'validating' | 'valid' | 'invalid'> = {};
+      const newErrors: Record<string, string> = {};
+
+      await Promise.all(nonGrowwFiles.map(async (f) => {
+        newStatuses[f.file.name] = 'validating';
+        try {
+          const res = await fetch(`${API_BASE}/validate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id, file_key: keyMap[f.file.name], broker: f.broker }),
+          });
+          const result = await res.json();
+          if (result.valid) {
+            newStatuses[f.file.name] = 'valid';
+          } else {
+            newStatuses[f.file.name] = 'invalid';
+            newErrors[f.file.name] = result.error || 'Invalid file — please check you uploaded the correct statement.';
+          }
+        } catch {
+          newStatuses[f.file.name] = 'valid'; // network error — don't block
+        }
+      }));
+
+      setFileValidationStatus(prev => ({ ...prev, ...newStatuses }));
+      setFileValidationErrors(prev => ({ ...prev, ...newErrors }));
+
+      const anyInvalid = Object.values(newStatuses).some(s => s === 'invalid');
+      if (!anyInvalid) {
+        setStep('details');
+      }
+    } catch (err) {
+      setProcessingError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  async function startProcessing() {
+    if (!allHoldingsEntered) return;
+    setProcessingError('');
+    setStep('processing');
+    setProcessingSteps(prev => prev.map((s, i) => ({ ...s, status: i === 0 ? 'active' : 'pending' })));
+
+    try {
+      // Reuse existing upload if already done in handleContinueToDetails
+      let session_id: string;
+      let keyMap: Record<string, string>;
+
+      if (uploadedSession) {
+        session_id = uploadedSession.sessionId;
+        keyMap = uploadedSession.keyMap;
+      } else {
+        // Fallback: upload now (e.g. if user navigated back to Step 2 and re-added files)
+        const fileList = files.map(f => ({ name: f.file.name, type: f.file.type || 'application/octet-stream' }));
+        const sessionRes = await fetch(`${API_BASE}/session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ files: fileList }),
+        });
+        if (!sessionRes.ok) throw new Error('Failed to create session — please try again.');
+        const sessionData = await sessionRes.json();
+        session_id = sessionData.session_id;
+        const upload_urls = sessionData.upload_urls as { name: string; url: string; key: string }[];
+        keyMap = {};
+        await Promise.all(
+          upload_urls.map(async ({ name, url, key }) => {
+            const uf = files.find(f => f.file.name === name);
+            if (!uf) return;
+            const putRes = await fetch(url, {
+              method: 'PUT', body: uf.file,
+              headers: { 'Content-Type': uf.file.type || 'application/octet-stream' },
+            });
+            if (!putRes.ok) throw new Error(`Failed to upload ${name}`);
+            keyMap[name] = key;
+          })
+        );
+      }
 
       const detectedBrokers = [...new Set(files.map(f => f.broker).filter(b => b !== 'unknown'))];
       const detectedBroker = detectedBrokers.join(',') || 'unknown';
@@ -531,6 +687,10 @@ export default function CalculatorPage() {
     setManualEntries([]);
     setResults(null);
     setProcessingSteps(PROCESSING_STEPS.map(s => ({ ...s, status: 'pending' as const })));
+    setUploadedSession(null);
+    setFileValidationStatus({});
+    setFileValidationErrors({});
+    setProcessingError('');
   }
 
   const STEPS_LABELS = ['Sign In', 'Upload', 'Details'];
@@ -695,42 +855,80 @@ export default function CalculatorPage() {
 
               {files.length > 0 && (
                 <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {files.map((f, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', ...innerCard }}>
-                      <div style={{
-                        width: 32, height: 32, borderRadius: 7, flexShrink: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: f.broker === 'zerodha' ? 'rgba(16,185,129,0.15)' : f.broker === 'groww' ? 'rgba(245,158,11,0.15)' : f.broker === 'fyers' ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.06)',
-                        fontSize: '0.65rem', fontWeight: 700,
-                        color: f.broker === 'zerodha' ? '#10b981' : f.broker === 'groww' ? GOLD : f.broker === 'fyers' ? '#818cf8' : '#64748b',
-                      }}>
-                        {f.broker === 'zerodha' ? 'CSV' : f.broker === 'groww' ? 'PDF' : f.broker === 'fyers' ? 'CSV' : '?'}
+                  {files.map((f, i) => {
+                    const vStatus = fileValidationStatus[f.file.name];
+                    const vError = f.formatError || fileValidationErrors[f.file.name];
+                    const hasError = !!f.formatError || vStatus === 'invalid';
+                    return (
+                      <div key={i}>
+                        <div style={{
+                          display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+                          ...innerCard,
+                          border: hasError ? '1px solid rgba(239,68,68,0.35)' : vStatus === 'valid' ? '1px solid rgba(16,185,129,0.25)' : innerCard.border,
+                          background: hasError ? 'rgba(239,68,68,0.05)' : vStatus === 'valid' ? 'rgba(16,185,129,0.04)' : innerCard.background,
+                        }}>
+                          <div style={{
+                            width: 32, height: 32, borderRadius: 7, flexShrink: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: f.broker === 'zerodha' ? 'rgba(16,185,129,0.15)' : f.broker === 'groww' ? 'rgba(245,158,11,0.15)' : f.broker === 'fyers' ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.06)',
+                            fontSize: '0.65rem', fontWeight: 700,
+                            color: f.broker === 'zerodha' ? '#10b981' : f.broker === 'groww' ? GOLD : f.broker === 'fyers' ? '#818cf8' : '#64748b',
+                          }}>
+                            {f.broker === 'zerodha' ? 'CSV' : f.broker === 'groww' ? 'PDF' : f.broker === 'fyers' ? 'CSV' : '?'}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.file.name}</p>
+                            <p style={{ margin: 0, fontSize: '0.75rem', color: '#475569', textTransform: 'capitalize' }}>
+                              {f.broker === 'unknown' ? 'Unknown file type' : f.broker === 'fyers' ? `Fyers · ${(f.file.size / 1024).toFixed(0)} KB` : `${f.broker} · ${(f.file.size / 1024).toFixed(0)} KB`}
+                            </p>
+                          </div>
+                          {vStatus === 'validating' && <span style={{ color: GOLD, fontSize: '0.75rem', flexShrink: 0 }}>checking…</span>}
+                          {vStatus === 'valid'      && !f.formatError && <span style={{ color: '#10b981', fontWeight: 700, flexShrink: 0 }}>✓</span>}
+                          {hasError                 && <span style={{ color: '#ef4444', fontWeight: 700, flexShrink: 0 }}>✗</span>}
+                          <button onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: 4, fontSize: '1.2rem', lineHeight: 1 }}>×</button>
+                        </div>
+                        {vError && (
+                          <p style={{ margin: '4px 0 0 4px', fontSize: '0.75rem', color: '#ef4444', fontWeight: 500 }}>
+                            ⚠ {vError}
+                          </p>
+                        )}
                       </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.file.name}</p>
-                        <p style={{ margin: 0, fontSize: '0.75rem', color: '#475569', textTransform: 'capitalize' }}>
-                          {f.broker === 'unknown' ? 'Unknown file type' : f.broker === 'fyers' ? `Fyers · ${(f.file.size / 1024).toFixed(0)} KB` : `${f.broker} · ${(f.file.size / 1024).toFixed(0)} KB`}
-                        </p>
-                      </div>
-                      <button onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: 4, fontSize: '1.2rem', lineHeight: 1 }}>×</button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
-                <button onClick={() => setStep('auth')} style={{ ...btnSecondary, flex: 1, padding: 12, fontSize: '0.9rem' }}>
-                  ← Back
-                </button>
-                <button onClick={() => setStep('details')} disabled={files.length === 0} style={{
-                  ...btnPrimary, flex: 2, padding: 12, fontSize: '0.9rem',
-                  background: files.length > 0 ? GOLD : 'rgba(255,255,255,0.08)',
-                  color: files.length > 0 ? '#0a1020' : '#334155',
-                  cursor: files.length > 0 ? 'pointer' : 'not-allowed',
-                }}>
-                  Continue ({files.length} file{files.length !== 1 ? 's' : ''}) →
-                </button>
-              </div>
+              {(() => {
+                const hasFormatErrors = files.some(f => f.formatError);
+                const hasValidationErrors = Object.values(fileValidationErrors).length > 0 && files.some(f => fileValidationStatus[f.file.name] === 'invalid');
+                const canContinue = files.length > 0 && !hasFormatErrors && !hasValidationErrors && !isUploading;
+                return (
+                  <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
+                    <button onClick={() => setStep('auth')} style={{ ...btnSecondary, flex: 1, padding: 12, fontSize: '0.9rem' }}>
+                      ← Back
+                    </button>
+                    <button onClick={handleContinueToDetails} disabled={!canContinue} style={{
+                      ...btnPrimary, flex: 2, padding: 12, fontSize: '0.9rem',
+                      background: canContinue ? GOLD : 'rgba(255,255,255,0.08)',
+                      color: canContinue ? '#0a1020' : '#334155',
+                      cursor: canContinue ? 'pointer' : 'not-allowed',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    }}>
+                      {isUploading ? (
+                        <>
+                          <svg width="14" height="14" viewBox="0 0 72 72" style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }}>
+                            <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(10,16,32,0.3)" strokeWidth="8" />
+                            <circle cx="36" cy="36" r="30" fill="none" stroke="#0a1020" strokeWidth="8" strokeDasharray="60 120" strokeLinecap="round" />
+                          </svg>
+                          Uploading & Validating…
+                        </>
+                      ) : (
+                        `Continue (${files.length} file${files.length !== 1 ? 's' : ''}) →`
+                      )}
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
@@ -969,7 +1167,7 @@ export default function CalculatorPage() {
               )}
 
               <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
-                <button onClick={() => setStep('upload')} style={{ ...btnSecondary, flex: 1, padding: 12, fontSize: '0.9rem' }}>
+                <button onClick={() => { setUploadedSession(null); setFileValidationStatus({}); setFileValidationErrors({}); setStep('upload'); }} style={{ ...btnSecondary, flex: 1, padding: 12, fontSize: '0.9rem' }}>
                   ← Back
                 </button>
                 {allGrowwPansValid && (
