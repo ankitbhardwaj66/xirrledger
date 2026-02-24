@@ -135,13 +135,13 @@ async function validateFileFormat(file: File, broker: UploadedFile['broker']): P
       const text = await file.slice(0, 4096).text();
       const firstLine = text.split('\n')[0]?.toLowerCase() ?? '';
       if (!firstLine.includes('particulars')) {
-        return 'This CSV has the wrong structure. Please download the correct statement from Zerodha.';
+        return 'This CSV has the wrong structure. Please download the correct statement from your broker.';
       }
     }
     if (broker === 'fyers') {
       const text = await file.slice(0, 8192).text();
       if (!text.includes('Transaction type') || !text.includes('Debit amount')) {
-        return 'This CSV has the wrong structure. Please download the correct ledger from Fyers.';
+        return 'This CSV has the wrong structure. Please download the correct statement from your broker.';
       }
     }
     if (broker === 'groww') {
