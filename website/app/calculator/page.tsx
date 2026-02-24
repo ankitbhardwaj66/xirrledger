@@ -257,6 +257,7 @@ export default function CalculatorPage() {
   const [manualEmail, setManualEmail] = useState('');
   const [authError, setAuthError] = useState('');
   const [showDownloadGuide, setShowDownloadGuide] = useState(false);
+  const [activeGuideTab, setActiveGuideTab] = useState<'zerodha' | 'groww' | 'fyers'>('zerodha');
   const [manualEntries, setManualEntries] = useState<ManualEntry[]>([]);
   const [processingError, setProcessingError] = useState('');
   const googleBtnRef = useRef<HTMLDivElement>(null);
@@ -652,7 +653,7 @@ export default function CalculatorPage() {
               <div style={{ marginBottom: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569' }}>Zerodha CSV, Groww PDF &amp; Fyers CSV supported</p>
                 <button
-                  onClick={() => setShowDownloadGuide(true)}
+                  onClick={() => { setShowDownloadGuide(true); setActiveGuideTab('zerodha'); }}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: GOLD, fontSize: '0.82rem', fontWeight: 600, padding: 0 }}
                 >
                   <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
@@ -1170,7 +1171,7 @@ export default function CalculatorPage() {
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, width: '100%', maxWidth: 720, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}
+            style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}
           >
             {/* Modal header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
@@ -1178,91 +1179,141 @@ export default function CalculatorPage() {
               <button onClick={() => setShowDownloadGuide(false)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', cursor: 'pointer', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 300 }}>×</button>
             </div>
 
-            {/* Modal body */}
-            <div style={{ padding: '24px 28px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: 6, padding: '16px 24px 0', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+              {([
+                { key: 'zerodha', label: 'Zerodha', letter: 'Z', color: GOLD, bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)' },
+                { key: 'groww',   label: 'Groww',   letter: 'G', color: '#10b981', bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.3)' },
+                { key: 'fyers',   label: 'Fyers',   letter: 'F', color: '#818cf8', bg: 'rgba(99,102,241,0.12)', border: 'rgba(99,102,241,0.3)' },
+              ] as const).map(({ key, label, letter, color, bg, border }) => {
+                const active = activeGuideTab === key;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setActiveGuideTab(key)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '10px 16px', borderRadius: '8px 8px 0 0',
+                      border: 'none', cursor: 'pointer',
+                      background: active ? 'rgba(255,255,255,0.05)' : 'transparent',
+                      borderBottom: active ? `2px solid ${color}` : '2px solid transparent',
+                      color: active ? '#ffffff' : '#64748b',
+                      fontWeight: active ? 700 : 500,
+                      fontSize: '0.88rem',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <span style={{ width: 22, height: 22, borderRadius: 6, background: active ? bg : 'transparent', border: active ? `1px solid ${border}` : '1px solid transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, color: active ? color : '#475569', transition: 'all 0.15s' }}>{letter}</span>
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Tab content */}
+            <div style={{ padding: '24px 28px' }}>
 
               {/* Zerodha */}
-              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(245,158,11,0.18)', borderRadius: 14, padding: '22px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 800, color: GOLD }}>Z</div>
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 700, color: '#ffffff', fontSize: '0.95rem' }}>Zerodha</p>
-                    <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>CSV format</p>
+              {activeGuideTab === 'zerodha' && (
+                <div>
+                  <p style={{ margin: '0 0 18px', fontSize: '0.8rem', color: '#64748b' }}>CSV format · no password required</p>
+                  {[
+                    <>Log in to <strong style={{ color: '#e2e8f0' }}>Zerodha Console</strong></>,
+                    <>Go to <strong style={{ color: '#e2e8f0' }}>Funds → View Statement</strong></>,
+                    <>Select <strong style={{ color: '#e2e8f0' }}>All Segments</strong> as category</>,
+                    <>Set date range <strong style={{ color: '#e2e8f0' }}>(first investment till today)</strong></>,
+                    <>Click the <strong style={{ color: '#e2e8f0' }}>blue arrow →</strong> then click <strong style={{ color: '#e2e8f0' }}>CSV</strong></>,
+                  ].map((item, i, arr) => (
+                    <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 14 : 0 }}>
+                      <span style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', color: GOLD, width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
+                      <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0, lineHeight: 1.65 }}>{item}</p>
+                    </div>
+                  ))}
+                  <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>✓ One CSV covers all years &nbsp;·&nbsp; Password: not required</p>
                   </div>
                 </div>
-                {[
-                  <>Log in to <strong style={{ color: '#e2e8f0' }}>Zerodha Console</strong></>,
-                  <>Go to <strong style={{ color: '#e2e8f0' }}>Funds → View Statement</strong></>,
-                  <>Select <strong style={{ color: '#e2e8f0' }}>All Segments</strong> as category</>,
-                  <>Set date range <strong style={{ color: '#e2e8f0' }}>(first investment till today)</strong></>,
-                  <>Click the <strong style={{ color: '#e2e8f0' }}>blue arrow →</strong> then click <strong style={{ color: '#e2e8f0' }}>CSV</strong></>,
-                ].map((item, i, arr) => (
-                  <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 12 : 0 }}>
-                    <span style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', color: GOLD, width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
-                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0, lineHeight: 1.6 }}>{item}</p>
-                  </div>
-                ))}
-                <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>✓ File type: CSV &nbsp;·&nbsp; Password: not required</p>
-                </div>
-              </div>
+              )}
 
               {/* Groww */}
-              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(16,185,129,0.18)', borderRadius: 14, padding: '22px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 800, color: '#10b981' }}>G</div>
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 700, color: '#ffffff', fontSize: '0.95rem' }}>Groww</p>
-                    <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>PDF format · one per year</p>
+              {activeGuideTab === 'groww' && (
+                <div>
+                  <p style={{ margin: '0 0 18px', fontSize: '0.8rem', color: '#64748b' }}>PDF format · password: your PAN (uppercase)</p>
+
+                  {/* Method 1 */}
+                  <div style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 10, padding: '16px', marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#10b981' }}>Method 1</span>
+                      <span style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', fontSize: '0.62rem', fontWeight: 700, padding: '2px 8px', borderRadius: 100, border: '1px solid rgba(16,185,129,0.3)' }}>RECOMMENDED</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748b' }}>— Groww Balance Statement</span>
+                    </div>
+                    {[
+                      <>Log in to <strong style={{ color: '#e2e8f0' }}>Groww</strong></>,
+                      <>Go to <strong style={{ color: '#e2e8f0' }}>Reports → Groww Balance Statement</strong></>,
+                      <>Select date range → click <strong style={{ color: '#e2e8f0' }}>Generate → Download</strong></>,
+                    ].map((item, i, arr) => (
+                      <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 12 : 0 }}>
+                        <span style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#10b981', width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 700, flexShrink: 0, marginTop: 2 }}>{i + 1}</span>
+                        <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0, lineHeight: 1.65 }}>{item}</p>
+                      </div>
+                    ))}
+                    <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      <p style={{ fontSize: '0.77rem', color: '#475569', margin: 0 }}>✓ All transactions in a single file</p>
+                      <p style={{ fontSize: '0.77rem', color: '#92400e', margin: 0 }}>⚠ As of Feb 2026, only available from 1 Apr 2023 in-app. For earlier history, contact Groww support via chat or email to request your full statement.</p>
+                    </div>
+                  </div>
+
+                  {/* Method 2 */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b' }}>Method 2</span>
+                      <span style={{ background: 'rgba(255,255,255,0.06)', color: '#64748b', fontSize: '0.62rem', fontWeight: 700, padding: '2px 8px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.1)' }}>ALTERNATIVE</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748b' }}>— Annual Statements</span>
+                    </div>
+                    {[
+                      <>Log in to <strong style={{ color: '#e2e8f0' }}>Groww</strong></>,
+                      <>Click your <strong style={{ color: '#e2e8f0' }}>profile icon</strong> (top right)</>,
+                      <>Click <strong style={{ color: '#e2e8f0' }}>Stocks, F&amp;O balance</strong></>,
+                      <>Click <strong style={{ color: '#e2e8f0' }}>All Transactions</strong></>,
+                      <>Click <strong style={{ color: '#e2e8f0' }}>Download statement</strong> (top right button)</>,
+                      <>Select date range (max 1 year) → <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
+                      <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
+                    ].map((item, i, arr) => (
+                      <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 12 : 0 }}>
+                        <span style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#64748b', width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 700, flexShrink: 0, marginTop: 2 }}>{i + 1}</span>
+                        <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0, lineHeight: 1.65 }}>{item}</p>
+                      </div>
+                    ))}
+                    <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <p style={{ fontSize: '0.77rem', color: '#92400e', margin: 0 }}>⚠ Download one PDF per year — repeat for each year separately</p>
+                    </div>
                   </div>
                 </div>
-                {[
-                  <>Log in to <strong style={{ color: '#e2e8f0' }}>Groww</strong></>,
-                  <>Click your <strong style={{ color: '#e2e8f0' }}>profile icon</strong> (top right)</>,
-                  <>Click <strong style={{ color: '#e2e8f0' }}>Stocks, F&amp;O balance</strong></>,
-                  <>Click <strong style={{ color: '#e2e8f0' }}>All Transactions</strong></>,
-                  <>Click <strong style={{ color: '#e2e8f0' }}>Download statement</strong> (top right button)</>,
-                  <>Select <strong style={{ color: '#e2e8f0' }}>date range</strong> (max 1 year) → click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
-                  <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
-                ].map((item, i, arr) => (
-                  <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 12 : 0 }}>
-                    <span style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#10b981', width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
-                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0, lineHeight: 1.6 }}>{item}</p>
-                  </div>
-                ))}
-                <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>✓ File type: PDF &nbsp;·&nbsp; Password: your PAN (uppercase)</p>
-                  <p style={{ fontSize: '0.78rem', color: '#92400e', margin: 0 }}>⚠ Download one PDF per year for the full period</p>
-                </div>
-              </div>
+              )}
 
               {/* Fyers */}
-              <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(99,102,241,0.18)', borderRadius: 14, padding: '22px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 800, color: '#818cf8' }}>F</div>
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 700, color: '#ffffff', fontSize: '0.95rem' }}>Fyers</p>
-                    <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>CSV format · one per year</p>
+              {activeGuideTab === 'fyers' && (
+                <div>
+                  <p style={{ margin: '0 0 18px', fontSize: '0.8rem', color: '#64748b' }}>CSV format · no password required</p>
+                  {[
+                    <>Log in to <strong style={{ color: '#e2e8f0' }}>Fyers</strong></>,
+                    <>Go to <strong style={{ color: '#e2e8f0' }}>Reports → Ledger</strong></>,
+                    <>Select the <strong style={{ color: '#e2e8f0' }}>Financial Year</strong></>,
+                    <>Click <strong style={{ color: '#e2e8f0' }}>Generate</strong></>,
+                    <>Click <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></>,
+                    <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
+                  ].map((item, i, arr) => (
+                    <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 14 : 0 }}>
+                      <span style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#818cf8', width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
+                      <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0, lineHeight: 1.65 }}>{item}</p>
+                    </div>
+                  ))}
+                  <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <p style={{ fontSize: '0.78rem', color: '#475569', margin: '0 0 4px' }}>✓ Password: not required</p>
+                    <p style={{ fontSize: '0.78rem', color: '#92400e', margin: 0 }}>⚠ Download one CSV per financial year for the full period</p>
                   </div>
                 </div>
-                {[
-                  <>Log in to <strong style={{ color: '#e2e8f0' }}>Fyers</strong></>,
-                  <>Go to <strong style={{ color: '#e2e8f0' }}>Reports → Ledger</strong></>,
-                  <>Select the <strong style={{ color: '#e2e8f0' }}>Financial Year</strong></>,
-                  <>Click <strong style={{ color: '#e2e8f0' }}>Generate</strong></>,
-                  <>Click <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></>,
-                  <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
-                ].map((item, i, arr) => (
-                  <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 12 : 0 }}>
-                    <span style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#818cf8', width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
-                    <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0, lineHeight: 1.6 }}>{item}</p>
-                  </div>
-                ))}
-                <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>✓ File type: CSV &nbsp;·&nbsp; Password: not required</p>
-                  <p style={{ fontSize: '0.78rem', color: '#92400e', margin: 0 }}>⚠ Download one CSV per year for the full period</p>
-                </div>
-              </div>
+              )}
 
             </div>
           </div>

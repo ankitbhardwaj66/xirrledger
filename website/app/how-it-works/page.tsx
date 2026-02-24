@@ -155,8 +155,8 @@ export default function HowItWorks() {
               </div>
             </div>
 
-            {/* Groww */}
-            <div style={{ ...glass, padding: '28px', borderColor: 'rgba(16,185,129,0.18)' }}>
+            {/* Groww — spans full width to fit 2 methods */}
+            <div style={{ ...glass, padding: '28px', borderColor: 'rgba(16,185,129,0.18)' }} className="lg:col-span-3 md:col-span-2">
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
                 <div style={{
                   width: '48px', height: '48px', borderRadius: '12px',
@@ -168,41 +168,78 @@ export default function HowItWorks() {
                   <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>Groww</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
                     <FaFilePdf size={13} color='#64748b' />
-                    <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>PDF Format</p>
+                    <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>PDF Format · Password: your PAN (uppercase)</p>
                   </div>
                 </div>
               </div>
 
-              {[
-                <>Log in to <a href="https://groww.in/" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600 }}>Groww</a></>,
-                <>Click your <strong style={{ color: '#e2e8f0' }}>profile icon</strong> (top right corner)</>,
-                <>Click <strong style={{ color: '#e2e8f0' }}>Stocks, F&amp;O balance</strong></>,
-                <>Click <strong style={{ color: '#e2e8f0' }}>All Transactions</strong></>,
-                <>Click <strong style={{ color: '#e2e8f0' }}>Download statement</strong> button (top right)</>,
-                <>Select the <strong style={{ color: '#e2e8f0' }}>date range</strong> (max 1 year) and click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
-                <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
-              ].map((item, i) => (
-                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 6 ? '14px' : 0 }}>
-                  <span style={{
-                    background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)',
-                    color: '#10b981', width: '24px', height: '24px', borderRadius: '50%',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '0.75rem', fontWeight: 700, flexShrink: 0, marginTop: '1px',
-                  }}>{i + 1}</span>
-                  <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0, lineHeight: 1.6 }}>{item}</p>
-                </div>
-              ))}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
 
-              <div style={{ marginTop: '20px', paddingTop: '18px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-                <p style={{ fontSize: '0.82rem', color: '#475569', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FaCheckCircle size={13} color='#10b981' /> File type: PDF
-                </p>
-                <p style={{ fontSize: '0.82rem', color: '#475569', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FaCheckCircle size={13} color='#10b981' /> Password: Your PAN (uppercase)
-                </p>
-                <p style={{ fontSize: '0.82rem', color: '#92400e', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FaExclamationTriangle size={13} color={GOLD} /> Download one PDF per year for the full period
-                </p>
+                {/* Method 1 */}
+                <div style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '12px', padding: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981' }}>Method 1</span>
+                    <span style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: '100px', border: '1px solid rgba(16,185,129,0.3)' }}>RECOMMENDED</span>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>— Groww Balance Statement</span>
+                  </div>
+                  {[
+                    <>Log in to <a href="https://groww.in/" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600 }}>Groww</a></>,
+                    <>Go to <strong style={{ color: '#e2e8f0' }}>Reports → Groww Balance Statement</strong></>,
+                    <>Select date range → click <strong style={{ color: '#e2e8f0' }}>Generate → Download</strong></>,
+                  ].map((item, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 2 ? '14px' : 0 }}>
+                      <span style={{
+                        background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)',
+                        color: '#10b981', width: '24px', height: '24px', borderRadius: '50%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '0.75rem', fontWeight: 700, flexShrink: 0, marginTop: '1px',
+                      }}>{i + 1}</span>
+                      <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0, lineHeight: 1.6 }}>{item}</p>
+                    </div>
+                  ))}
+                  <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <p style={{ fontSize: '0.82rem', color: '#475569', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FaCheckCircle size={13} color='#10b981' /> All transactions in one file
+                    </p>
+                    <p style={{ fontSize: '0.82rem', color: '#92400e', margin: 0, display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                      <FaExclamationTriangle size={13} color={GOLD} style={{ marginTop: 2, flexShrink: 0 }} /> As of Feb 2026, only available from 1 Apr 2023 in-app. For earlier history, contact Groww support via chat or email.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Method 2 */}
+                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b' }}>Method 2</span>
+                    <span style={{ background: 'rgba(255,255,255,0.06)', color: '#64748b', fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.1)' }}>ALTERNATIVE</span>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>— Annual Statements</span>
+                  </div>
+                  {[
+                    <>Log in to <a href="https://groww.in/" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600 }}>Groww</a></>,
+                    <>Click your <strong style={{ color: '#e2e8f0' }}>profile icon</strong> (top right corner)</>,
+                    <>Click <strong style={{ color: '#e2e8f0' }}>Stocks, F&amp;O balance</strong></>,
+                    <>Click <strong style={{ color: '#e2e8f0' }}>All Transactions</strong></>,
+                    <>Click <strong style={{ color: '#e2e8f0' }}>Download statement</strong> button (top right)</>,
+                    <>Select date range (max 1 year) → click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
+                    <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
+                  ].map((item, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 6 ? '14px' : 0 }}>
+                      <span style={{
+                        background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+                        color: '#64748b', width: '24px', height: '24px', borderRadius: '50%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '0.75rem', fontWeight: 700, flexShrink: 0, marginTop: '1px',
+                      }}>{i + 1}</span>
+                      <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0, lineHeight: 1.6 }}>{item}</p>
+                    </div>
+                  ))}
+                  <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                    <p style={{ fontSize: '0.82rem', color: '#92400e', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FaExclamationTriangle size={13} color={GOLD} /> Download one PDF per year — repeat for each year separately
+                    </p>
+                  </div>
+                </div>
+
               </div>
             </div>
 
