@@ -55,6 +55,7 @@ from reportlab.lib.enums import TA_CENTER
 from reportlab.pdfgen import canvas as rl_canvas
 from reportlab.graphics.shapes import Drawing, Rect, String as GStr
 from reportlab.graphics.charts.piecharts import Pie
+from reportlab.graphics.charts.barcharts import VerticalBarChart
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -994,52 +995,113 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         elements.append(PageBreak())
         elements.append(Paragraph("Individual Account Analysis", h2_s))
 
-        # ── Portfolio Composition Pie Chart ───────────────────
+        # ── Portfolio Composition (Pie + Bar side-by-side) ────
         SLICE_COLORS = ["#f59e0b", "#3b82f6", "#10b981", "#8b5cf6", "#f43f5e", "#06b6d4"]
-        total_inv    = combined_stats["total_invested"] or 1
-        pie_vals     = [max(s["total_invested"], 0) for s in individual_stats]
-        pie_names    = [s.get("account_name", "Account") for s in individual_stats]
-        pie_pcts     = [v / total_inv * 100 for v in pie_vals]
+        total_inv = combined_stats["total_invested"] or 1
+        pie_vals  = [max(s["total_invested"], 0) for s in individual_stats]
+        pie_names = [s.get("account_name", "Account") for s in individual_stats]
+        pie_pcts  = [v / total_inv * 100 for v in pie_vals]
+        xirr_vals = [round(s["xirr_percentage"], 2) if s.get("xirr_percentage") is not None else 0
+                     for s in individual_stats]
 
-        DW, DH  = page_w, 160
-        pie_r   = 62
-        pie_cx  = 80
-        pie_cy  = DH / 2
+        chart_h = 200
+        left_w  = page_w * 0.44
+        right_w = page_w * 0.56
 
-        d = Drawing(DW, DH)
+        # ── Left: Pie chart + legend ───────────────────────────
+        pie_r  = 55
+        pie_cx = left_w / 2
+        pie_cy = chart_h - pie_r - 10    # top-aligned, y from bottom
 
-        pc           = Pie()
-        pc.x         = pie_cx - pie_r
-        pc.y         = pie_cy - pie_r
-        pc.width     = pie_r * 2
-        pc.height    = pie_r * 2
-        pc.data      = [max(v, 0.001) for v in pie_vals]   # avoid zero-slice crash
-        pc.labels    = [""] * len(pie_vals)
+        pie_d = Drawing(left_w, chart_h)
+        pie_d.add(GStr(pie_cx, chart_h - 6, "Capital Distribution",
+                       fontName="Helvetica-Bold", fontSize=8,
+                       textAnchor="middle", fillColor=colors.HexColor("#f59e0b")))
+
+        pc = Pie()
+        pc.x      = pie_cx - pie_r
+        pc.y      = pie_cy - pie_r
+        pc.width  = pie_r * 2
+        pc.height = pie_r * 2
+        pc.data   = [max(v, 0.001) for v in pie_vals]
+        pc.labels = [""] * len(pie_vals)
         pc.slices.strokeColor = colors.HexColor("#ffffff")
         pc.slices.strokeWidth = 1.5
         for i, col in enumerate(SLICE_COLORS[:len(pie_vals)]):
             pc.slices[i].fillColor = colors.HexColor(col)
-        d.add(pc)
+        pie_d.add(pc)
 
-        # Legend
-        lx    = pie_cx + pie_r + 28
-        ly    = DH - 18
-        row_h = 24
+        # Legend below pie
+        leg_y = pie_cy - pie_r - 10
         for i, (name, pct) in enumerate(zip(pie_names, pie_pcts)):
             col   = SLICE_COLORS[i % len(SLICE_COLORS)]
-            y_pos = ly - i * row_h
-            d.add(Rect(lx, y_pos - 8, 11, 11,
-                       fillColor=colors.HexColor(col), strokeColor=None))
-            d.add(GStr(lx + 18, y_pos,
-                       name, fontName="Helvetica-Bold", fontSize=8,
-                       fillColor=colors.HexColor("#0f172a")))
-            d.add(GStr(lx + 18, y_pos - 11,
-                       f"{pct:.1f}% of total invested",
-                       fontName="Helvetica", fontSize=7,
-                       fillColor=colors.HexColor("#64748b")))
+            y_pos = leg_y - i * 16
+            pie_d.add(Rect(4, y_pos - 6, 9, 9,
+                           fillColor=colors.HexColor(col), strokeColor=None))
+            pie_d.add(GStr(17, y_pos,
+                           f"{name}  {pct:.1f}%",
+                           fontName="Helvetica", fontSize=7,
+                           fillColor=colors.HexColor("#0f172a")))
 
-        elements.append(d)
-        elements.append(Spacer(1, 6))
+        # ── Right: Bar chart (XIRR by account) ────────────────
+        bar_d = Drawing(right_w, chart_h)
+        bar_d.add(GStr(right_w / 2, chart_h - 6, "XIRR by Account",
+                       fontName="Helvetica-Bold", fontSize=8,
+                       textAnchor="middle", fillColor=colors.HexColor("#f59e0b")))
+
+        bc = VerticalBarChart()
+        bc.x      = 38
+        bc.y      = 38
+        bc.width  = right_w - 52
+        bc.height = chart_h - 54
+
+        bc.data = [xirr_vals]
+
+        y_min = min(0, min(xirr_vals)) - 1.5
+        y_max = max(0, max(xirr_vals)) + 1.5
+        step  = max(1, round((y_max - y_min) / 5))
+        bc.valueAxis.valueMin         = y_min
+        bc.valueAxis.valueMax         = y_max
+        bc.valueAxis.valueStep        = step
+        bc.valueAxis.labelTextFormat  = '%g%%'
+        bc.valueAxis.labels.fontSize  = 7
+        bc.valueAxis.labels.fontName  = "Helvetica"
+        bc.valueAxis.labels.fillColor = colors.HexColor("#64748b")
+        bc.valueAxis.strokeColor      = colors.HexColor("#cbd5e1")
+        bc.valueAxis.gridStrokeColor  = colors.HexColor("#e2e8f0")
+
+        # Short labels: "Zerodha (GZW478)" → "GZW478", "Groww (PAN)" → "Groww"
+        short_names = []
+        for s in individual_stats:
+            name = s.get("account_name", "Account")
+            short_names.append(name.split("(")[1].rstrip(")") if "(" in name else name[:10])
+        bc.categoryAxis.categoryNames   = short_names
+        bc.categoryAxis.labels.fontSize = 7
+        bc.categoryAxis.labels.fontName = "Helvetica"
+        bc.categoryAxis.labels.fillColor = colors.HexColor("#0f172a")
+        bc.categoryAxis.strokeColor     = colors.HexColor("#cbd5e1")
+
+        bc.groupSpacing   = 10
+        bc.barSpacing     = 2
+        bc.bars.strokeColor = None
+        for i, col in enumerate(SLICE_COLORS[:len(xirr_vals)]):
+            bc.bars[0, i].fillColor = colors.HexColor(col)
+
+        bar_d.add(bc)
+
+        # ── Side-by-side table ─────────────────────────────────
+        charts_t = Table([[pie_d, bar_d]], colWidths=[left_w, right_w])
+        charts_t.setStyle(TableStyle([
+            ("VALIGN",        (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING",   (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING",  (0, 0), (-1, -1), 0),
+            ("TOPPADDING",    (0, 0), (-1, -1), 0),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+            ("BOX",           (0, 0), (0, 0), 0.5, colors.HexColor("#e2e8f0")),
+            ("BOX",           (1, 0), (1, 0), 0.5, colors.HexColor("#e2e8f0")),
+        ]))
+        elements.append(charts_t)
+        elements.append(Spacer(1, 8))
 
         for stats in individual_stats:
             acc_xirr   = f"{stats['xirr_percentage']:.2f}%" if stats.get("xirr_percentage") is not None else "N/A"
