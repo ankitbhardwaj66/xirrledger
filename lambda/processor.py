@@ -53,6 +53,8 @@ from reportlab.platypus import (
 )
 from reportlab.lib.enums import TA_CENTER
 from reportlab.pdfgen import canvas as rl_canvas
+from reportlab.graphics.shapes import Drawing, Rect, String as GStr
+from reportlab.graphics.charts.piecharts import Pie
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -991,6 +993,53 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
     if len(individual_stats) > 1:
         elements.append(PageBreak())
         elements.append(Paragraph("Individual Account Analysis", h2_s))
+
+        # ── Portfolio Composition Pie Chart ───────────────────
+        SLICE_COLORS = ["#f59e0b", "#3b82f6", "#10b981", "#8b5cf6", "#f43f5e", "#06b6d4"]
+        total_inv    = combined_stats["total_invested"] or 1
+        pie_vals     = [max(s["total_invested"], 0) for s in individual_stats]
+        pie_names    = [s.get("account_name", "Account") for s in individual_stats]
+        pie_pcts     = [v / total_inv * 100 for v in pie_vals]
+
+        DW, DH  = page_w, 160
+        pie_r   = 62
+        pie_cx  = 80
+        pie_cy  = DH / 2
+
+        d = Drawing(DW, DH)
+
+        pc           = Pie()
+        pc.x         = pie_cx - pie_r
+        pc.y         = pie_cy - pie_r
+        pc.width     = pie_r * 2
+        pc.height    = pie_r * 2
+        pc.data      = [max(v, 0.001) for v in pie_vals]   # avoid zero-slice crash
+        pc.labels    = [""] * len(pie_vals)
+        pc.slices.strokeColor = colors.HexColor("#ffffff")
+        pc.slices.strokeWidth = 1.5
+        for i, col in enumerate(SLICE_COLORS[:len(pie_vals)]):
+            pc.slices[i].fillColor = colors.HexColor(col)
+        d.add(pc)
+
+        # Legend
+        lx    = pie_cx + pie_r + 28
+        ly    = DH - 18
+        row_h = 24
+        for i, (name, pct) in enumerate(zip(pie_names, pie_pcts)):
+            col   = SLICE_COLORS[i % len(SLICE_COLORS)]
+            y_pos = ly - i * row_h
+            d.add(Rect(lx, y_pos - 8, 11, 11,
+                       fillColor=colors.HexColor(col), strokeColor=None))
+            d.add(GStr(lx + 18, y_pos,
+                       name, fontName="Helvetica-Bold", fontSize=8,
+                       fillColor=colors.HexColor("#0f172a")))
+            d.add(GStr(lx + 18, y_pos - 11,
+                       f"{pct:.1f}% of total invested",
+                       fontName="Helvetica", fontSize=7,
+                       fillColor=colors.HexColor("#64748b")))
+
+        elements.append(d)
+        elements.append(Spacer(1, 6))
 
         for stats in individual_stats:
             acc_xirr   = f"{stats['xirr_percentage']:.2f}%" if stats.get("xirr_percentage") is not None else "N/A"
