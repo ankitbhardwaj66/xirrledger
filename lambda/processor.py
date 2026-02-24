@@ -1001,10 +1001,9 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         pie_vals  = [max(s["total_invested"], 0) for s in individual_stats]
         pie_names = [s.get("account_name", "Account") for s in individual_stats]
         pie_pcts  = [v / total_inv * 100 for v in pie_vals]
-        xirr_vals = [round(s["xirr_percentage"], 2) if s.get("xirr_percentage") is not None else 0
-                     for s in individual_stats]
+        gain_vals = [round(s.get("net_gain") or 0, 2) for s in individual_stats]
 
-        chart_h = 200
+        chart_h = 210
         left_w  = page_w * 0.44
         right_w = page_w * 0.56
 
@@ -1043,48 +1042,56 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                            fontName="Helvetica", fontSize=7,
                            fillColor=colors.HexColor("#0f172a")))
 
-        # ── Right: Bar chart (XIRR by account) ────────────────
+        # ── Right: Bar chart (Profit / Loss by account) ───────
         bar_d = Drawing(right_w, chart_h)
-        bar_d.add(GStr(right_w / 2, chart_h - 6, "XIRR by Account",
+        bar_d.add(GStr(right_w / 2, chart_h - 6, "Profit / Loss by Account",
                        fontName="Helvetica-Bold", fontSize=8,
                        textAnchor="middle", fillColor=colors.HexColor("#f59e0b")))
 
         bc = VerticalBarChart()
-        bc.x      = 38
-        bc.y      = 38
-        bc.width  = right_w - 52
-        bc.height = chart_h - 54
+        bc.x      = 46
+        bc.y      = 36
+        bc.width  = right_w - 58
+        bc.height = chart_h - 52
 
-        bc.data = [xirr_vals]
+        bc.data = [gain_vals]
 
-        y_min = min(0, min(xirr_vals)) - 1.5
-        y_max = max(0, max(xirr_vals)) + 1.5
-        step  = max(1, round((y_max - y_min) / 5))
+        padding = max(abs(v) for v in gain_vals) * 0.15 or 10000
+        y_min   = min(0, min(gain_vals)) - padding
+        y_max   = max(0, max(gain_vals)) + padding
+
+        def _lakh_fmt(v):
+            if v == 0:
+                return "0"
+            l = v / 100000
+            sign = "+" if l > 0 else ""
+            return f"{sign}{l:.1f}L"
+
         bc.valueAxis.valueMin         = y_min
         bc.valueAxis.valueMax         = y_max
-        bc.valueAxis.valueStep        = step
-        bc.valueAxis.labelTextFormat  = '%g%%'
+        bc.valueAxis.valueSteps       = None
+        bc.valueAxis.labelTextFormat  = _lakh_fmt
         bc.valueAxis.labels.fontSize  = 7
         bc.valueAxis.labels.fontName  = "Helvetica"
         bc.valueAxis.labels.fillColor = colors.HexColor("#64748b")
         bc.valueAxis.strokeColor      = colors.HexColor("#cbd5e1")
         bc.valueAxis.gridStrokeColor  = colors.HexColor("#e2e8f0")
 
-        # Short labels: "Zerodha (GZW478)" → "GZW478", "Groww (PAN)" → "Groww"
+        # Short X labels: "Zerodha (GZW478)" → "GZW478"
         short_names = []
         for s in individual_stats:
             name = s.get("account_name", "Account")
             short_names.append(name.split("(")[1].rstrip(")") if "(" in name else name[:10])
-        bc.categoryAxis.categoryNames   = short_names
-        bc.categoryAxis.labels.fontSize = 7
-        bc.categoryAxis.labels.fontName = "Helvetica"
+        bc.categoryAxis.categoryNames    = short_names
+        bc.categoryAxis.labels.fontSize  = 7
+        bc.categoryAxis.labels.fontName  = "Helvetica"
         bc.categoryAxis.labels.fillColor = colors.HexColor("#0f172a")
-        bc.categoryAxis.strokeColor     = colors.HexColor("#cbd5e1")
+        bc.categoryAxis.strokeColor      = colors.HexColor("#cbd5e1")
 
-        bc.groupSpacing   = 10
-        bc.barSpacing     = 2
+        bc.groupSpacing     = 10
+        bc.barSpacing       = 2
         bc.bars.strokeColor = None
-        for i, col in enumerate(SLICE_COLORS[:len(xirr_vals)]):
+        for i, col in enumerate(SLICE_COLORS[:len(gain_vals)]):
             bc.bars[0, i].fillColor = colors.HexColor(col)
 
         bar_d.add(bc)
