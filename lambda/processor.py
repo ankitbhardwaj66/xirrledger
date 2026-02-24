@@ -853,17 +853,16 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         ["Total Withdrawn",          _fmt_inr(cs["total_withdrawn"])],
         ["Current Portfolio Value",  _fmt_inr(cs["current_value"])],
         ["Net Gain / Loss",          _fmt_inr(cs["net_gain"])],     # row 7
-        ["Simple Return",            f"{cs['simple_return']:.2f}%"],
-        ["XIRR (Annualised)",        xirr_v],
+        ["XIRR (Annualised)",        xirr_v],                       # row 8
     ]
     st = Table(summary_rows, colWidths=[page_w * 0.56, page_w * 0.44])
     st.setStyle(_base_table_style("#0f172a"))
     st.setStyle(TableStyle([
         ("BACKGROUND",  (0, 7), (-1, 7), gain_bg),          # Net Gain row (index 7)
         ("FONTNAME",    (1, 7), (1, 7),  "Helvetica-Bold"),  # bold value
-        ("FONTNAME",    (1, 9), (1, 9),  "Helvetica-Bold"),  # bold XIRR value
-        ("FONTSIZE",    (1, 9), (1, 9),  10),
-        ("TEXTCOLOR",   (1, 9), (1, 9),  colors.HexColor("#f59e0b")),
+        ("FONTNAME",    (1, 8), (1, 8),  "Helvetica-Bold"),  # bold XIRR value
+        ("FONTSIZE",    (1, 8), (1, 8),  10),
+        ("TEXTCOLOR",   (1, 8), (1, 8),  colors.HexColor("#f59e0b")),
     ]))
     elements.append(st)
 
@@ -957,17 +956,16 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                 ["Total Withdrawn",    _fmt_inr(stats["total_withdrawn"])],
                 ["Current Value",      _fmt_inr(stats["current_value"])],
                 ["Net Gain / Loss",    _fmt_inr(stats["net_gain"])],    # row 6
-                ["Simple Return",      f"{stats['simple_return']:.2f}%"],
-                ["XIRR (Annualised)",  acc_xirr],
+                ["XIRR (Annualised)",  acc_xirr],                       # row 7
             ]
             at = Table(rows, colWidths=[page_w * 0.56, page_w * 0.44])
             at.setStyle(_base_table_style("#1e293b"))
             at.setStyle(TableStyle([
                 ("BACKGROUND", (0, 6), (-1, 6), acc_gain_bg),
                 ("FONTNAME",   (1, 6), (1, 6),  "Helvetica-Bold"),
-                ("FONTNAME",   (1, 8), (1, 8),  "Helvetica-Bold"),
-                ("FONTSIZE",   (1, 8), (1, 8),  10),
-                ("TEXTCOLOR",  (1, 8), (1, 8),  colors.HexColor("#f59e0b")),
+                ("FONTNAME",   (1, 7), (1, 7),  "Helvetica-Bold"),
+                ("FONTSIZE",   (1, 7), (1, 7),  10),
+                ("TEXTCOLOR",  (1, 7), (1, 7),  colors.HexColor("#f59e0b")),
             ]))
             elements.append(at)
             elements.append(Spacer(1, 10))
