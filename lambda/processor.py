@@ -306,9 +306,14 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
 
         logger.info("Processing complete for session %s — XIRR: %s%%", session_id, xirr_pct)
 
-    except Exception as e:
-        logger.exception("Processing failed for session %s", session_id)
+    except ValueError as e:
+        # ValueError messages are already written to be user-friendly
+        logger.error("Processing failed (ValueError) for session %s: %s", session_id, e)
         update_status({"status": "error", "message": str(e)})
+    except Exception as e:
+        # Catch-all for unexpected errors — never show raw Python to the user
+        logger.exception("Processing failed for session %s", session_id)
+        update_status({"status": "error", "message": "Something went wrong while processing your files. Please go back and try again."})
 
 
 # ─────────────────────────────────────────────────────────────
