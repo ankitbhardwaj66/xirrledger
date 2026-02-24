@@ -421,16 +421,9 @@ export default function CalculatorPage() {
       pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
       for (const uf of filesToCheck) {
         const data = await uf.file.arrayBuffer();
-        const pdfDoc = await pdfjsLib.getDocument({ data, password: pan }).promise;
-        // Check first page text contains "groww" to confirm it's the right file type
-        const page1 = await pdfDoc.getPage(1);
-        const tc = await page1.getTextContent();
-        const pageText = (tc.items as Array<{ str: string }>).map(i => i.str).join(' ');
-        if (!/groww/i.test(pageText)) {
-          setPanValidationStatus(prev => ({ ...prev, [key]: 'invalid' }));
-          setPanValidationErrors(prev => ({ ...prev, [key]: 'This does not appear to be a Groww Balance Statement — please upload the correct file.' }));
-          return;
-        }
+        // If PAN decrypts the PDF successfully, that's the validation signal.
+        // Content check is done by Lambda /validate after upload.
+        await pdfjsLib.getDocument({ data, password: pan }).promise;
       }
       setPanValidationStatus(prev => ({ ...prev, [key]: 'valid' }));
       setPanValidationErrors(prev => { const next = { ...prev }; delete next[key]; return next; });
