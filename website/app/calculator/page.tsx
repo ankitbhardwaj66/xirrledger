@@ -1250,7 +1250,8 @@ export default function CalculatorPage() {
                     {[
                       <>Log in to <strong style={{ color: '#e2e8f0' }}>Groww</strong></>,
                       <>Click your <strong style={{ color: '#e2e8f0' }}>profile icon</strong> (top right)</>,
-                      <>Go to <strong style={{ color: '#e2e8f0' }}>Transactions → Groww Balance Statement</strong></>,
+                      <>Click <strong style={{ color: '#e2e8f0' }}>Reports</strong></>,
+                      <>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions → Groww Balance Statement</strong></>,
                       <>Choose format: select <strong style={{ color: '#e2e8f0' }}>PDF</strong> (not Excel)</>,
                       <>Set date range → click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
                     ].map((item, i, arr) => (

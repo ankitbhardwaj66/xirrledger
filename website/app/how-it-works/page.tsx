@@ -185,11 +185,12 @@ export default function HowItWorks() {
                   {[
                     <>Log in to <a href="https://groww.in/" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600 }}>Groww</a></>,
                     <>Click your <strong style={{ color: '#e2e8f0' }}>profile icon</strong> (top right)</>,
-                    <>Go to <strong style={{ color: '#e2e8f0' }}>Transactions → Groww Balance Statement</strong></>,
+                    <>Click <strong style={{ color: '#e2e8f0' }}>Reports</strong></>,
+                    <>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions → Groww Balance Statement</strong></>,
                     <>Choose format: select <strong style={{ color: '#e2e8f0' }}>PDF</strong> (not Excel)</>,
                     <>Set date range → click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
                   ].map((item, i) => (
-                    <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 4 ? '14px' : 0 }}>
+                    <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 5 ? '14px' : 0 }}>
                       <span style={{
                         background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)',
                         color: '#10b981', width: '24px', height: '24px', borderRadius: '50%',
