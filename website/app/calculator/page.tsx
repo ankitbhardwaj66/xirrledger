@@ -20,6 +20,7 @@ interface UploadedFile {
   broker: 'zerodha' | 'groww' | 'fyers' | 'unknown';
   hash: string;
   formatError?: string;
+  fyersClientId?: string;
 }
 
 interface Account {
@@ -126,49 +127,41 @@ async function hashFile(file: File): Promise<string> {
     .slice(0, 16);
 }
 
-async function validateFileFormat(file: File, broker: UploadedFile['broker']): Promise<string | undefined> {
-  if (broker === 'unknown') {
-    return 'Unrecognized file — please upload a Zerodha CSV, Groww PDF, or Fyers CSV.';
-  }
-  try {
-    if (broker === 'zerodha') {
-      const text = await file.slice(0, 4096).text();
-      const firstLine = text.split('\n')[0]?.toLowerCase() ?? '';
-      if (!firstLine.includes('particulars')) {
-        return 'This CSV has the wrong structure. Please download the correct statement from your broker.';
-      }
-    }
-    if (broker === 'fyers') {
-      const text = await file.slice(0, 8192).text();
-      if (!text.includes('Transaction type') || !text.includes('Debit amount')) {
-        return 'This CSV has the wrong structure. Please download the correct statement from your broker.';
-      }
-    }
-    if (broker === 'groww') {
+async function detectBrokerFromContent(file: File): Promise<Pick<UploadedFile, 'broker' | 'formatError' | 'fyersClientId'>> {
+  const name = file.name.toLowerCase();
+  const isPdf = file.type === 'application/pdf' || name.endsWith('.pdf');
+  const isCsv = file.type === 'text/csv' || name.endsWith('.csv');
+
+  if (isPdf) {
+    try {
       const bytes = await file.slice(0, 8).arrayBuffer();
       const sig = new TextDecoder().decode(new Uint8Array(bytes));
       if (!sig.startsWith('%PDF')) {
-        return 'Not a valid PDF. Please upload your Groww Balance Statement PDF.';
+        return { broker: 'unknown', formatError: 'Not a valid PDF. Please upload your Groww Balance Statement PDF.' };
       }
-    }
-  } catch {
-    // unreadable file — let the Lambda catch it later
+    } catch { /* fall through */ }
+    return { broker: 'groww' };
   }
-  return undefined;
-}
 
-function detectBroker(file: File): 'zerodha' | 'groww' | 'fyers' | 'unknown' {
-  const name = file.name.toLowerCase();
-  if (name.startsWith('fyers_')) return 'fyers';
-  if (file.type === 'text/csv' || name.endsWith('.csv')) return 'zerodha';
-  if (file.type === 'application/pdf' || name.endsWith('.pdf')) return 'groww';
-  return 'unknown';
-}
+  if (isCsv) {
+    try {
+      const text = await file.slice(0, 8192).text();
+      // Zerodha: header row contains 'particulars'
+      if (text.split('\n')[0]?.toLowerCase().includes('particulars')) {
+        return { broker: 'zerodha' };
+      }
+      // Fyers: content contains 'Transaction type' + 'Debit amount'
+      if (text.includes('Transaction type') && text.includes('Debit amount')) {
+        const m = text.match(/Client\s+ID[,\s:]+([A-Z0-9]+)/i);
+        return { broker: 'fyers', fyersClientId: m ? m[1] : file.name.replace(/\.csv$/i, '') };
+      }
+      return { broker: 'unknown', formatError: 'This CSV has the wrong structure. Please download the correct statement from your broker.' };
+    } catch {
+      return { broker: 'unknown', formatError: 'Could not read this file. Please check it is not corrupted.' };
+    }
+  }
 
-function extractFyersClientId(filename: string): string {
-  // Ledger format: FYERS_ledger_XS80867_2024-04-01_to_2025-03-31.csv
-  const m = filename.match(/FYERS_ledger_([^_]+)_/i);
-  return m ? m[1] : filename.replace(/\.csv$/i, '');
+  return { broker: 'unknown', formatError: 'Unrecognized file — please upload a Zerodha CSV, Groww PDF, or Fyers CSV.' };
 }
 
 function formatINR(amount: number): string {
@@ -192,10 +185,10 @@ function buildAccounts(files: UploadedFile[], filePans: Record<string, string>, 
     });
   });
 
-  // Fyers: group by Client ID extracted from filename
+  // Fyers: group by Client ID extracted from file content
   const fyersByClientId: Record<string, string[]> = {};
   files.filter(f => f.broker === 'fyers').forEach(f => {
-    const clientId = extractFyersClientId(f.file.name);
+    const clientId = f.fyersClientId || f.file.name.replace(/\.csv$/i, '');
     if (!fyersByClientId[clientId]) fyersByClientId[clientId] = [];
     fyersByClientId[clientId].push(f.file.name);
   });
@@ -373,9 +366,8 @@ export default function CalculatorPage() {
   const addFiles = useCallback(async (incoming: FileList | File[]) => {
     const withHashes = await Promise.all(
       Array.from(incoming).map(async file => {
-        const broker = detectBroker(file);
-        const [hash, formatError] = await Promise.all([hashFile(file), validateFileFormat(file, broker)]);
-        return { file, broker, hash, formatError };
+        const [detected, hash] = await Promise.all([detectBrokerFromContent(file), hashFile(file)]);
+        return { file, hash, ...detected };
       })
     );
     setFiles(prev => {
