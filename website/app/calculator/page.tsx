@@ -134,10 +134,14 @@ async function detectBrokerFromContent(file: File): Promise<Pick<UploadedFile, '
 
   if (isPdf) {
     try {
-      const bytes = await file.slice(0, 8).arrayBuffer();
-      const sig = new TextDecoder().decode(new Uint8Array(bytes));
-      if (!sig.startsWith('%PDF')) {
+      const allBytes = await file.arrayBuffer();
+      const content = new TextDecoder('latin1').decode(new Uint8Array(allBytes));
+      if (!content.startsWith('%PDF')) {
         return { broker: 'unknown', formatError: 'Not a valid PDF. Please upload your Groww Balance Statement PDF.' };
+      }
+      // Groww PDFs are always PAN-encrypted. /Encrypt only exists in encrypted PDFs.
+      if (!content.includes('/Encrypt')) {
+        return { broker: 'unknown', formatError: 'This PDF is not password-protected. Groww statements are always encrypted with your PAN — please upload the correct file.' };
       }
     } catch { /* fall through */ }
     return { broker: 'groww' };
@@ -422,25 +426,6 @@ export default function CalculatorPage() {
       for (const uf of filesToCheck) {
         const data = await uf.file.arrayBuffer();
 
-        // Step 1: try opening WITHOUT a password.
-        // If it succeeds → the PDF is not encrypted → definitely not a Groww statement.
-        try {
-          await pdfjsLib.getDocument({ data }).promise;
-          // Opened without a password — not a Groww file.
-          setPanValidationStatus(prev => ({ ...prev, [key]: 'invalid' }));
-          setPanValidationErrors(prev => ({ ...prev, [key]: 'This PDF is not password-protected. Groww statements are always encrypted with your PAN — please upload the correct file.' }));
-          return;
-        } catch (e: unknown) {
-          if ((e as { name?: string })?.name !== 'PasswordException') {
-            // Unexpected error (corrupted file etc.) — fail gracefully
-            setPanValidationStatus(prev => ({ ...prev, [key]: 'invalid' }));
-            setPanValidationErrors(prev => ({ ...prev, [key]: 'Could not read this PDF — please check the file is not corrupted.' }));
-            return;
-          }
-          // PasswordException: PDF IS encrypted — proceed to try with PAN
-        }
-
-        // Step 2: open with the entered PAN.
         await pdfjsLib.getDocument({ data, password: pan }).promise;
       }
       setPanValidationStatus(prev => ({ ...prev, [key]: 'valid' }));
