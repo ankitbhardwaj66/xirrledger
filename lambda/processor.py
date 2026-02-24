@@ -726,12 +726,12 @@ def _base_table_style(header_bg, num_cols=2):
     return TableStyle(style)
 
 
-def _kpi_cell(label, value, sublabel, bg, value_color="#f59e0b"):
+def _kpi_cell(label, value, sublabel, bg, value_color="#f59e0b", label_color="#94a3b8"):
     """Single KPI banner cell with stacked label / big value / sublabel."""
     return Paragraph(
-        f'<font name="Helvetica" size="8" color="#94a3b8">{label}</font><br/>'
+        f'<font name="Helvetica" size="8" color="{label_color}">{label}</font><br/>'
         f'<font name="Helvetica-Bold" size="20" color="{value_color}">{value}</font><br/>'
-        f'<font name="Helvetica" size="8" color="#94a3b8">{sublabel}</font>',
+        f'<font name="Helvetica" size="8" color="{label_color}">{sublabel}</font>',
         ParagraphStyle("KPI", alignment=TA_CENTER, leading=22,
                        backColor=colors.HexColor(bg), borderPadding=(14, 8, 14, 8))
     )
@@ -813,7 +813,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
     kpi_row = [[
         _kpi_cell("YOUR XIRR",     xirr_v,  "annualised return", "#0f172a"),
         _kpi_cell("NIFTY 50 XIRR", nifty_v, "benchmark return",  "#1e293b"),
-        _kpi_cell("PERFORMANCE",   beat_v,  beat_lbl,             kpi3_bg,  value_color="#ffffff"),
+        _kpi_cell("PERFORMANCE",   beat_v,  beat_lbl,             kpi3_bg,  value_color="#ffffff", label_color="#ffffff"),
     ]]
     cw = page_w / 3
     kpi_t = Table(kpi_row, colWidths=[cw, cw, cw], spaceBefore=0,
