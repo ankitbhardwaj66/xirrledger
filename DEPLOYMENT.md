@@ -94,7 +94,11 @@
 - `handler.py` — routes `POST /session` (presigned URLs) and `POST /process` (async trigger)
 - `processor.py` — full pipeline:
   - Zerodha CSV parser (Funds added, Payouts, Quarterly settlements)
-  - Groww PDF parser (pdfplumber, PAN as password)
+  - Groww PDF parser (pdfplumber, PAN as password) — supports **two formats**:
+    1. Annual statement PDFs (downloaded via Groww UI — from April 2023 only)
+    2. "Statement of accounts of funds" PDF (full history — request from Groww support team)
+    - Deposit segment types matched: `RAZORPAY_DEPOSIT`, `DIRECT_NETBANKING`, `GROWW_MANDATE`, `GROWW_UPI`
+    - Withdrawal segment type: `GROWW_WITHDRAW`
   - Cross-file duplicate detection for Groww (same date+amount across files = skip)
   - **Manual entries** (`manual_entries` in event) — injected as additional cash outflows before XIRR (commit `78c464b`)
   - XIRR calculation (Newton-Raphson + Brent fallback)

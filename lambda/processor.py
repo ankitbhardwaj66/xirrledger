@@ -430,7 +430,10 @@ def parse_groww_pdf(file_bytes, password=None):
                         except Exception:
                             continue
 
-                        if "DEPOSIT" in seg_type.upper() and credit_amt:
+                        # Deposit types: RAZORPAY_DEPOSIT, DIRECT_NETBANKING,
+                        # GROWW_MANDATE, GROWW_UPI (all are real bank → broker transfers)
+                        _DEPOSIT_KEYWORDS = ("DEPOSIT", "NETBANKING", "MANDATE", "UPI")
+                        if any(k in seg_type.upper() for k in _DEPOSIT_KEYWORDS) and credit_amt:
                             try:
                                 amt = float(credit_amt.replace(",", "").strip())
                                 if amt > 0:
