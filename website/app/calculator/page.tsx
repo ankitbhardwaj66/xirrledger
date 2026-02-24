@@ -421,8 +421,26 @@ export default function CalculatorPage() {
       pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
       for (const uf of filesToCheck) {
         const data = await uf.file.arrayBuffer();
-        // If PAN decrypts the PDF successfully, that's the validation signal.
-        // Content check is done by Lambda /validate after upload.
+
+        // Step 1: try opening WITHOUT a password.
+        // If it succeeds → the PDF is not encrypted → definitely not a Groww statement.
+        try {
+          await pdfjsLib.getDocument({ data }).promise;
+          // Opened without a password — not a Groww file.
+          setPanValidationStatus(prev => ({ ...prev, [key]: 'invalid' }));
+          setPanValidationErrors(prev => ({ ...prev, [key]: 'This PDF is not password-protected. Groww statements are always encrypted with your PAN — please upload the correct file.' }));
+          return;
+        } catch (e: unknown) {
+          if ((e as { name?: string })?.name !== 'PasswordException') {
+            // Unexpected error (corrupted file etc.) — fail gracefully
+            setPanValidationStatus(prev => ({ ...prev, [key]: 'invalid' }));
+            setPanValidationErrors(prev => ({ ...prev, [key]: 'Could not read this PDF — please check the file is not corrupted.' }));
+            return;
+          }
+          // PasswordException: PDF IS encrypted — proceed to try with PAN
+        }
+
+        // Step 2: open with the entered PAN.
         await pdfjsLib.getDocument({ data, password: pan }).promise;
       }
       setPanValidationStatus(prev => ({ ...prev, [key]: 'valid' }));
