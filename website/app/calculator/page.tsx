@@ -1249,8 +1249,10 @@ export default function CalculatorPage() {
                     </div>
                     {[
                       <>Log in to <strong style={{ color: '#e2e8f0' }}>Groww</strong></>,
-                      <>Go to <strong style={{ color: '#e2e8f0' }}>Reports → Groww Balance Statement</strong></>,
-                      <>Select date range → click <strong style={{ color: '#e2e8f0' }}>Generate → Download</strong></>,
+                      <>Click your <strong style={{ color: '#e2e8f0' }}>profile icon</strong> (top right)</>,
+                      <>Go to <strong style={{ color: '#e2e8f0' }}>Transactions → Groww Balance Statement</strong></>,
+                      <>Choose format: select <strong style={{ color: '#e2e8f0' }}>PDF</strong> (not Excel)</>,
+                      <>Set date range → click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
                     ].map((item, i, arr) => (
                       <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 12 : 0 }}>
                         <span style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#10b981', width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 700, flexShrink: 0, marginTop: 2 }}>{i + 1}</span>
