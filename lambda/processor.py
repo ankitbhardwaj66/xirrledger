@@ -726,11 +726,11 @@ def _base_table_style(header_bg, num_cols=2):
     return TableStyle(style)
 
 
-def _kpi_cell(label, value, sublabel, bg):
+def _kpi_cell(label, value, sublabel, bg, value_color="#f59e0b"):
     """Single KPI banner cell with stacked label / big value / sublabel."""
     return Paragraph(
         f'<font name="Helvetica" size="8" color="#94a3b8">{label}</font><br/>'
-        f'<font name="Helvetica-Bold" size="20" color="#f59e0b">{value}</font><br/>'
+        f'<font name="Helvetica-Bold" size="20" color="{value_color}">{value}</font><br/>'
         f'<font name="Helvetica" size="8" color="#94a3b8">{sublabel}</font>',
         ParagraphStyle("KPI", alignment=TA_CENTER, leading=22,
                        backColor=colors.HexColor(bg), borderPadding=(14, 8, 14, 8))
@@ -763,7 +763,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
 
     # ── Shared paragraph styles ───────────────────────────────
     title_s = ParagraphStyle("T", fontSize=22, fontName="Helvetica-Bold",
-                              textColor=colors.HexColor("#0f172a"),
+                              textColor=colors.HexColor("#f59e0b"),
                               alignment=TA_CENTER, spaceAfter=16)
     sub_s   = ParagraphStyle("S", fontSize=9,  fontName="Helvetica",
                               textColor=colors.HexColor("#64748b"),
@@ -785,7 +785,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
     cs = combined_stats
 
     # ── Page title ────────────────────────────────────────────
-    elements.append(Paragraph("XIRR Calculator Report", title_s))
+    elements.append(Paragraph("XIRR Ledger Report", title_s))
     elements.append(Paragraph(
         f"Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}  |  "
         f"Prepared for: <b>{user_name}</b>",
@@ -811,12 +811,11 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         kpi3_bg  = "#37474f"  # neutral dark grey when no comparison possible
 
     kpi_row = [[
-        _kpi_cell("YOUR XIRR",    xirr_v,  "annualised return",    "#0f172a"),
-        _kpi_cell("NIFTY 50 XIRR", nifty_v, "benchmark return",   "#1e293b"),
-        _kpi_cell("PERFORMANCE",   beat_v,  beat_lbl,               kpi3_bg),
+        _kpi_cell("YOUR XIRR",     xirr_v,  "annualised return", "#0f172a"),
+        _kpi_cell("NIFTY 50 XIRR", nifty_v, "benchmark return",  "#1e293b"),
+        _kpi_cell("PERFORMANCE",   beat_v,  beat_lbl,             kpi3_bg,  value_color="#ffffff"),
     ]]
-    gap = 4
-    cw  = (page_w - gap * 2) / 3
+    cw = page_w / 3
     kpi_t = Table(kpi_row, colWidths=[cw, cw, cw], spaceBefore=0,
                   style=TableStyle([
                       ("BACKGROUND",    (0, 0), (0, 0), colors.HexColor("#0f172a")),
@@ -842,7 +841,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
     txn_str = (f"{cs.get('n_investments', 0)} investments,  "
                f"{cs.get('n_withdrawals', 0)} withdrawals")
 
-    gain_bg = colors.HexColor("#e8f5e9") if (cs.get("net_gain") or 0) >= 0 else colors.HexColor("#ffebee")
+    gain_bg = colors.HexColor("#d1fae5") if (cs.get("net_gain") or 0) >= 0 else colors.HexColor("#fee2e2")
 
     summary_rows = [
         ["Metric",                  "Value"],
@@ -892,8 +891,8 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
     if has_nifty:
         perf_str     = f"BEAT BY {diff:.2f}%" if diff > 0 else f"UNDERPERFORMED BY {abs(diff):.2f}%"
         val_diff_str = _fmt_inr(cs["current_value"] - cs["nifty_current_value"])
-        perf_bg      = colors.HexColor("#e8f5e9") if diff > 0 else colors.HexColor("#fff3e0")
-        perf_txt_col = colors.HexColor("#1b5e20") if diff > 0 else colors.HexColor("#e65100")
+        perf_bg      = colors.HexColor("#d1fae5") if diff > 0 else colors.HexColor("#fee2e2")
+        perf_txt_col = colors.HexColor("#065f46") if diff > 0 else colors.HexColor("#991b1b")
     else:
         perf_str     = "Nifty data unavailable"
         val_diff_str = "N/A"
@@ -931,6 +930,63 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         note_s
     ))
 
+    # ── Insight Card ──────────────────────────────────────────
+    if has_nifty:
+        period_yrs = cs.get("investment_period_years") or 0
+        if diff > 0:
+            tag           = "OUTPERFORMING"
+            insight_title = f"Beating Nifty 50 by {diff:.2f}%"
+            insight_body  = ("Your portfolio is outperforming the benchmark that beats most "
+                             "professional fund managers. Keep it up!")
+            card_bg       = "#0b2418"
+            card_border   = "#10b981"
+            tag_color     = "#10b981"
+            body_color    = "#6ee7b7"
+        elif period_yrs < 5:
+            tag           = "KEEP GOING"
+            insight_title = "Keep building your skills!"
+            insight_body  = (f"You are {period_yrs:.1f} years into your investing journey. "
+                             "Nifty 50 is a tough benchmark — many investors only start "
+                             "beating it after 5+ years of experience. Stay consistent!")
+            card_bg       = "#1c1400"
+            card_border   = "#f59e0b"
+            tag_color     = "#f59e0b"
+            body_color    = "#fcd34d"
+        else:
+            tag           = "UNDERPERFORMING"
+            insight_title = "Consider shifting to index funds"
+            insight_body  = (f"After {period_yrs:.1f} years, Nifty 50 has consistently "
+                             f"outperformed your portfolio by {abs(diff):.2f}%. Index funds "
+                             "match the market automatically — it may be the smarter long-term move.")
+            card_bg       = "#1a0a0a"
+            card_border   = "#ef4444"
+            tag_color     = "#ef4444"
+            body_color    = "#fca5a5"
+
+        tag_s   = ParagraphStyle("ITAG", fontSize=7,   fontName="Helvetica-Bold",
+                                  textColor=colors.HexColor(tag_color),
+                                  spaceBefore=0, spaceAfter=3)
+        title_i = ParagraphStyle("ITIT", fontSize=10,  fontName="Helvetica-Bold",
+                                  textColor=colors.HexColor(tag_color),
+                                  spaceBefore=0, spaceAfter=4)
+        body_i  = ParagraphStyle("IBOD", fontSize=8.5, fontName="Helvetica",
+                                  textColor=colors.HexColor(body_color),
+                                  spaceBefore=0, spaceAfter=0, leading=12)
+        card_t = Table([[
+            [Paragraph(tag, tag_s), Paragraph(insight_title, title_i), Paragraph(insight_body, body_i)]
+        ]], colWidths=[page_w])
+        card_t.setStyle(TableStyle([
+            ("BACKGROUND",    (0, 0), (-1, -1), colors.HexColor(card_bg)),
+            ("BOX",           (0, 0), (-1, -1), 1.5, colors.HexColor(card_border)),
+            ("LEFTPADDING",   (0, 0), (-1, -1), 14),
+            ("RIGHTPADDING",  (0, 0), (-1, -1), 14),
+            ("TOPPADDING",    (0, 0), (-1, -1), 12),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+            ("VALIGN",        (0, 0), (-1, -1), "TOP"),
+        ]))
+        elements.append(Spacer(1, 10))
+        elements.append(card_t)
+
     # ── Individual Account Analysis ───────────────────────────
     if len(individual_stats) > 1:
         elements.append(PageBreak())
@@ -944,8 +1000,8 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                               f"({stats['investment_period_years']:.2f} years)")
             acc_txn = (f"{stats.get('n_investments', 0)} investments,  "
                        f"{stats.get('n_withdrawals', 0)} withdrawals")
-            acc_gain_bg = colors.HexColor("#e8f5e9") if (stats.get("net_gain") or 0) >= 0 \
-                          else colors.HexColor("#ffebee")
+            acc_gain_bg = colors.HexColor("#d1fae5") if (stats.get("net_gain") or 0) >= 0 \
+                          else colors.HexColor("#fee2e2")
 
             elements.append(Paragraph(stats.get("account_name", "Account"), acct_h_s))
             rows = [
