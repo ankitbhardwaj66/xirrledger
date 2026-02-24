@@ -871,9 +871,11 @@ export default function CalculatorPage() {
                             </p>
                           </div>
                           {vStatus === 'validating' && <span style={{ color: GOLD, fontSize: '0.75rem', flexShrink: 0 }}>checking…</span>}
-                          {vStatus === 'valid'      && !f.formatError && <span style={{ color: '#10b981', fontWeight: 700, flexShrink: 0 }}>✓</span>}
-                          {hasError                 && <span style={{ color: '#ef4444', fontWeight: 700, flexShrink: 0 }}>✗</span>}
-                          <button onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: 4, fontSize: '1.2rem', lineHeight: 1 }}>×</button>
+                          {vStatus === 'valid' && !f.formatError && <span style={{ color: '#10b981', fontWeight: 700, flexShrink: 0 }}>✓</span>}
+                          {hasError
+                            ? <button onClick={() => removeFile(i)} style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#ef4444', cursor: 'pointer', padding: '3px 9px', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0 }}>Remove</button>
+                            : <button onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: 4, fontSize: '1.2rem', lineHeight: 1 }}>×</button>
+                          }
                         </div>
                         {vError && (
                           <p style={{ margin: '4px 0 0 4px', fontSize: '0.75rem', color: '#ef4444', fontWeight: 500 }}>
