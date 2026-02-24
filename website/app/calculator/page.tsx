@@ -978,30 +978,45 @@ export default function CalculatorPage() {
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {growwFiles.map(f => (
-                      <div key={f.file.name} style={{ ...innerCard, padding: '12px 14px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                          <div style={{ width: 28, height: 28, borderRadius: 6, background: 'rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 700, color: GOLD, flexShrink: 0 }}>PDF</div>
-                          <p style={{ margin: 0, fontWeight: 600, fontSize: '0.845rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.file.name}</p>
-                          <span style={{ marginLeft: 'auto', fontSize: '0.72rem', color: '#334155', flexShrink: 0 }}>{(f.file.size / 1024).toFixed(0)} KB</span>
+                    {growwFiles.map(f => {
+                      const hasError = panValidationStatus[f.file.name] === 'invalid';
+                      return (
+                        <div key={f.file.name} style={{
+                          ...innerCard, padding: '12px 14px',
+                          border: hasError ? '1px solid rgba(239,68,68,0.35)' : innerCard.border,
+                          background: hasError ? 'rgba(239,68,68,0.04)' : innerCard.background,
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                            <div style={{ width: 28, height: 28, borderRadius: 6, background: 'rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 700, color: GOLD, flexShrink: 0 }}>PDF</div>
+                            <p style={{ margin: 0, fontWeight: 600, fontSize: '0.845rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{f.file.name}</p>
+                            <span style={{ fontSize: '0.72rem', color: '#334155', flexShrink: 0 }}>{(f.file.size / 1024).toFixed(0)} KB</span>
+                            {hasError && (
+                              <button
+                                onClick={() => removeFile(files.findIndex(uf => uf.file.name === f.file.name))}
+                                style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#ef4444', cursor: 'pointer', padding: '3px 9px', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0 }}
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', flexShrink: 0 }}>PAN:</label>
+                            <input
+                              type="text" placeholder="e.g. ABCDE1234F" maxLength={10}
+                              value={filePans[f.file.name] ?? ''}
+                              onChange={e => updateFilePan(f.file.name, e.target.value)}
+                              style={{ ...inputBase, flex: 1, padding: '7px 10px', fontSize: '0.845rem', letterSpacing: 2, fontFamily: 'monospace', border: panBorder(f.file.name), background: panBg(f.file.name) }}
+                            />
+                            {panValidationStatus[f.file.name] === 'validating' && <span style={{ color: GOLD }}>⏳</span>}
+                            {panValidationStatus[f.file.name] === 'valid'      && <span style={{ color: '#10b981', fontWeight: 700 }}>✓</span>}
+                            {panValidationStatus[f.file.name] === 'invalid'    && <span style={{ color: '#ef4444', fontWeight: 700 }}>✗</span>}
+                          </div>
+                          {panValidationErrors[f.file.name] && (
+                            <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: '#ef4444', fontWeight: 600 }}>{panValidationErrors[f.file.name]}</p>
+                          )}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', flexShrink: 0 }}>PAN:</label>
-                          <input
-                            type="text" placeholder="e.g. ABCDE1234F" maxLength={10}
-                            value={filePans[f.file.name] ?? ''}
-                            onChange={e => updateFilePan(f.file.name, e.target.value)}
-                            style={{ ...inputBase, flex: 1, padding: '7px 10px', fontSize: '0.845rem', letterSpacing: 2, fontFamily: 'monospace', border: panBorder(f.file.name), background: panBg(f.file.name) }}
-                          />
-                          {panValidationStatus[f.file.name] === 'validating' && <span style={{ color: GOLD }}>⏳</span>}
-                          {panValidationStatus[f.file.name] === 'valid'      && <span style={{ color: '#10b981', fontWeight: 700 }}>✓</span>}
-                          {panValidationStatus[f.file.name] === 'invalid'    && <span style={{ color: '#ef4444', fontWeight: 700 }}>✗</span>}
-                        </div>
-                        {panValidationErrors[f.file.name] && (
-                          <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: '#ef4444', fontWeight: 600 }}>{panValidationErrors[f.file.name]}</p>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 
