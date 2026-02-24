@@ -1165,11 +1165,6 @@ export default function CalculatorPage() {
                 </div>
               )}
 
-              {processingError && (
-                <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, padding: '10px 14px', marginTop: 14 }}>
-                  <p style={{ color: '#ef4444', fontSize: '0.82rem', margin: 0 }}>{processingError}</p>
-                </div>
-              )}
 
               <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
                 <button onClick={() => { setUploadedSession(null); setFileValidationStatus({}); setFileValidationErrors({}); setStep('upload'); }} style={{ ...btnSecondary, flex: 1, padding: 12, fontSize: '0.9rem' }}>
@@ -1365,6 +1360,25 @@ export default function CalculatorPage() {
         )}
 
       </div>
+
+      {/* ── Processing Error Modal ── */}
+      {processingError && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: '#0f172a', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 20, width: '100%', maxWidth: 420, padding: '36px 32px', textAlign: 'center', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}>
+            <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(239,68,68,0.1)', border: '1.5px solid rgba(239,68,68,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '1.4rem' }}>
+              ⚠
+            </div>
+            <h2 style={{ margin: '0 0 10px', fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>Something went wrong</h2>
+            <p style={{ margin: '0 0 28px', fontSize: '0.875rem', color: '#94a3b8', lineHeight: 1.6 }}>{processingError}</p>
+            <button
+              onClick={() => setProcessingError('')}
+              style={{ ...btnPrimary, width: '100%', padding: '13px', fontSize: '0.95rem' }}
+            >
+              ← Go Back &amp; Try Again
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Download Guide Modal ── */}
       {showDownloadGuide && (
