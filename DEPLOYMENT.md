@@ -49,7 +49,7 @@
 
 ### Website
 - Next.js 16 with Tailwind CSS — pages: Home, Features, How It Works, FAQ, Contact, Blog
-- 4 MDX blog posts with per-post SEO meta tags
+- 5 MDX blog posts with per-post SEO meta tags (latest: XIRR vs CAGR — 2026-02-24)
 - Google Analytics 4 integrated
 - Static export deployed to Hostinger via `deploy.sh` (runs on remote server)
 - **Premium Navy + Gold theme** applied across all pages (inline styles, `#0f172a` bg / `#f59e0b` gold)
@@ -60,6 +60,7 @@
 - **Footer**: disclaimer text made visible (`#64748b` + bordered pill style)
 - **Hero section**: green privacy badge — "We never store your financial data."
 - **Sample PDF** (`/sample_report.pdf`): replaced with real Lambda-generated report (realistic 2-account data, 19.6% XIRR vs 12.3% Nifty)
+- **Favicon**: `website/app/icon.svg` — navy bg, gold "XI/RR" two-line (Next.js App Router auto-detects)
 
 ### Calculator (`/calculator`)
 - Google Sign-In (GSI One Tap + button) + manual name/email fallback
@@ -98,7 +99,11 @@
   - **Manual entries** (`manual_entries` in event) — injected as additional cash outflows before XIRR (commit `78c464b`)
   - XIRR calculation (Newton-Raphson + Brent fallback)
   - Nifty 50 comparison (reads from S3 daily cache — no yfinance on user requests)
-  - PDF report generation (ReportLab) with watermark, KPI banner, Nifty comparison, outside investments note
+  - PDF report generation (ReportLab) — fully rethemed Navy + Gold (2026-02-24):
+    - Title "XIRR Ledger Report" in gold; gold HR divider; navy table headers; gold section headings
+    - KPI banner: continuous block, gold separators, white text on coloured performance box
+    - Removed Simple Return row; insight card (OUTPERFORMING / KEEP GOING / UNDERPERFORMING)
+    - Page 2 charts (multi-account): stacked pie (Capital Distribution) + bar (Profit/Loss in Lakhs)
   - Status polling via S3 jobs bucket (public read)
   - Email via SES on completion — full results in email (XIRR, Nifty, stats grid, insight card)
   - PHP bridge notification on completion
