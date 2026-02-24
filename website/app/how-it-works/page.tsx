@@ -107,7 +107,7 @@ export default function HowItWorks() {
             Broker-Specific Guides
           </h2>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 gap-8">
 
             {/* Zerodha */}
             <div style={{ ...glass, padding: '28px', borderColor: 'rgba(245,158,11,0.18)' }}>
@@ -155,8 +155,58 @@ export default function HowItWorks() {
               </div>
             </div>
 
+            {/* Fyers */}
+            <div style={{ ...glass, padding: '28px', borderColor: 'rgba(99,102,241,0.18)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
+                <div style={{
+                  width: '48px', height: '48px', borderRadius: '12px',
+                  background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1.2rem', fontWeight: 800, color: INDIGO,
+                }}>F</div>
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>Fyers</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
+                    <FaFileCsv size={13} color='#64748b' />
+                    <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>CSV Format</p>
+                  </div>
+                </div>
+              </div>
+
+              {[
+                <>Log in to <strong style={{ color: '#e2e8f0' }}>Fyers</strong></>,
+                <>Go to <strong style={{ color: '#e2e8f0' }}>Reports → Ledger</strong></>,
+                <>Select the <strong style={{ color: '#e2e8f0' }}>Financial Year</strong></>,
+                <>Click <strong style={{ color: '#e2e8f0' }}>Generate</strong></>,
+                <>Click <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></>,
+                <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
+              ].map((item, i) => (
+                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 5 ? '14px' : 0 }}>
+                  <span style={{
+                    background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)',
+                    color: INDIGO, width: '24px', height: '24px', borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.75rem', fontWeight: 700, flexShrink: 0, marginTop: '1px',
+                  }}>{i + 1}</span>
+                  <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0, lineHeight: 1.6 }}>{item}</p>
+                </div>
+              ))}
+
+              <div style={{ marginTop: '20px', paddingTop: '18px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                <p style={{ fontSize: '0.82rem', color: '#475569', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FaCheckCircle size={13} color='#10b981' /> File type: CSV
+                </p>
+                <p style={{ fontSize: '0.82rem', color: '#475569', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FaCheckCircle size={13} color='#10b981' /> Password: Not required
+                </p>
+                <p style={{ fontSize: '0.82rem', color: '#92400e', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FaExclamationTriangle size={13} color={GOLD} /> Download one CSV per year for the full period
+                </p>
+              </div>
+            </div>
+
             {/* Groww — spans full width to fit 2 methods */}
-            <div style={{ ...glass, padding: '28px', borderColor: 'rgba(16,185,129,0.18)' }} className="lg:col-span-3 md:col-span-2">
+            <div style={{ ...glass, padding: '28px', borderColor: 'rgba(16,185,129,0.18)' }} className="md:col-span-2">
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
                 <div style={{
                   width: '48px', height: '48px', borderRadius: '12px',
@@ -246,55 +296,6 @@ export default function HowItWorks() {
               </div>
             </div>
 
-            {/* Fyers */}
-            <div style={{ ...glass, padding: '28px', borderColor: 'rgba(99,102,241,0.18)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
-                <div style={{
-                  width: '48px', height: '48px', borderRadius: '12px',
-                  background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.2rem', fontWeight: 800, color: INDIGO,
-                }}>F</div>
-                <div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>Fyers</h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
-                    <FaFileCsv size={13} color='#64748b' />
-                    <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>CSV Format</p>
-                  </div>
-                </div>
-              </div>
-
-              {[
-                <>Log in to <strong style={{ color: '#e2e8f0' }}>Fyers</strong></>,
-                <>Go to <strong style={{ color: '#e2e8f0' }}>Reports → Ledger</strong></>,
-                <>Select the <strong style={{ color: '#e2e8f0' }}>Financial Year</strong></>,
-                <>Click <strong style={{ color: '#e2e8f0' }}>Generate</strong></>,
-                <>Click <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></>,
-                <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
-              ].map((item, i) => (
-                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 5 ? '14px' : 0 }}>
-                  <span style={{
-                    background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)',
-                    color: INDIGO, width: '24px', height: '24px', borderRadius: '50%',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '0.75rem', fontWeight: 700, flexShrink: 0, marginTop: '1px',
-                  }}>{i + 1}</span>
-                  <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: 0, lineHeight: 1.6 }}>{item}</p>
-                </div>
-              ))}
-
-              <div style={{ marginTop: '20px', paddingTop: '18px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-                <p style={{ fontSize: '0.82rem', color: '#475569', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FaCheckCircle size={13} color='#10b981' /> File type: CSV
-                </p>
-                <p style={{ fontSize: '0.82rem', color: '#475569', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FaCheckCircle size={13} color='#10b981' /> Password: Not required
-                </p>
-                <p style={{ fontSize: '0.82rem', color: '#92400e', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FaExclamationTriangle size={13} color={GOLD} /> Download one CSV per year for the full period
-                </p>
-              </div>
-            </div>
 
           </div>
         </div>
