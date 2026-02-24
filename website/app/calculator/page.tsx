@@ -128,27 +128,27 @@ async function hashFile(file: File): Promise<string> {
 
 async function validateFileFormat(file: File, broker: UploadedFile['broker']): Promise<string | undefined> {
   if (broker === 'unknown') {
-    return 'Unrecognized file. Please upload a Zerodha CSV, Groww PDF, or Fyers Ledger CSV.';
+    return 'Unrecognized file — please upload a Zerodha CSV, Groww PDF, or Fyers CSV.';
   }
   try {
     if (broker === 'zerodha') {
       const text = await file.slice(0, 4096).text();
       const firstLine = text.split('\n')[0]?.toLowerCase() ?? '';
       if (!firstLine.includes('particulars')) {
-        return 'Not a Zerodha statement — "particulars" column not found. Download from Zerodha Console → Funds → View Statement → CSV.';
+        return 'This CSV has the wrong structure. Please download the correct statement from Zerodha.';
       }
     }
     if (broker === 'fyers') {
       const text = await file.slice(0, 8192).text();
       if (!text.includes('Transaction type') || !text.includes('Debit amount')) {
-        return 'Not a Fyers Ledger CSV — expected columns not found. Download from Fyers → Reports → Ledger → CSV.';
+        return 'This CSV has the wrong structure. Please download the correct ledger from Fyers.';
       }
     }
     if (broker === 'groww') {
       const bytes = await file.slice(0, 8).arrayBuffer();
       const sig = new TextDecoder().decode(new Uint8Array(bytes));
       if (!sig.startsWith('%PDF')) {
-        return 'Not a valid PDF file. Please upload your Groww Balance Statement PDF.';
+        return 'Not a valid PDF. Please upload your Groww Balance Statement PDF.';
       }
     }
   } catch {

@@ -222,6 +222,13 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                 [combined_outflows, pd.DataFrame(manual_rows)], ignore_index=True
             )
 
+        # ── Guard: at least one transaction must exist ────────
+        if combined_outflows.empty:
+            raise ValueError(
+                "No fund transfer transactions were found in the uploaded files. "
+                "Please check you downloaded the correct statement (ledger/funds history), not a trade or holdings report."
+            )
+
         # ── Fetch Nifty 50 data from S3 cache ────────────────
         update_status({"status": "fetching", "message": "Loading Nifty 50 benchmark data..."})
         first_date = min(pd.to_datetime(combined_outflows["date"]))

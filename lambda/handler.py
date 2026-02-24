@@ -192,22 +192,15 @@ def handle_validate(event):
             outflows, _ = parse_groww_pdf(file_bytes, password=pan)
             return _response(200, {"valid": True, "transactions_found": len(outflows)})
 
-    except ValueError as e:
-        friendly = str(e)
-        # Make common parser errors more user-friendly
-        if "missing columns" in friendly.lower():
-            friendly = f"Wrong file format — {friendly}. Please download the correct statement from your broker."
-        elif "no 'funds added'" in friendly.lower():
-            friendly = "No fund transfer transactions found in this file. Make sure to download the full ledger statement, not a trade/order history."
-        return _response(200, {"valid": False, "error": friendly})
+    except ValueError:
+        return _response(200, {"valid": False, "error": "This CSV has the wrong structure. Please download the correct one from your broker."})
 
     except Exception as e:
         logger.exception("Error in handle_validate")
-        # Catch PDF password errors and generic failures
         err_str = str(e).lower()
         if "password" in err_str or "encrypted" in err_str or "pdfread" in err_str:
             return _response(200, {"valid": False, "error": "Incorrect PAN — could not open this PDF. Please check your PAN and try again."})
-        return _response(200, {"valid": False, "error": "Could not read this file — please check it is the correct format for your broker."})
+        return _response(200, {"valid": False, "error": "This file has the wrong structure. Please download the correct one from your broker."})
 
 
 # ─────────────────────────────────────────────────────────────
