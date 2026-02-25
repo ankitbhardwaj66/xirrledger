@@ -194,8 +194,23 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             else:
                 acct_name = broker.capitalize() if broker else "Unknown"
 
+            # Derive a stable account id for manual-entry linking.
+            # Use the frontend-provided id if present; fall back to broker-specific
+            # identifiers that match exactly what the frontend stores as acc.id.
+            if broker == "fyers" and fyers_client_id:
+                _derived_id = fyers_client_id
+            elif broker == "groww" and pan:
+                _derived_id = pan
+            elif file_keys:
+                _derived_id = file_keys[0].split("/")[-1]   # filename, e.g. ledger-NBN208.csv
+            else:
+                _derived_id = ""
+            _acct_id = account.get("id", "") or _derived_id
+            logger.info("Account id resolved: frontend=%r  derived=%r  used=%r",
+                        account.get("id", ""), _derived_id, _acct_id)
+
             account_stats_list.append({
-                "id": account.get("id", ""),
+                "id": _acct_id,
                 "name": acct_name,
                 "outflows": acc_out,
                 "inflows": acc_inf,
@@ -1150,11 +1165,14 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
 
             # Find manual entries linked to this account
             acc_id = stats.get("account_id", "")
+            logger.info("PDF: account=%r  acc_id=%r  manual_entries=%r",
+                        stats.get("account_name"), acc_id, manual_entries)
             linked_manual = [
                 me for me in (manual_entries or [])
                 if acc_id and me.get("account_id") == acc_id
                 and me.get("amount") and me.get("date")
             ]
+            logger.info("PDF: linked_manual count=%d", len(linked_manual))
             manual_total    = sum(float(me["amount"]) for me in linked_manual) if linked_manual else 0
             broker_invested = stats["total_invested"] - manual_total
 
