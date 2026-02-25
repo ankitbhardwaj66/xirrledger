@@ -324,6 +324,7 @@ export default function CalculatorPage() {
   }, [files, effectivePans]);
 
   const allHoldingsEntered = accounts.length > 0 && accounts.every(a => a.holdings.trim() !== '');
+  const allManualEntriesLinked = manualEntries.every(e => e.accountId !== '');
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -551,7 +552,7 @@ export default function CalculatorPage() {
   }
 
   async function startProcessing() {
-    if (!allHoldingsEntered) return;
+    if (!allHoldingsEntered || !allManualEntriesLinked) return;
     setProcessingError('');
     setStep('processing');
     setProcessingSteps(prev => prev.map((s, i) => ({ ...s, status: i === 0 ? 'active' : 'pending' })));
@@ -1117,7 +1118,7 @@ export default function CalculatorPage() {
                 )}
               </div>
               <p style={{ color: '#64748b', fontSize: '0.82rem', lineHeight: 1.55, margin: '10px 0 18px' }}>
-                For investments your broker doesn&apos;t track — sovereign gold bonds, unlisted stocks, etc. — add their original purchase details here. Their <strong style={{ color: '#94a3b8' }}>current value should already be included</strong> in your holdings amount above. Link each entry to the account where the holding appears for accurate per-account XIRR.
+                For investments your broker doesn&apos;t track — sovereign gold bonds, unlisted stocks, etc. — add their original purchase details here. Select the account where <strong style={{ color: '#94a3b8' }}>the holding&apos;s current value is already included</strong> above.
               </p>
 
               {manualEntries.length === 0 ? (
@@ -1145,14 +1146,14 @@ export default function CalculatorPage() {
                       {accounts.length > 0 && (
                         <div style={{ marginBottom: 10 }}>
                           <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 5 }}>
-                            Link to account <span style={{ fontWeight: 400, color: '#475569' }}>(optional — for per-account XIRR)</span>
+                            Account *
                           </label>
                           <select
                             value={entry.accountId}
                             onChange={e => updateManualEntry(entry.id, 'accountId', e.target.value)}
-                            style={{ ...inputBase, width: '100%', padding: '9px 11px', fontSize: '0.845rem', boxSizing: 'border-box' as const, cursor: 'pointer' }}
+                            style={{ ...inputBase, width: '100%', padding: '9px 11px', fontSize: '0.845rem', boxSizing: 'border-box' as const, cursor: 'pointer', color: entry.accountId ? '#e2e8f0' : '#475569' }}
                           >
-                            <option value="">— Not linked to any account —</option>
+                            <option value="" disabled>Select account where this holding appears…</option>
                             {accounts.map(acc => (
                               <option key={acc.id} value={acc.id}>{acc.name}</option>
                             ))}
@@ -1191,11 +1192,11 @@ export default function CalculatorPage() {
                   ← Back
                 </button>
                 {allGrowwPansValid && (
-                  <button onClick={startProcessing} disabled={!allHoldingsEntered} style={{
+                  <button onClick={startProcessing} disabled={!allHoldingsEntered || !allManualEntriesLinked} style={{
                     ...btnPrimary, flex: 2, padding: 12, fontSize: '0.9rem',
-                    background: allHoldingsEntered ? GOLD : 'rgba(255,255,255,0.07)',
-                    color: allHoldingsEntered ? '#0a1020' : '#334155',
-                    cursor: allHoldingsEntered ? 'pointer' : 'not-allowed',
+                    background: (allHoldingsEntered && allManualEntriesLinked) ? GOLD : 'rgba(255,255,255,0.07)',
+                    color: (allHoldingsEntered && allManualEntriesLinked) ? '#0a1020' : '#334155',
+                    cursor: (allHoldingsEntered && allManualEntriesLinked) ? 'pointer' : 'not-allowed',
                   }}>
                     Calculate My XIRR →
                   </button>
