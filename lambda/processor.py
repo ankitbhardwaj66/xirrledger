@@ -257,6 +257,7 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
         for acc in account_stats_list:
             stats = compute_portfolio_stats(acc["outflows"], acc["inflows"], acc["current_value"], nifty_data)
             stats["account_name"] = acc["name"]
+            stats["account_id"]   = acc.get("id", "")
             individual_stats.append(stats)
 
         # ── Generate PDF ──────────────────────────────────────
@@ -1142,27 +1143,68 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
             acc_gain_bg = colors.HexColor("#d1fae5") if (stats.get("net_gain") or 0) >= 0 \
                           else colors.HexColor("#fee2e2")
 
+            # Find manual entries linked to this account
+            acc_id = stats.get("account_id", "")
+            linked_manual = [
+                me for me in (manual_entries or [])
+                if acc_id and me.get("account_id") == acc_id
+                and me.get("amount") and me.get("date")
+            ]
+            manual_total    = sum(float(me["amount"]) for me in linked_manual) if linked_manual else 0
+            broker_invested = stats["total_invested"] - manual_total
+
             elements.append(Paragraph(stats.get("account_name", "Account"), acct_h_s))
             rows = [
                 ["Metric",            "Value"],
                 ["Investment Period",  acc_period],
                 ["Total Transactions", acc_txn],
                 ["Total Invested",     _fmt_inr(stats["total_invested"])],
+            ]
+            if linked_manual:
+                rows.append(["\u2514 Broker transactions",   _fmt_inr(broker_invested)])
+                rows.append(["\u2514 Outside investments",   _fmt_inr(manual_total)])
+            rows.extend([
                 ["Total Withdrawn",    _fmt_inr(stats["total_withdrawn"])],
                 ["Current Value",      _fmt_inr(stats["current_value"])],
-                ["Net Gain / Loss",    _fmt_inr(stats["net_gain"])],    # row 6
-                ["XIRR (Annualised)",  acc_xirr],                       # row 7
-            ]
+                ["Net Gain / Loss",    _fmt_inr(stats["net_gain"])],
+                ["XIRR (Annualised)",  acc_xirr],
+            ])
+
+            sub_rows   = 2 if linked_manual else 0
+            gain_idx   = 6 + sub_rows
+            xirr_idx   = 7 + sub_rows
+
             at = Table(rows, colWidths=[page_w * 0.56, page_w * 0.44])
             at.setStyle(_base_table_style("#1e293b"))
-            at.setStyle(TableStyle([
-                ("BACKGROUND", (0, 6), (-1, 6), acc_gain_bg),
-                ("FONTNAME",   (1, 6), (1, 6),  "Helvetica-Bold"),
-                ("FONTNAME",   (1, 7), (1, 7),  "Helvetica-Bold"),
-                ("FONTSIZE",   (1, 7), (1, 7),  10),
-                ("TEXTCOLOR",  (1, 7), (1, 7),  colors.HexColor("#f59e0b")),
-            ]))
+            style_cmds = [
+                ("BACKGROUND", (0, gain_idx), (-1, gain_idx), acc_gain_bg),
+                ("FONTNAME",   (1, gain_idx), (1, gain_idx),  "Helvetica-Bold"),
+                ("FONTNAME",   (1, xirr_idx), (1, xirr_idx),  "Helvetica-Bold"),
+                ("FONTSIZE",   (1, xirr_idx), (1, xirr_idx),  10),
+                ("TEXTCOLOR",  (1, xirr_idx), (1, xirr_idx),  colors.HexColor("#f59e0b")),
+            ]
+            if linked_manual:
+                sub_bg = colors.HexColor("#eef2f7")
+                for r in (4, 5):
+                    style_cmds.extend([
+                        ("BACKGROUND",  (0, r), (-1, r), sub_bg),
+                        ("FONTSIZE",    (0, r), (-1, r), 8),
+                        ("TEXTCOLOR",   (0, r), (0, r),  colors.HexColor("#64748b")),
+                        ("TEXTCOLOR",   (1, r), (1, r),  colors.HexColor("#64748b")),
+                        ("LEFTPADDING", (0, r), (0, r),  26),
+                    ])
+            at.setStyle(TableStyle(style_cmds))
             elements.append(at)
+
+            if linked_manual:
+                entries_note = "  \u2022  ".join(
+                    f"{me.get('label', 'Investment')} \u2014 \u20b9{float(me['amount']):,.0f} on {me['date']}"
+                    for me in linked_manual
+                )
+                elements.append(Paragraph(
+                    f"Outside investments linked to this account:  {entries_note}",
+                    note_s
+                ))
             elements.append(Spacer(1, 10))
 
         # ── Account Comparison ────────────────────────────────
