@@ -177,7 +177,7 @@ const faqCategories = [
             <p style={{ marginBottom: '8px' }}><strong style={{ color: '#e2e8f0' }}>Absolutely safe!</strong> Your privacy and security are our top priorities:</p>
             <ul style={{ paddingLeft: '20px', lineHeight: 2 }}>
               <li>Your ledger files are processed securely and <strong style={{ color: '#e2e8f0' }}>never stored</strong> on our servers</li>
-              <li>Reports are <strong style={{ color: '#e2e8f0' }}>auto-deleted 15 minutes</strong> after creation</li>
+              <li>Reports are <strong style={{ color: '#e2e8f0' }}>auto-deleted after 24 hours</strong></li>
               <li>No registration or account creation required</li>
               <li>No tracking or analytics on your financial data</li>
             </ul>
@@ -196,9 +196,10 @@ const faqCategories = [
             <p style={{ marginBottom: '8px' }}>Currently supported:</p>
             <ul style={{ paddingLeft: '20px', lineHeight: 2, marginBottom: '10px' }}>
               <li><strong style={{ color: '#e2e8f0' }}>Zerodha</strong> — CSV format ledger files</li>
-              <li><strong style={{ color: '#e2e8f0' }}>Groww</strong> — PDF format ledger files (password-protected)</li>
+              <li><strong style={{ color: '#e2e8f0' }}>Groww</strong> — PDF format ledger files (password: your PAN)</li>
+              <li><strong style={{ color: '#e2e8f0' }}>Fyers</strong> — CSV format ledger files</li>
             </ul>
-            <p><strong style={{ color: '#e2e8f0' }}>Coming soon:</strong> Angel One, Upstox, ICICI Direct, and other popular Indian brokers.</p>
+            <p>You can combine files from all three brokers in a single calculation to get your true combined portfolio XIRR.</p>
           </div>
         ),
       },
@@ -221,13 +222,12 @@ const faqCategories = [
         answer: (
           <div>
             <ol style={{ paddingLeft: '20px', lineHeight: 2, marginBottom: '10px' }}>
-              <li>Log in to Zerodha Console</li>
-              <li>Go to <strong style={{ color: '#e2e8f0' }}>Funds → View Statement</strong></li>
+              <li><a href="https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 600 }}>Open Zerodha Statement →</a> (direct link — no navigation needed)</li>
               <li>Select <strong style={{ color: '#e2e8f0' }}>All Segments</strong> as category</li>
-              <li>Select date range (from first investment till today)</li>
-              <li>Click the <strong style={{ color: '#e2e8f0' }}>blue arrow →</strong> then click the <strong style={{ color: '#e2e8f0' }}>CSV</strong> link</li>
+              <li>Set date range from your first investment till today</li>
+              <li>Click the <strong style={{ color: '#e2e8f0' }}>blue arrow →</strong> then click <strong style={{ color: '#e2e8f0' }}>CSV</strong></li>
             </ol>
-            <p style={{ color: '#10b981' }}>✓ No password required for Zerodha CSV files</p>
+            <p style={{ color: '#10b981' }}>✓ One CSV covers all years · No password required</p>
           </div>
         ),
       },
@@ -235,15 +235,33 @@ const faqCategories = [
         question: 'How do I download my ledger from Groww?',
         answer: (
           <div>
-            <ol style={{ paddingLeft: '20px', lineHeight: 2, marginBottom: '10px' }}>
-              <li>Log in to Groww</li>
-              <li>Go to <strong style={{ color: '#e2e8f0' }}>Funds → All Transactions</strong></li>
-              <li>Select date &amp; year <strong style={{ color: '#e2e8f0' }}>(max 1 year per PDF)</strong></li>
-              <li>Click Download</li>
-              <li><strong style={{ color: '#e2e8f0' }}>Repeat for ALL years</strong> from your first investment</li>
+            <p style={{ marginBottom: '8px', fontWeight: 600, color: '#e2e8f0' }}>Method 1 — Recommended (single file, all history from Apr 2023):</p>
+            <ol style={{ paddingLeft: '20px', lineHeight: 2, marginBottom: '12px' }}>
+              <li><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 600 }}>Open Groww Reports →</a></li>
+              <li>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions → Groww Balance Statement</strong></li>
+              <li>Select <strong style={{ color: '#e2e8f0' }}>PDF</strong> format, set date range → Download</li>
             </ol>
-            <p style={{ color: GOLD, marginBottom: '6px' }}>⚠ Groww limits downloads to 1 year per PDF — download multiple files for the full period.</p>
-            <p style={{ color: '#94a3b8' }}>🔐 Password: Your PAN number in UPPERCASE (e.g., ABCDE1234F)</p>
+            <p style={{ marginBottom: '8px', fontWeight: 600, color: '#64748b' }}>Method 2 — Alternative (for history before Apr 2023):</p>
+            <ol style={{ paddingLeft: '20px', lineHeight: 2, marginBottom: '12px' }}>
+              <li><a href="https://groww.in/user/balance/inr" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 600 }}>Open Groww Balance →</a></li>
+              <li>Click <strong style={{ color: '#e2e8f0' }}>All Transactions → Download statement</strong></li>
+              <li>Select date range (max 1 year) → Repeat for all years</li>
+            </ol>
+            <p style={{ color: '#94a3b8' }}>🔐 Password for all Groww PDFs: your PAN in UPPERCASE (e.g., ABCDE1234F)</p>
+          </div>
+        ),
+      },
+      {
+        question: 'How do I download my ledger from Fyers?',
+        answer: (
+          <div>
+            <ol style={{ paddingLeft: '20px', lineHeight: 2, marginBottom: '10px' }}>
+              <li><a href="https://fyers.in/web/reports/ledger" target="_blank" rel="noopener noreferrer" style={{ color: '#818cf8', fontWeight: 600 }}>Open Fyers Ledger →</a> (direct link)</li>
+              <li>Select the <strong style={{ color: '#e2e8f0' }}>Financial Year</strong></li>
+              <li>Click <strong style={{ color: '#e2e8f0' }}>Generate</strong> then <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></li>
+              <li><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from your first investment</li>
+            </ol>
+            <p style={{ color: '#10b981' }}>✓ No password required · Download one CSV per financial year</p>
           </div>
         ),
       },
