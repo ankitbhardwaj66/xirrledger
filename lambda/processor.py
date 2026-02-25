@@ -10,6 +10,7 @@ Called from handler.py with:
     "email": str,
     "accounts": [
       {
+        "id": str,                    # frontend account id (used to link manual_entries)
         "broker": "zerodha" | "groww" | "fyers",
         "pan": str | None,
         "pan_password": str | None,   # for Groww PDFs (Fyers doesn't need this)
@@ -22,7 +23,8 @@ Called from handler.py with:
       {
         "label": str,                # e.g. "RBI Bond 2022"
         "amount": float,             # purchase amount (positive)
-        "date": str                  # ISO date "YYYY-MM-DD"
+        "date": str,                 # ISO date "YYYY-MM-DD"
+        "account_id": str | None     # links to accounts[].id for per-account XIRR
       }
     ]
   }
@@ -193,6 +195,7 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                 acct_name = broker.capitalize() if broker else "Unknown"
 
             account_stats_list.append({
+                "id": account.get("id", ""),
                 "name": acct_name,
                 "outflows": acc_out,
                 "inflows": acc_inf,
@@ -207,6 +210,9 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
         combined_value    = sum(a["current_value"] for a in account_stats_list)
 
         # ── Inject manual outside-broker investment entries ───
+        # Build a lookup so linked entries can also be injected into per-account outflows
+        account_id_to_idx = {acc["id"]: i for i, acc in enumerate(account_stats_list) if acc.get("id")}
+
         manual_rows = []
         for me in manual_entries:
             try:
@@ -214,10 +220,19 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                 dt  = str(me.get("date", "")).strip()
                 if amt > 0 and dt:
                     manual_rows.append({"date": dt, "amount": -amt})
+                    # If linked to a specific account, inject into that account's outflows too
+                    linked_id = me.get("account_id") or ""
+                    if linked_id and linked_id in account_id_to_idx:
+                        idx = account_id_to_idx[linked_id]
+                        account_stats_list[idx]["outflows"] = pd.concat(
+                            [account_stats_list[idx]["outflows"], pd.DataFrame([{"date": dt, "amount": -amt}])],
+                            ignore_index=True,
+                        )
+                        logger.info("Injected manual entry '%s' into account '%s'", me.get("label", ""), account_stats_list[idx]["name"])
             except (ValueError, TypeError):
                 continue
         if manual_rows:
-            logger.info("Appending %d manual outside-investment entries", len(manual_rows))
+            logger.info("Appending %d manual outside-investment entries to combined outflows", len(manual_rows))
             combined_outflows = pd.concat(
                 [combined_outflows, pd.DataFrame(manual_rows)], ignore_index=True
             )

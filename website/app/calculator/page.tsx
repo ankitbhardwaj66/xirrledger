@@ -37,6 +37,7 @@ interface ManualEntry {
   label: string;
   amount: string;
   date: string;
+  accountId: string;
 }
 
 interface ProcessingStep {
@@ -471,7 +472,7 @@ export default function CalculatorPage() {
   }
 
   function addManualEntry() {
-    setManualEntries(prev => [...prev, { id: crypto.randomUUID(), label: '', amount: '', date: '' }]);
+    setManualEntries(prev => [...prev, { id: crypto.randomUUID(), label: '', amount: '', date: '', accountId: '' }]);
   }
   function removeManualEntry(id: string) {
     setManualEntries(prev => prev.filter(e => e.id !== id));
@@ -599,6 +600,7 @@ export default function CalculatorPage() {
       }).catch(() => {});
 
       const accountsPayload = accounts.map(acc => ({
+        id: acc.id,
         broker: acc.broker,
         pan: acc.broker === 'groww' ? acc.id : null,
         pan_password: acc.broker === 'groww' ? acc.id : null,
@@ -613,6 +615,7 @@ export default function CalculatorPage() {
           label: e.label.trim() || 'Manual investment',
           amount: parseFloat(e.amount),
           date: e.date,
+          account_id: e.accountId || null,
         }));
 
       const processRes = await fetch(`${API_BASE}/process`, {
@@ -1114,7 +1117,7 @@ export default function CalculatorPage() {
                 )}
               </div>
               <p style={{ color: '#64748b', fontSize: '0.82rem', lineHeight: 1.55, margin: '10px 0 18px' }}>
-                For investments your broker doesn&apos;t track — sovereign gold bonds, unlisted stocks, etc. — add their original purchase details here. Their <strong style={{ color: '#94a3b8' }}>current value should already be included</strong> in your holdings amount above.
+                For investments your broker doesn&apos;t track — sovereign gold bonds, unlisted stocks, etc. — add their original purchase details here. Their <strong style={{ color: '#94a3b8' }}>current value should already be included</strong> in your holdings amount above. Link each entry to the account where the holding appears for accurate per-account XIRR.
               </p>
 
               {manualEntries.length === 0 ? (
@@ -1139,6 +1142,23 @@ export default function CalculatorPage() {
                         />
                         <button onClick={() => removeManualEntry(entry.id)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '1.2rem', lineHeight: 1, padding: 4, flexShrink: 0 }}>×</button>
                       </div>
+                      {accounts.length > 0 && (
+                        <div style={{ marginBottom: 10 }}>
+                          <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 5 }}>
+                            Link to account <span style={{ fontWeight: 400, color: '#475569' }}>(optional — for per-account XIRR)</span>
+                          </label>
+                          <select
+                            value={entry.accountId}
+                            onChange={e => updateManualEntry(entry.id, 'accountId', e.target.value)}
+                            style={{ ...inputBase, width: '100%', padding: '9px 11px', fontSize: '0.845rem', boxSizing: 'border-box' as const, cursor: 'pointer' }}
+                          >
+                            <option value="">— Not linked to any account —</option>
+                            {accounts.map(acc => (
+                              <option key={acc.id} value={acc.id}>{acc.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                         <div>
                           <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 5 }}>Amount invested (₹) *</label>
