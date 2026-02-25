@@ -325,6 +325,7 @@ export default function CalculatorPage() {
 
   const allHoldingsEntered = accounts.length > 0 && accounts.every(a => a.holdings.trim() !== '');
   const allManualEntriesLinked = manualEntries.every(e => e.accountId !== '');
+  const allManualEntriesFilled = manualEntries.every(e => e.amount.trim() !== '' && e.date.trim() !== '');
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -552,7 +553,7 @@ export default function CalculatorPage() {
   }
 
   async function startProcessing() {
-    if (!allHoldingsEntered || !allManualEntriesLinked) return;
+    if (!allHoldingsEntered || !allManualEntriesLinked || !allManualEntriesFilled) return;
     setProcessingError('');
     setStep('processing');
     setProcessingSteps(prev => prev.map((s, i) => ({ ...s, status: i === 0 ? 'active' : 'pending' })));
@@ -1192,11 +1193,11 @@ export default function CalculatorPage() {
                   ← Back
                 </button>
                 {allGrowwPansValid && (
-                  <button onClick={startProcessing} disabled={!allHoldingsEntered || !allManualEntriesLinked} style={{
+                  <button onClick={startProcessing} disabled={!allHoldingsEntered || !allManualEntriesLinked || !allManualEntriesFilled} style={{
                     ...btnPrimary, flex: 2, padding: 12, fontSize: '0.9rem',
-                    background: (allHoldingsEntered && allManualEntriesLinked) ? GOLD : 'rgba(255,255,255,0.07)',
-                    color: (allHoldingsEntered && allManualEntriesLinked) ? '#0a1020' : '#334155',
-                    cursor: (allHoldingsEntered && allManualEntriesLinked) ? 'pointer' : 'not-allowed',
+                    background: (allHoldingsEntered && allManualEntriesLinked && allManualEntriesFilled) ? GOLD : 'rgba(255,255,255,0.07)',
+                    color: (allHoldingsEntered && allManualEntriesLinked && allManualEntriesFilled) ? '#0a1020' : '#334155',
+                    cursor: (allHoldingsEntered && allManualEntriesLinked && allManualEntriesFilled) ? 'pointer' : 'not-allowed',
                   }}>
                     Calculate My XIRR →
                   </button>
