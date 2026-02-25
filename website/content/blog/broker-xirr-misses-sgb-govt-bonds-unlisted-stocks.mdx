@@ -1,0 +1,157 @@
+---
+title: "Your Broker's XIRR Is Lying to You (SGBs, Govt Bonds & Unlisted Stocks Are Missing)"
+date: "2026-02-25"
+author: "XIRR Ledger Team"
+excerpt: "If you own Sovereign Gold Bonds, RBI bonds, or unlisted stocks, your broker's XIRR calculation is missing a chunk of your money — and showing you a return that's too good to be true."
+category: "Investment Insights"
+keywords:
+  - broker XIRR wrong
+  - SGB XIRR calculation India
+  - sovereign gold bond returns XIRR
+  - RBI bond XIRR
+  - unlisted stocks XIRR
+  - correct XIRR calculation India
+  - outside investments XIRR
+  - Zerodha XIRR missing investments
+  - Groww XIRR incomplete
+  - true portfolio XIRR India
+  - portfolio returns calculator India
+  - XIRR beyond broker account
+---
+
+Most Indian investors have at least one investment that lives outside their broker account. A Sovereign Gold Bond bought through a bank. An RBI Floating Rate Bond subscribed via HDFC Securities. An unlisted share from an employee stock option or a startup. A chit fund or a fixed deposit that rounds off the portfolio.
+
+These investments are real. The money came out of your pocket. But your broker has no record of them.
+
+So when you — or your broker's app — calculates your XIRR, those outflows are simply not counted. The result looks better than it actually is. Sometimes a lot better.
+
+## What XIRR Actually Measures
+
+XIRR is a cash flow calculation. It looks at every rupee that left your pocket (outflows) and every rupee that came back or is expected to come back (the current value as a final inflow), and finds the annualised return rate that connects them.
+
+The key phrase is **every rupee that left your pocket**.
+
+Your broker's ledger only records what passed through your broker account. If money went directly from your bank to an SGB subscription or to an unlisted share purchase, it never appears in the ledger. The outflow is invisible to the calculation.
+
+But the value of those investments? You're almost certainly including it in your current portfolio value — because it's part of your net worth.
+
+**You're counting the return but hiding the investment. That's the distortion.**
+
+## A Real Example: The SGB Effect
+
+Let's say you have two Zerodha accounts and a Sovereign Gold Bond bought through your bank in 2022.
+
+| Investment | Amount Invested | Current Value |
+|---|---|---|
+| Zerodha account 1 | ₹46,73,336 | ₹37,87,636 |
+| Zerodha account 2 | ₹50,88,820 | ₹43,48,736 |
+| SGB (via bank, 2023) | ₹1,50,000 | included above |
+
+The SGB is held in your demat via BOID — so its current value is already reflected in your Zerodha holdings. But the ₹1,50,000 you paid for it went directly from your bank account during the SGB subscription window. It never hit your Zerodha ledger.
+
+### What your broker's XIRR sees:
+
+```
+Total invested (per ledger):  ₹97,62,156
+Current portfolio value:      ₹81,36,372
+```
+
+XIRR runs on these numbers. The ₹1,50,000 you paid for the SGB is nowhere in the ledger — it's simply missing.
+
+### What your true XIRR should see:
+
+```
+Total invested (actual):      ₹99,12,156   (+₹1,50,000 SGB)
+Current portfolio value:      ₹81,36,372   (same — SGB value already included)
+```
+
+The current value hasn't changed. The investment has gone up. That's a lower XIRR — which is the honest number.
+
+In this specific case, the impact on XIRR was **approximately 0.4–0.6 percentage points**. That sounds small, but across a 3–5 year horizon it changes how you compare yourself to Nifty 50.
+
+## Why the Distortion Grows Over Time
+
+The SGB example above is one investment worth ₹1.5 lakh in a ₹1 crore portfolio — just 1.5% of capital. The distortion is detectable but not dramatic.
+
+Now consider these scenarios that are common among serious investors:
+
+### Scenario A: The Bond Ladder
+
+Ravi built a bond ladder between 2020 and 2023. He bought:
+- ₹5,00,000 in RBI Floating Rate Bonds (via bank, not broker)
+- ₹3,00,000 in 54EC bonds (capital gains bonds, only via offline application)
+- ₹2,00,000 in SGBs across two tranches
+
+Total: **₹10,00,000 outside his broker account**. His broker account shows ₹40 lakhs invested with a 14% XIRR.
+
+But he's entered the current value of all these bonds in his "holdings" field because they're part of his portfolio.
+
+The reality: he deployed ₹50 lakhs, not ₹40 lakhs. His actual XIRR is closer to **11.8%** — meaningfully below what his broker app shows.
+
+### Scenario B: The ESOP Holder
+
+Priya received ESOPs from her startup employer and exercised them for ₹4,00,000 in 2021. The shares are unlisted and live in a physical share certificate or a NSDL demat that her Zerodha account doesn't connect to.
+
+The shares are now worth ₹9,00,000 — a 125% gain. She includes this in her total portfolio value when entering her holdings.
+
+But the ₹4,00,000 exercise cost is absent from every ledger.
+
+Her broker's XIRR looks like her portfolio is a 14-star performer. Her real XIRR — counting the ₹4 lakhs that actually left her account — is about **2 percentage points lower**.
+
+## The Invisible Half of the Calculation
+
+This is the core of the problem. XIRR requires two things to be symmetric:
+
+1. **Outflows** — money you put in, by date
+2. **Inflows** — money you got back + current value, by date
+
+Most calculators and all broker apps handle (2) reasonably well because you enter your current holdings value. But (1) is sourced exclusively from the ledger — and the ledger is blind to anything that happened outside the broker.
+
+The result: **your inflows are complete, your outflows are incomplete, and the XIRR that comes out is too high.**
+
+## What Correct Calculation Looks Like
+
+An accurate XIRR needs to account for every cash outflow from the moment money left your control, regardless of where it went.
+
+This means:
+
+- An SGB subscription on 15-June-2023 for ₹1,50,000 is a cash outflow on 15-June-2023
+- An RBI bond purchase in 2021 is a cash outflow on that date
+- An ESOP exercise in 2020 is a cash outflow on that date
+- A chit fund payment every month is a series of outflows
+
+If the current value of these investments is being counted in the portfolio (which it should be), the purchase cost must be counted as an outflow.
+
+**XIRR Ledger does this correctly.** In Step 3, before calculating, you can add any number of outside investments — each with its original purchase amount and date. These are injected as real cash outflows into the XIRR calculation alongside your broker ledger transactions, linked to the specific account that holds the current value.
+
+The result is a single XIRR number that reflects your entire investment picture, not just the portion your broker can see.
+
+## How Much Does It Actually Matter?
+
+Here's a rough feel for the impact depending on how much of your portfolio is "off-ledger":
+
+| Off-ledger as % of portfolio | Typical XIRR distortion |
+|---|---|
+| < 5% | 0.2 – 0.5 percentage points |
+| 5 – 15% | 0.5 – 2 percentage points |
+| 15 – 30% | 2 – 5 percentage points |
+| > 30% | Can exceed 5 percentage points |
+
+If you're comparing your returns against Nifty 50's ~12–13% XIRR, even a 1-point distortion can be the difference between "I beat the index" and "I matched it."
+
+## The Right Way to Calculate Your Portfolio XIRR
+
+1. **Download your broker ledger** (Zerodha, Groww, or Fyers CSV/PDF)
+2. **Enter your current holdings value** including the market value of SGBs, bonds, and unlisted shares you hold in that account
+3. **Add outside investments** — any purchase that happened outside the broker ledger, with the date and amount you paid
+4. **Get one honest XIRR** — built from the complete picture of your money
+
+The investments your broker can't see are usually the ones that feel like "extra" or "safe" portions of the portfolio. They're often bonds and gold — assets you hold for stability. Including them in the return calculation gives you an honest view of whether that safety net is contributing to or diluting your overall returns.
+
+That's a question worth answering accurately.
+
+---
+
+**Want to calculate your true XIRR including all investments?** [Try XIRR Ledger →](https://xirrledger.com/calculator)
+
+**See what a complete report looks like** [Download Sample Report →](/sample_report.pdf)
