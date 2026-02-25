@@ -16,7 +16,7 @@ const steps = [
   {
     icon: <FaDownload size={22} color={GOLD} />,
     title: 'Download Your Ledger',
-    description: 'Export your trading ledger from your broker\'s website. For Zerodha, download the CSV from Funds → View Statement. For Groww, download PDF statements for each year. For Fyers, go to Reports → Ledger and download one CSV per financial year.',
+    description: 'Export your trading ledger from your broker\'s website. For Zerodha, use the direct link below — just set the date range and download CSV. For Groww, download PDF statements for each year. For Fyers, go to Reports → Ledger and download one CSV per financial year.',
     note: 'Tip: Select the full date range — from your first investment till today — for accurate results.',
   },
   {
@@ -128,13 +128,12 @@ export default function HowItWorks() {
               </div>
 
               {[
-                <>Log in to <a href="https://console.zerodha.com/" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, textDecoration: 'none', fontWeight: 600 }}>Zerodha Console</a></>,
-                <>Go to <strong style={{ color: '#e2e8f0' }}>Funds → View Statement</strong></>,
+                <><a href="https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 700 }}>Open Zerodha Statement →</a> (logs in automatically if you&apos;re signed in)</>,
                 <>Select <strong style={{ color: '#e2e8f0' }}>All Segments</strong> as category</>,
-                <>Set date range <strong style={{ color: '#e2e8f0' }}>(first investment till today)</strong></>,
+                <>Set date range — <strong style={{ color: '#e2e8f0' }}>from your first investment till today</strong></>,
                 <>Click the <strong style={{ color: '#e2e8f0' }}>blue arrow →</strong> then click the <strong style={{ color: '#e2e8f0' }}>CSV</strong> link</>,
               ].map((item, i) => (
-                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 4 ? '14px' : 0 }}>
+                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 3 ? '14px' : 0 }}>
                   <span style={{
                     background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)',
                     color: GOLD, width: '24px', height: '24px', borderRadius: '50%',
