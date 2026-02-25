@@ -1087,7 +1087,7 @@ export default function CalculatorPage() {
                               background: account.holdings ? 'rgba(245,158,11,0.06)' : 'rgba(255,255,255,0.04)',
                             }}
                           />
-                          <p style={{ margin: '3px 0 0', fontSize: '0.68rem', color: '#475569' }}>Today's market value of your holdings — not what you invested</p>
+                          <p style={{ margin: '3px 0 0', fontSize: '0.68rem', color: '#94a3b8' }}>Today's market value of your holdings — not what you invested</p>
                         </div>
                         <div>
                           <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 5 }}>Available cash (₹)</label>
@@ -1097,7 +1097,7 @@ export default function CalculatorPage() {
                             onChange={e => updateAccount(account.id, 'cash', e.target.value.replace('-', ''))}
                             style={{ ...inputBase, width: '100%', padding: '9px 11px', fontSize: '0.845rem', boxSizing: 'border-box' }}
                           />
-                          <p style={{ margin: '3px 0 0', fontSize: '0.68rem', color: '#334155' }}>Cash in broker account</p>
+                          <p style={{ margin: '3px 0 0', fontSize: '0.68rem', color: '#94a3b8' }}>Cash in broker account</p>
                         </div>
                       </div>
                     </div>
