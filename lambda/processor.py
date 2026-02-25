@@ -1022,116 +1022,121 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         elements.append(card_t)
 
     # ── Individual Account Analysis ───────────────────────────
-    if len(individual_stats) > 1:
+    if len(individual_stats) >= 1:
         elements.append(PageBreak())
-        elements.append(Paragraph("Individual Account Analysis", h2_s))
+        elements.append(Paragraph(
+            "Individual Account Analysis" if len(individual_stats) > 1 else "Account Detail",
+            h2_s
+        ))
 
-        # ── Portfolio Composition Charts (stacked) ────────────
-        SLICE_COLORS = ["#f59e0b", "#3b82f6", "#10b981", "#8b5cf6", "#f43f5e", "#06b6d4"]
-        total_inv = combined_stats["total_invested"] or 1
-        pie_vals  = [max(s["total_invested"], 0) for s in individual_stats]
-        pie_names = [s.get("account_name", "Account") for s in individual_stats]
-        pie_pcts  = [v / total_inv * 100 for v in pie_vals]
-        gain_vals = [round(s.get("net_gain") or 0, 2) for s in individual_stats]
+        if len(individual_stats) > 1:
+            # ── Portfolio Composition Charts (stacked) ────────────
+            SLICE_COLORS = ["#f59e0b", "#3b82f6", "#10b981", "#8b5cf6", "#f43f5e", "#06b6d4"]
+            total_inv = combined_stats["total_invested"] or 1
+            pie_vals  = [max(s["total_invested"], 0) for s in individual_stats]
+            pie_names = [s.get("account_name", "Account") for s in individual_stats]
+            pie_pcts  = [v / total_inv * 100 for v in pie_vals]
+            gain_vals = [round(s.get("net_gain") or 0, 2) for s in individual_stats]
 
-        n = len(individual_stats)
+            n = len(individual_stats)
 
-        # ── Pie chart (full width, pie left + legend right) ────
-        pie_h  = 180
-        pie_r  = 70
-        pie_cx = pie_r + 20
-        pie_cy = pie_h / 2
+            # ── Pie chart (full width, pie left + legend right) ────
+            pie_h  = 180
+            pie_r  = 70
+            pie_cx = pie_r + 20
+            pie_cy = pie_h / 2
 
-        pie_d = Drawing(page_w, pie_h)
-        pie_d.add(GStr(page_w / 2, pie_h - 14, "Capital Distribution",
-                       fontName="Helvetica-Bold", fontSize=9,
-                       textAnchor="middle", fillColor=colors.HexColor("#f59e0b")))
+            pie_d = Drawing(page_w, pie_h)
+            pie_d.add(GStr(page_w / 2, pie_h - 14, "Capital Distribution",
+                           fontName="Helvetica-Bold", fontSize=9,
+                           textAnchor="middle", fillColor=colors.HexColor("#f59e0b")))
 
-        pc = Pie()
-        pc.x      = pie_cx - pie_r
-        pc.y      = pie_cy - pie_r
-        pc.width  = pie_r * 2
-        pc.height = pie_r * 2
-        pc.data   = [max(v, 0.001) for v in pie_vals]
-        pc.labels = [""] * len(pie_vals)
-        pc.slices.strokeColor = colors.HexColor("#ffffff")
-        pc.slices.strokeWidth = 1.5
-        for i, col in enumerate(SLICE_COLORS[:n]):
-            pc.slices[i].fillColor = colors.HexColor(col)
-        pie_d.add(pc)
+            pc = Pie()
+            pc.x      = pie_cx - pie_r
+            pc.y      = pie_cy - pie_r
+            pc.width  = pie_r * 2
+            pc.height = pie_r * 2
+            pc.data   = [max(v, 0.001) for v in pie_vals]
+            pc.labels = [""] * len(pie_vals)
+            pc.slices.strokeColor = colors.HexColor("#ffffff")
+            pc.slices.strokeWidth = 1.5
+            for i, col in enumerate(SLICE_COLORS[:n]):
+                pc.slices[i].fillColor = colors.HexColor(col)
+            pie_d.add(pc)
 
-        # Legend to the right of the pie
-        lx    = pie_cx + pie_r + 24
-        ly    = pie_cy + (n * 18) / 2   # vertically centred
-        for i, (name, pct) in enumerate(zip(pie_names, pie_pcts)):
-            col   = SLICE_COLORS[i % len(SLICE_COLORS)]
-            y_pos = ly - i * 20
-            pie_d.add(Rect(lx, y_pos - 6, 10, 10,
-                           fillColor=colors.HexColor(col), strokeColor=None))
-            pie_d.add(GStr(lx + 16, y_pos,
-                           f"{name}  {pct:.1f}%",
-                           fontName="Helvetica", fontSize=8,
-                           fillColor=colors.HexColor("#0f172a")))
+            # Legend to the right of the pie
+            lx    = pie_cx + pie_r + 24
+            ly    = pie_cy + (n * 18) / 2   # vertically centred
+            for i, (name, pct) in enumerate(zip(pie_names, pie_pcts)):
+                col   = SLICE_COLORS[i % len(SLICE_COLORS)]
+                y_pos = ly - i * 20
+                pie_d.add(Rect(lx, y_pos - 6, 10, 10,
+                               fillColor=colors.HexColor(col), strokeColor=None))
+                pie_d.add(GStr(lx + 16, y_pos,
+                               f"{name}  {pct:.1f}%",
+                               fontName="Helvetica", fontSize=8,
+                               fillColor=colors.HexColor("#0f172a")))
 
-        elements.append(pie_d)
-        elements.append(Spacer(1, 4))
+            elements.append(pie_d)
+            elements.append(Spacer(1, 4))
 
-        # ── Bar chart (full width) ─────────────────────────────
-        bar_h = 180
-        bar_d = Drawing(page_w, bar_h)
-        bar_d.add(GStr(page_w / 2, bar_h - 14, "Profit / Loss by Account",
-                       fontName="Helvetica-Bold", fontSize=9,
-                       textAnchor="middle", fillColor=colors.HexColor("#f59e0b")))
+            # ── Bar chart (full width) ─────────────────────────────
+            bar_h = 180
+            bar_d = Drawing(page_w, bar_h)
+            bar_d.add(GStr(page_w / 2, bar_h - 14, "Profit / Loss by Account",
+                           fontName="Helvetica-Bold", fontSize=9,
+                           textAnchor="middle", fillColor=colors.HexColor("#f59e0b")))
 
-        bc = VerticalBarChart()
-        bc.x      = 52
-        bc.y      = 30
-        bc.width  = page_w - 68
-        bc.height = bar_h - 52
+            bc = VerticalBarChart()
+            bc.x      = 52
+            bc.y      = 30
+            bc.width  = page_w - 68
+            bc.height = bar_h - 52
 
-        bc.data = [gain_vals]
+            bc.data = [gain_vals]
 
-        padding = max(abs(v) for v in gain_vals) * 0.15 or 10000
-        y_min   = min(0, min(gain_vals)) - padding
-        y_max   = max(0, max(gain_vals)) + padding
+            padding = max(abs(v) for v in gain_vals) * 0.15 or 10000
+            y_min   = min(0, min(gain_vals)) - padding
+            y_max   = max(0, max(gain_vals)) + padding
 
-        def _lakh_fmt(v):
-            if v == 0:
-                return "0"
-            l    = v / 100000
-            sign = "+" if l > 0 else ""
-            return f"{sign}{l:.1f}L"
+            def _lakh_fmt(v):
+                if v == 0:
+                    return "0"
+                l    = v / 100000
+                sign = "+" if l > 0 else ""
+                return f"{sign}{l:.1f}L"
 
-        bc.valueAxis.valueMin         = y_min
-        bc.valueAxis.valueMax         = y_max
-        bc.valueAxis.valueSteps       = None
-        bc.valueAxis.labelTextFormat  = _lakh_fmt
-        bc.valueAxis.labels.fontSize  = 7
-        bc.valueAxis.labels.fontName  = "Helvetica"
-        bc.valueAxis.labels.fillColor = colors.HexColor("#64748b")
-        bc.valueAxis.strokeColor      = colors.HexColor("#cbd5e1")
-        bc.valueAxis.gridStrokeColor  = colors.HexColor("#e2e8f0")
+            bc.valueAxis.valueMin         = y_min
+            bc.valueAxis.valueMax         = y_max
+            bc.valueAxis.valueSteps       = None
+            bc.valueAxis.labelTextFormat  = _lakh_fmt
+            bc.valueAxis.labels.fontSize  = 7
+            bc.valueAxis.labels.fontName  = "Helvetica"
+            bc.valueAxis.labels.fillColor = colors.HexColor("#64748b")
+            bc.valueAxis.strokeColor      = colors.HexColor("#cbd5e1")
+            bc.valueAxis.gridStrokeColor  = colors.HexColor("#e2e8f0")
 
-        short_names = []
-        for s in individual_stats:
-            name = s.get("account_name", "Account")
-            short_names.append(name.split("(")[1].rstrip(")") if "(" in name else name[:10])
-        bc.categoryAxis.categoryNames    = short_names
-        bc.categoryAxis.labels.fontSize  = 8
-        bc.categoryAxis.labels.fontName  = "Helvetica"
-        bc.categoryAxis.labels.fillColor = colors.HexColor("#0f172a")
-        bc.categoryAxis.strokeColor      = colors.HexColor("#cbd5e1")
+            short_names = []
+            for s in individual_stats:
+                name = s.get("account_name", "Account")
+                short_names.append(name.split("(")[1].rstrip(")") if "(" in name else name[:10])
+            bc.categoryAxis.categoryNames    = short_names
+            bc.categoryAxis.labels.fontSize  = 8
+            bc.categoryAxis.labels.fontName  = "Helvetica"
+            bc.categoryAxis.labels.fillColor = colors.HexColor("#0f172a")
+            bc.categoryAxis.strokeColor      = colors.HexColor("#cbd5e1")
 
-        bc.groupSpacing     = 16
-        bc.barSpacing       = 2
-        bc.bars.strokeColor = None
-        for i, col in enumerate(SLICE_COLORS[:n]):
-            bc.bars[0, i].fillColor = colors.HexColor(col)
+            bc.groupSpacing     = 16
+            bc.barSpacing       = 2
+            bc.bars.strokeColor = None
+            for i, col in enumerate(SLICE_COLORS[:n]):
+                bc.bars[0, i].fillColor = colors.HexColor(col)
 
-        bar_d.add(bc)
-        elements.append(bar_d)
-        elements.append(Spacer(1, 8))
+            bar_d.add(bc)
+            elements.append(bar_d)
+            elements.append(Spacer(1, 8))
 
+        # ── Per-account tables (always, even for single account) ──
         for stats in individual_stats:
             acc_xirr   = f"{stats['xirr_percentage']:.2f}%" if stats.get("xirr_percentage") is not None else "N/A"
             acc_period = "N/A"
@@ -1207,35 +1212,36 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                 ))
             elements.append(Spacer(1, 10))
 
-        # ── Account Comparison ────────────────────────────────
-        elements.append(Paragraph("Account Comparison", h2_s))
-        cmp_rows = [["Account", "Invested", "Withdrawn", "Current Value", "Gain / Loss"]]
-        for stats in individual_stats:
+        # ── Account Comparison (multi-account only) ────────────
+        if len(individual_stats) > 1:
+            elements.append(Paragraph("Account Comparison", h2_s))
+            cmp_rows = [["Account", "Invested", "Withdrawn", "Current Value", "Gain / Loss"]]
+            for stats in individual_stats:
+                cmp_rows.append([
+                    stats.get("account_name", "Account"),
+                    _fmt_inr(stats["total_invested"]),
+                    _fmt_inr(stats["total_withdrawn"]),
+                    _fmt_inr(stats["current_value"]),
+                    _fmt_inr(stats["net_gain"]),
+                ])
+            last = len(cmp_rows)  # combined row will be at this index
             cmp_rows.append([
-                stats.get("account_name", "Account"),
-                _fmt_inr(stats["total_invested"]),
-                _fmt_inr(stats["total_withdrawn"]),
-                _fmt_inr(stats["current_value"]),
-                _fmt_inr(stats["net_gain"]),
+                "COMBINED",
+                _fmt_inr(combined_stats["total_invested"]),
+                _fmt_inr(combined_stats["total_withdrawn"]),
+                _fmt_inr(combined_stats["current_value"]),
+                _fmt_inr(combined_stats["net_gain"]),
             ])
-        last = len(cmp_rows)  # combined row will be at this index
-        cmp_rows.append([
-            "COMBINED",
-            _fmt_inr(combined_stats["total_invested"]),
-            _fmt_inr(combined_stats["total_withdrawn"]),
-            _fmt_inr(combined_stats["current_value"]),
-            _fmt_inr(combined_stats["net_gain"]),
-        ])
-        cw5 = page_w / 5
-        cmt = Table(cmp_rows, colWidths=[cw5 * 1.5, cw5 * 0.875, cw5 * 0.875, cw5 * 0.875, cw5 * 0.875])
-        cmt.setStyle(_base_table_style("#0f172a", num_cols=5))
-        cmt.setStyle(TableStyle([
-            ("BACKGROUND", (0, last), (-1, last), colors.HexColor("#0f172a")),
-            ("TEXTCOLOR",  (0, last), (-1, last), colors.HexColor("#f59e0b")),
-            ("FONTNAME",   (0, last), (-1, last), "Helvetica-Bold"),
-            ("LINEABOVE",  (0, last), (-1, last), 1.5, colors.HexColor("#f59e0b")),
-        ]))
-        elements.append(cmt)
+            cw5 = page_w / 5
+            cmt = Table(cmp_rows, colWidths=[cw5 * 1.5, cw5 * 0.875, cw5 * 0.875, cw5 * 0.875, cw5 * 0.875])
+            cmt.setStyle(_base_table_style("#0f172a", num_cols=5))
+            cmt.setStyle(TableStyle([
+                ("BACKGROUND", (0, last), (-1, last), colors.HexColor("#0f172a")),
+                ("TEXTCOLOR",  (0, last), (-1, last), colors.HexColor("#f59e0b")),
+                ("FONTNAME",   (0, last), (-1, last), "Helvetica-Bold"),
+                ("LINEABOVE",  (0, last), (-1, last), 1.5, colors.HexColor("#f59e0b")),
+            ]))
+            elements.append(cmt)
 
     # ── Footer ────────────────────────────────────────────────
     elements.append(Paragraph(
