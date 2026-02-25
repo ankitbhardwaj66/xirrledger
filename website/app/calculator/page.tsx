@@ -1510,8 +1510,7 @@ export default function CalculatorPage() {
                       <span style={{ fontSize: '0.78rem', color: '#64748b' }}>— Annual Statements</span>
                     </div>
                     {[
-                      <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700 }}>Open Groww Reports →</a> (logs in automatically if you&apos;re signed in)</>,
-                      <>Click <strong style={{ color: '#e2e8f0' }}>Stocks, F&amp;O balance</strong></>,
+                      <><a href="https://groww.in/user/balance/inr" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700 }}>Open Groww Balance →</a> (logs in automatically if you&apos;re signed in)</>,
                       <>Click <strong style={{ color: '#e2e8f0' }}>All Transactions</strong></>,
                       <>Click <strong style={{ color: '#e2e8f0' }}>Download statement</strong> (top right button)</>,
                       <>Select date range (max 1 year) → <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
