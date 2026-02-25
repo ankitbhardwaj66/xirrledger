@@ -1486,9 +1486,7 @@ export default function CalculatorPage() {
                       <span style={{ fontSize: '0.78rem', color: '#64748b' }}>— Groww Balance Statement</span>
                     </div>
                     {[
-                      <>Log in to <strong style={{ color: '#e2e8f0' }}>Groww</strong></>,
-                      <>Click your <strong style={{ color: '#e2e8f0' }}>profile icon</strong> (top right)</>,
-                      <>Click <strong style={{ color: '#e2e8f0' }}>Reports</strong></>,
+                      <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700 }}>Open Groww Reports →</a> (logs in automatically if you&apos;re signed in)</>,
                       <>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions → Groww Balance Statement</strong></>,
                       <>Choose format: select <strong style={{ color: '#e2e8f0' }}>PDF</strong> (not Excel)</>,
                       <>Set date range → click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
@@ -1512,8 +1510,7 @@ export default function CalculatorPage() {
                       <span style={{ fontSize: '0.78rem', color: '#64748b' }}>— Annual Statements</span>
                     </div>
                     {[
-                      <>Log in to <strong style={{ color: '#e2e8f0' }}>Groww</strong></>,
-                      <>Click your <strong style={{ color: '#e2e8f0' }}>profile icon</strong> (top right)</>,
+                      <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700 }}>Open Groww Reports →</a> (logs in automatically if you&apos;re signed in)</>,
                       <>Click <strong style={{ color: '#e2e8f0' }}>Stocks, F&amp;O balance</strong></>,
                       <>Click <strong style={{ color: '#e2e8f0' }}>All Transactions</strong></>,
                       <>Click <strong style={{ color: '#e2e8f0' }}>Download statement</strong> (top right button)</>,

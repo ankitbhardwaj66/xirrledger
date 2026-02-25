@@ -231,9 +231,7 @@ export default function HowItWorks() {
                     <span style={{ fontSize: '0.8rem', color: '#64748b' }}>— Groww Balance Statement</span>
                   </div>
                   {[
-                    <>Log in to <a href="https://groww.in/" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600 }}>Groww</a></>,
-                    <>Click your <strong style={{ color: '#e2e8f0' }}>profile icon</strong> (top right)</>,
-                    <>Click <strong style={{ color: '#e2e8f0' }}>Reports</strong></>,
+                    <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700 }}>Open Groww Reports →</a> (logs in automatically if you&apos;re signed in)</>,
                     <>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions → Groww Balance Statement</strong></>,
                     <>Choose format: select <strong style={{ color: '#e2e8f0' }}>PDF</strong> (not Excel)</>,
                     <>Set date range → click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
@@ -266,15 +264,14 @@ export default function HowItWorks() {
                     <span style={{ fontSize: '0.8rem', color: '#64748b' }}>— Annual Statements</span>
                   </div>
                   {[
-                    <>Log in to <a href="https://groww.in/" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600 }}>Groww</a></>,
-                    <>Click your <strong style={{ color: '#e2e8f0' }}>profile icon</strong> (top right corner)</>,
+                    <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700 }}>Open Groww Reports →</a> (logs in automatically if you&apos;re signed in)</>,
                     <>Click <strong style={{ color: '#e2e8f0' }}>Stocks, F&amp;O balance</strong></>,
                     <>Click <strong style={{ color: '#e2e8f0' }}>All Transactions</strong></>,
                     <>Click <strong style={{ color: '#e2e8f0' }}>Download statement</strong> button (top right)</>,
                     <>Select date range (max 1 year) → click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
                     <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
                   ].map((item, i) => (
-                    <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 6 ? '14px' : 0 }}>
+                    <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 5 ? '14px' : 0 }}>
                       <span style={{
                         background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
                         color: '#64748b', width: '24px', height: '24px', borderRadius: '50%',
