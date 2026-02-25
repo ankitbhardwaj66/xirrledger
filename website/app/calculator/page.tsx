@@ -1457,10 +1457,9 @@ export default function CalculatorPage() {
                 <div>
                   <p style={{ margin: '0 0 18px', fontSize: '0.8rem', color: '#64748b' }}>CSV format · no password required</p>
                   {[
-                    <>Log in to <strong style={{ color: '#e2e8f0' }}>Zerodha Console</strong></>,
-                    <>Go to <strong style={{ color: '#e2e8f0' }}>Funds → View Statement</strong></>,
+                    <><a href="https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 700 }}>Open Zerodha Statement →</a> (logs in automatically if you're signed in)</>,
                     <>Select <strong style={{ color: '#e2e8f0' }}>All Segments</strong> as category</>,
-                    <>Set date range <strong style={{ color: '#e2e8f0' }}>(first investment till today)</strong></>,
+                    <>Set date range — <strong style={{ color: '#e2e8f0' }}>from your first investment till today</strong></>,
                     <>Click the <strong style={{ color: '#e2e8f0' }}>blue arrow →</strong> then click <strong style={{ color: '#e2e8f0' }}>CSV</strong></>,
                   ].map((item, i, arr) => (
                     <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 14 : 0 }}>
