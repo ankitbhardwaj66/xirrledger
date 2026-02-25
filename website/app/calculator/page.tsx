@@ -1537,8 +1537,7 @@ export default function CalculatorPage() {
                 <div>
                   <p style={{ margin: '0 0 18px', fontSize: '0.8rem', color: '#64748b' }}>CSV format · no password required</p>
                   {[
-                    <>Log in to <strong style={{ color: '#e2e8f0' }}>Fyers</strong></>,
-                    <>Go to <strong style={{ color: '#e2e8f0' }}>Reports → Ledger</strong></>,
+                    <><a href="https://fyers.in/web/reports/ledger" target="_blank" rel="noopener noreferrer" style={{ color: '#818cf8', fontWeight: 700 }}>Open Fyers Ledger →</a> (logs in automatically if you&apos;re signed in)</>,
                     <>Select the <strong style={{ color: '#e2e8f0' }}>Financial Year</strong></>,
                     <>Click <strong style={{ color: '#e2e8f0' }}>Generate</strong></>,
                     <>Click <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></>,

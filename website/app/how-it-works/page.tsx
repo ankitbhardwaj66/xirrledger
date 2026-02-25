@@ -16,7 +16,7 @@ const steps = [
   {
     icon: <FaDownload size={22} color={GOLD} />,
     title: 'Download Your Ledger',
-    description: 'Export your trading ledger from your broker\'s website. For Zerodha, use the direct link below — just set the date range and download CSV. For Groww, download PDF statements for each year. For Fyers, go to Reports → Ledger and download one CSV per financial year.',
+    description: 'Export your trading ledger from your broker\'s website. For Zerodha, use the direct link below — just set the date range and download CSV. For Groww, download PDF statements for each year. For Fyers, use the direct link below — select the financial year, generate and download CSV.',
     note: 'Tip: Select the full date range — from your first investment till today — for accurate results.',
   },
   {
@@ -173,14 +173,13 @@ export default function HowItWorks() {
               </div>
 
               {[
-                <>Log in to <strong style={{ color: '#e2e8f0' }}>Fyers</strong></>,
-                <>Go to <strong style={{ color: '#e2e8f0' }}>Reports → Ledger</strong></>,
+                <><a href="https://fyers.in/web/reports/ledger" target="_blank" rel="noopener noreferrer" style={{ color: '#818cf8', fontWeight: 700 }}>Open Fyers Ledger →</a> (logs in automatically if you&apos;re signed in)</>,
                 <>Select the <strong style={{ color: '#e2e8f0' }}>Financial Year</strong></>,
                 <>Click <strong style={{ color: '#e2e8f0' }}>Generate</strong></>,
                 <>Click <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></>,
                 <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
               ].map((item, i) => (
-                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 5 ? '14px' : 0 }}>
+                <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 4 ? '14px' : 0 }}>
                   <span style={{
                     background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)',
                     color: INDIGO, width: '24px', height: '24px', borderRadius: '50%',
