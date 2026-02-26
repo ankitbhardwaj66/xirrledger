@@ -1,0 +1,90 @@
+---
+title: "What Happens to Dividends and SGB Interest in Your XIRR Calculation?"
+date: "2026-02-26"
+author: "XIRR Ledger Team"
+excerpt: "Dividends and SGB interest go straight to your bank — not your broker. Here's exactly how they factor into your XIRR, and why reinvesting them is the key."
+category: "Investment Insights"
+keywords:
+  - dividend XIRR calculation India
+  - SGB interest XIRR
+  - how dividends affect XIRR
+  - portfolio XIRR dividends
+  - SGB interest portfolio returns
+  - XIRR reinvestment
+  - Zerodha XIRR dividend
+  - accurate XIRR calculation India
+  - fund statement XIRR
+  - xirrledger dividend handling
+---
+
+If you hold dividend-paying stocks or Sovereign Gold Bonds, you've probably wondered: *does my XIRR account for the dividends and interest I receive?*
+
+It's a fair question — and the answer depends entirely on one thing: **what you do with that money after you receive it.**
+
+## Why Dividends and SGB Interest Are Different
+
+When a company pays a dividend or the RBI credits your SGB interest, the money lands directly in your **bank account** — not your broker account. This is important because xirrledger calculates your XIRR from your broker's fund statement, which only captures money moving in and out of your broker account.
+
+So if dividends and SGB interest bypass your broker entirely, are they missing from your XIRR?
+
+**Only if you don't reinvest them.**
+
+## The Reinvestment Principle
+
+Here's how it works in practice:
+
+**If you reinvest the dividend/interest:**
+- You transfer that money back to your broker
+- It shows up as a **deposit (Bank Receipt)** in your fund statement
+- xirrledger picks it up automatically — no manual entry needed
+- Your XIRR correctly accounts for this additional capital ✅
+
+**If you spend the dividend/interest or let it sit in your bank:**
+- It never appears in your fund statement
+- Your XIRR is calculated without it
+- Your XIRR will be **slightly understated** — but that's an accurate reflection of what your broker account achieved ✅
+
+Both outcomes are honest. The XIRR xirrledger calculates answers a specific question: *"What return did I earn on every rupee I moved into my broker account?"*
+
+## A Concrete Example
+
+Say you hold 100 shares of a stock that pays ₹10/share as dividend — ₹1,000 total.
+
+**Scenario A — You reinvest:**
+- ₹1,000 hits your bank → you transfer it to Zerodha → you buy more stock
+- Fund statement shows a ₹1,000 deposit
+- XIRR treats this as additional capital deployed on that date ✅
+
+**Scenario B — You use it for a vacation:**
+- ₹1,000 hits your bank → it's spent
+- Fund statement shows nothing
+- Your broker portfolio never saw that money — and your XIRR correctly reflects that ✅
+
+## What About SGB Interest Specifically?
+
+SGB pays ~2.5% per year as semi-annual interest directly to your bank. The SGB bond itself stays in your Zerodha holdings at its current market value.
+
+- **Current SGB value** → already included in your portfolio value ✅
+- **SGB interest received** → if reinvested, captured as a deposit ✅; if not reinvested, outside the scope of your broker XIRR ✅
+
+The purchase outflow (when you bought the SGB via RBI/bank) is the one thing that doesn't appear in the fund statement — since it never went through your broker. That's why xirrledger lets you add SGB purchases as manual entries.
+
+## Why We Don't Track Dividends Separately
+
+Some calculators ask you to manually log every dividend received. We deliberately don't do this.
+
+Here's why: if you reinvested the dividend, it's already in your fund statement as a deposit. If you log it separately *and* it shows as a deposit, you've counted that money twice — which would **understate your XIRR** (making it look like you deployed more capital than you did).
+
+By anchoring to the fund statement, xirrledger stays clean and free of double-counting by design.
+
+## The Bottom Line
+
+Your XIRR from xirrledger answers: *"What return did I earn on every rupee I consciously put into my broker account?"*
+
+Dividends and SGB interest that you reinvest become part of that answer automatically. Dividends you spend are income you enjoyed outside your portfolio — and your XIRR is none the worse for not knowing about them.
+
+The most accurate thing you can do is **reinvest your dividends and interest**, then let the fund statement tell the full story.
+
+---
+
+**Want to see your true portfolio XIRR?** [Calculate Now →](https://xirrledger.com/calculator)
