@@ -941,8 +941,22 @@ export default function CalculatorPage() {
               )}
 
               {/* ── Dividend files section ── */}
+              <div style={{ marginTop: 16, padding: '10px 14px', borderRadius: 8, background: 'rgba(245,158,11,0.04)', border: '1px solid rgba(245,158,11,0.12)' }}>
+                <p style={{ margin: '0 0 4px', fontSize: '0.78rem', color: GOLD, fontWeight: 600 }}>
+                  Optional: Zerodha dividend statement (.xlsx)
+                </p>
+                <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748b', lineHeight: 1.5 }}>
+                  Adds dividend income as inflows to your XIRR.{' '}
+                  Download from{' '}
+                  <a href="https://console.zerodha.com/reports/downloads" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, textDecoration: 'underline' }}>
+                    Zerodha Console → Reports → Downloads
+                  </a>
+                  {' '}→ select <b style={{ color: '#94a3b8' }}>Dividend statement</b>, choose FY, click Download. Upload one file per FY.
+                </p>
+              </div>
+
               {dividendFiles.length > 0 && (
-                <div style={{ marginTop: 16 }}>
+                <div style={{ marginTop: 10 }}>
                   <p style={{ margin: '0 0 8px', fontSize: '0.78rem', color: GOLD, fontWeight: 600 }}>
                     Dividend statements detected — inflows will be included in XIRR
                   </p>
