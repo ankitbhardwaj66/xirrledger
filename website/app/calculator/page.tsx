@@ -529,7 +529,9 @@ export default function CalculatorPage() {
           const df = dividendFiles.find(f => f.name === name);
           const fileObj = uf?.file ?? df;
           if (!fileObj) return;
-          const contentType = uf?.file.type || 'application/octet-stream';
+          const contentType = uf
+            ? (uf.file.type || 'application/octet-stream')
+            : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
           const putRes = await fetch(url, {
             method: 'PUT', body: fileObj,
             headers: { 'Content-Type': contentType },
