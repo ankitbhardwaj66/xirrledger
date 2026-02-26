@@ -135,6 +135,7 @@ def handle_process(event, context):
             "name": body.get("name", ""),
             "email": body.get("email", ""),
             "accounts": body.get("accounts", []),
+            "manual_entries": body.get("manual_entries", []),
         }
 
         lambda_client.invoke(

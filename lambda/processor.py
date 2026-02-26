@@ -979,6 +979,10 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         note_s
     ))
 
+    # ── Page break before insight + account section ───────────
+    if has_nifty or len(individual_stats) >= 1:
+        elements.append(PageBreak())
+
     # ── Insight Card ──────────────────────────────────────────
     if has_nifty:
         period_yrs = cs.get("investment_period_years") or 0
@@ -1038,7 +1042,6 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
 
     # ── Individual Account Analysis ───────────────────────────
     if len(individual_stats) >= 1:
-        elements.append(PageBreak())
         elements.append(Paragraph(
             "Individual Account Analysis" if len(individual_stats) > 1 else "Account Detail",
             h2_s

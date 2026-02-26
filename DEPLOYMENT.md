@@ -64,9 +64,13 @@
 
 ### Calculator (`/calculator`)
 - Google Sign-In (GSI One Tap + button) + manual name/email fallback
-- Drag & drop file upload (CSV=Zerodha, PDF=Groww), multi-file
+- Drag & drop file upload (CSV=Zerodha/Fyers, PDF=Groww), multi-file
 - SHA-256 content hashing — duplicate file detection across uploads
-- Auto broker detection from file extension
+- **2-layer file validation** — runs on "Continue →" (Step 2), before going to details:
+  - **Layer 1 (frontend, instant)**: `detectBrokerFromContent()` reads file bytes — checks CSV headers for Zerodha/Fyers structure, checks PDF magic bytes + `/Encrypt` entry (Groww PDFs are always password-protected); rejects invalid files immediately with a per-file error + **Remove** button
+  - **Layer 2 (Lambda, deep)**: `POST /validate` endpoint — downloads file from S3, runs actual parser, returns `{valid, transactions_found}` or `{valid: false, error}`; shown as per-file "checking…" → ✓ / error
+  - Files upload to S3 on "Continue →" click; `startProcessing()` reuses the already-uploaded session
+- Content-based broker detection (`detectBrokerFromContent`) — not filename-based
 - Groww PAN entry: "Same PAN for all" checkbox or per-file
 - Files with same PAN auto-grouped into one Groww account
 - **Real-time PAN validation** — pdfjs-dist attempts to decrypt PDF with entered PAN; shows ✓/✗ after 10 chars typed
@@ -75,12 +79,14 @@
 - Per-account holdings + cash inputs — labelled "Current holdings value (₹)" with hint "Today's market value of your holdings — not what you invested"
 - **Outside Investments (manual entries)** — optional card in Step 3 (commit `78c464b`)
   - Add any number of investments not tracked by broker (govt bonds, gold bonds, FDs, etc.)
-  - Each entry: description (optional), amount (₹), date
-  - Sent to Lambda as `manual_entries` array; treated as additional cash outflows in XIRR calculation
+  - Each entry: description (optional), amount (₹), date, **required account link**
+  - Account selection is mandatory — Calculate button blocked until all entries linked
+  - Sent to Lambda as `manual_entries` array with `account_id`; treated as additional cash outflows in XIRR calculation
   - Current value of these investments should be included in broker holdings field
   - **To revert if removed:** `git revert 78c464b` then redeploy Lambda
-- "How to download?" link opens a modal with full Groww + Zerodha step-by-step guide (replaces old cluttered text box)
+- "How to download?" link opens a modal with tabbed guide: **Zerodha | Groww | Fyers** (each with step-by-step instructions)
 - Async processing with animated progress steps
+- **Processing error modal** — if Lambda returns an error, a fixed-position overlay shows the message + "← Go Back & Try Again" button (no raw Python ever shown)
 - Results: XIRR vs Nifty 50, portfolio stats (total invested, current value, net gain, investment period), contextual insight card
 - Results disclaimer: "This report assumes all investments were made exclusively through the provided account statements."
 - **Edit Holdings button** on results page — returns to Step 3 with all data preserved (files, PANs, values); user edits and recalculates
@@ -91,7 +97,9 @@
 - Step 1 subtitle: "We will email you the report too" (concise, no extra header bar)
 
 ### Lambda
-- `handler.py` — routes `POST /session` (presigned URLs) and `POST /process` (async trigger)
+- `handler.py` — routes: `POST /session` (presigned URLs), `POST /process` (async trigger), **`POST /validate`** (deep file parse check)
+  - `handle_validate()`: downloads file from S3, runs actual parser, returns `{valid, transactions_found}` or `{valid: false, error}`
+  - `ValueError` → user-friendly message; generic `Exception` → "Something went wrong" (raw Python never reaches UI)
 - `processor.py` — full pipeline:
   - Zerodha CSV parser (Funds added, Payouts, Quarterly settlements)
   - Groww PDF parser (pdfplumber, PAN as password) — supports **two formats**:
@@ -100,7 +108,11 @@
     - Deposit segment types matched: `RAZORPAY_DEPOSIT`, `DIRECT_NETBANKING`, `GROWW_MANDATE`, `GROWW_UPI`
     - Withdrawal segment type: `GROWW_WITHDRAW`
   - Cross-file duplicate detection for Groww (same date+amount across files = skip)
+  - Guard against empty `combined_outflows` before `min()` — raises `ValueError` with clear message if no transactions found
   - **Manual entries** (`manual_entries` in event) — injected as additional cash outflows before XIRR (commit `78c464b`)
+    - Each entry has `account_id` to link to a specific broker account for per-account XIRR
+    - Per-account outflows: linked manual entries injected before per-account XIRR calculation
+    - `handle_process` forwards `manual_entries` in the async self-invocation payload (was missing — fixed 2026-02-25)
   - XIRR calculation (Newton-Raphson + Brent fallback)
   - Nifty 50 comparison (reads from S3 daily cache — no yfinance on user requests)
   - PDF report generation (ReportLab) — fully rethemed Navy + Gold (2026-02-24):
@@ -108,6 +120,8 @@
     - KPI banner: continuous block, gold separators, white text on coloured performance box
     - Removed Simple Return row; insight card (OUTPERFORMING / KEEP GOING / UNDERPERFORMING)
     - Page 2 charts (multi-account): stacked pie (Capital Distribution) + bar (Profit/Loss in Lakhs)
+    - Per-account table shows breakdown sub-rows under "Total Invested" when linked manual entries exist: └ Broker transactions / └ Outside investments
+    - PageBreak placed before insight card so card + account analysis share same page (no empty page 2)
   - Status polling via S3 jobs bucket (public read)
   - Email via SES on completion — full results in email (XIRR, Nifty, stats grid, insight card)
   - PHP bridge notification on completion
@@ -126,6 +140,88 @@
 - EventBridge rule for daily Nifty refresh
 - SES domain identity (verified), email template `xirrledger-report-ready` (Navy + Gold theme, full results data)
 - CloudWatch log groups (7-day retention)
+
+---
+
+## Testing Checklist 🧪
+
+### Scenario Testing
+
+#### File Upload & Parsing
+- [ ] Zerodha CSV only — single file, single year
+- [ ] Zerodha CSV — multiple years (ensure no duplicate transactions)
+- [ ] Groww PDF only — single PAN, annual statement format
+- [ ] Groww PDF — full-history format (from Groww support team, 12-column)
+- [ ] Groww PDFs — multiple PANs (different accounts treated separately)
+- [ ] Groww PDFs — multiple files with same PAN (auto-grouped, cross-file dedup)
+- [ ] Fyers Ledger CSV — single year
+- [ ] Fyers Ledger CSV — multiple years (cross-file dedup)
+- [ ] All 3 brokers combined in one session
+- [ ] Only manual entries submitted (no broker files)
+- [ ] Manual entries combined with broker files
+- [ ] File with zero transactions (empty ledger — should surface a clear error, not crash)
+- [ ] Very large files (10+ years of Zerodha history, 100k+ rows)
+- [ ] Overlapping date ranges across files (ensure dedup logic handles it)
+
+#### Edge Cases
+- [ ] Investment period < 1 year (XIRR should still compute correctly)
+- [ ] Single cash flow (only one deposit, no withdrawal) — XIRR boundary condition
+- [ ] All investments in the same month
+- [ ] Holdings value = 0 entered by user (zero or negative XIRR)
+- [ ] Holdings value much smaller than invested (severe negative XIRR)
+- [ ] Extremely high XIRR (>100%) — Newton-Raphson convergence check
+- [ ] Future dates in manual entries (should reject or warn)
+- [ ] Nifty 50 cache unavailable (S3 read fails) — graceful degradation
+- [ ] User closes tab mid-processing — verify email still sends on Lambda completion
+
+#### UX / Flow
+- [ ] Google Sign-In flow — new user vs returning user
+- [ ] Manual name/email flow (no Google sign-in)
+- [ ] "Same PAN for all" checkbox — switch between single and per-file modes
+- [ ] PAN validation ✓/✗ with correct and wrong PANs
+- [ ] Duplicate file upload detection (same file content, different filename)
+- [ ] Edit Holdings → recalculate — verify state is fully preserved
+- [ ] Stop & Edit on processing page — verify polling cancelled, Step 3 restored
+- [ ] PDF report opens in new tab; confirm 24h presigned URL works
+- [ ] Email received with correct figures matching on-screen results
+- [ ] Mobile responsiveness — all 5 steps on small screens
+
+---
+
+### Security Testing
+
+#### File Upload
+- [ ] Upload a non-CSV file renamed as `.csv` (e.g. a JPEG or shell script) — Lambda should fail gracefully, not execute
+- [ ] Upload a non-PDF file renamed as `.pdf` — pdfplumber should error, not crash Lambda
+- [ ] Upload an oversized file (>50MB) — API Gateway / Lambda payload limit should block it
+- [ ] CSV with formula injection in cells (`=CMD()`, `@SUM`) — verify no execution path
+- [ ] CSV with path traversal in header values (`../../etc/passwd`) — verify safe parsing
+- [ ] PDF with embedded JavaScript — verify pdfplumber doesn't execute it
+
+#### API & Lambda
+- [ ] Call `POST /process` with a fabricated/expired session ID — should return 4xx
+- [ ] Call `POST /process` with a session ID belonging to a different user — S3 key isolation check
+- [ ] Replay attack: reuse a previously completed session ID to re-trigger processing
+- [ ] Submit `manual_entries` with extreme values (negative amounts, year 1900 dates) — validate input sanitisation in Lambda
+- [ ] Inject special characters in `name`/`email` fields sent to PHP bridge — SQL injection check
+- [ ] Fuzz the `holdings` and `cash` fields with non-numeric strings — Lambda should handle `ValueError` gracefully
+
+#### S3 & Presigned URLs
+- [ ] Attempt to access another job's `status.json` by guessing the session UUID
+- [ ] Attempt to access the PDF report URL after 24h expiry — should return 403
+- [ ] Attempt direct S3 bucket listing — bucket policy should deny `s3:ListBucket`
+- [ ] Attempt to upload directly to S3 using a presigned upload URL from another session
+
+#### Frontend & CORS
+- [ ] Call API Gateway from an unlisted origin — CORS policy should block it
+- [ ] Check Content-Security-Policy headers on Hostinger (prevent XSS via injected scripts)
+- [ ] Verify no sensitive credentials exposed in browser `window.*` or Next.js `NEXT_PUBLIC_*` env vars beyond what is intentional
+- [ ] Check that Google OAuth `client_id` is restricted to `xirrledger.com` in Google Cloud Console
+
+#### Rate Limiting & Abuse
+- [ ] Spam `POST /session` rapidly from the same IP — verify API Gateway throttling (currently default AWS limits)
+- [ ] Submit 100 manual entries in one request — check Lambda memory/timeout behaviour
+- [ ] Automated form submission without Google Sign-In (only manual email) — any bot protection needed?
 
 ---
 
@@ -245,3 +341,8 @@ AWS_PROFILE=ankit aws logs tail /aws/lambda/xirr-processor --follow --region ap-
 | Download guide modal (Step 2) | `aee2138` | `git revert aee2138` |
 | Edit Holdings / Stop & Edit buttons | `ae7d792` | `git revert ae7d792` |
 | Full results data in email | `d20e8fb` | `git revert d20e8fb` + update SES template |
+| 2-layer file validation + Upload on Continue | `77343eb`–`04d1386` | `git revert 77343eb..04d1386` + redeploy Lambda |
+| Processing error modal | `5de5c05` | `git revert 5de5c05` |
+| Lambda ValueError/Exception split + empty outflows guard | `39a07a1` | `git revert 39a07a1` + redeploy Lambda |
+| Outside investments account linking (required, per-account XIRR) | (2026-02-25) | Revert frontend + Lambda changes |
+| PDF breakdown sub-rows + fix empty page 2 | (2026-02-25) | Lambda-only — redeploy previous processor.py |
