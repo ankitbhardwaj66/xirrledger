@@ -180,18 +180,21 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             all_outflows.append(acc_out)
             all_inflows.append(acc_inf)
 
-            # ── Inject dividend inflows (Zerodha dividend XLSX) ──
+            # ── Collect dividend inflows (Zerodha dividend XLSX) ──
+            # Kept separate from broker inflows so total_withdrawn stays broker-only.
+            # Dividends are passed into compute_portfolio_stats as dividend_cashflows
+            # so they affect XIRR and net_gain but not the "Total Withdrawn" display.
             dividend_file_keys = account.get("dividend_file_keys", [])
             dividend_details   = []
+            dividend_cashflows = pd.DataFrame(columns=["date", "amount"])
             for dk in dividend_file_keys:
                 try:
                     obj     = s3_client.get_object(Bucket=uploads_bucket, Key=dk)
                     div_df, div_detail = parse_zerodha_dividends_xlsx(obj["Body"].read())
                     if not div_df.empty:
-                        acc_inf = pd.concat([acc_inf, div_df], ignore_index=True)
-                        all_inflows[-1] = pd.concat([all_inflows[-1], div_df], ignore_index=True)
+                        dividend_cashflows = pd.concat([dividend_cashflows, div_df], ignore_index=True)
                         dividend_details.extend(div_detail)
-                        logger.info("Injected %d dividend inflow rows from %s", len(div_df), dk)
+                        logger.info("Collected %d dividend inflow rows from %s", len(div_df), dk)
                 except Exception as e:
                     logger.warning("Failed to parse dividend file %s: %s", dk, e)
 
@@ -232,6 +235,7 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                 "outflows": acc_out,
                 "inflows": acc_inf,
                 "current_value": current_value,
+                "dividend_cashflows": dividend_cashflows,
                 "dividend_details": dividend_details,
             })
 
@@ -284,11 +288,26 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
 
         # ── Compute XIRR ─────────────────────────────────────
         update_status({"status": "computing", "message": "Computing XIRR..."})
-        combined_stats = compute_portfolio_stats(combined_outflows, combined_inflows, combined_value, nifty_data)
+        combined_div_cashflows_list = [
+            acc["dividend_cashflows"] for acc in account_stats_list
+            if not acc["dividend_cashflows"].empty
+        ]
+        combined_div_cashflows = (
+            pd.concat(combined_div_cashflows_list, ignore_index=True)
+            if combined_div_cashflows_list
+            else pd.DataFrame(columns=["date", "amount"])
+        )
+        combined_stats = compute_portfolio_stats(
+            combined_outflows, combined_inflows, combined_value, nifty_data,
+            dividend_cashflows=combined_div_cashflows,
+        )
 
         individual_stats = []
         for acc in account_stats_list:
-            stats = compute_portfolio_stats(acc["outflows"], acc["inflows"], acc["current_value"], nifty_data)
+            stats = compute_portfolio_stats(
+                acc["outflows"], acc["inflows"], acc["current_value"], nifty_data,
+                dividend_cashflows=acc.get("dividend_cashflows"),
+            )
             stats["account_name"]     = acc["name"]
             stats["account_id"]       = acc.get("id", "")
             stats["dividend_details"] = acc.get("dividend_details", [])
@@ -743,11 +762,15 @@ def calculate_nifty_xirr(outflows, inflows, nifty_data):
 # ─────────────────────────────────────────────────────────────
 # Portfolio stats
 # ─────────────────────────────────────────────────────────────
-def compute_portfolio_stats(outflows, inflows, current_value, nifty_data=None):
+def compute_portfolio_stats(outflows, inflows, current_value, nifty_data=None, dividend_cashflows=None):
     today = datetime.now()
     total_invested  = -outflows["amount"].sum() if len(outflows) else 0
+    # total_withdrawn = broker withdrawals only (excludes dividends for clean display)
     total_withdrawn = inflows["amount"].sum() if len(inflows) else 0
-    net_gain        = current_value + total_withdrawn - total_invested
+    # dividend_total is tracked separately and added to net_gain
+    has_dividends   = dividend_cashflows is not None and not dividend_cashflows.empty
+    dividend_total  = float(dividend_cashflows["amount"].sum()) if has_dividends else 0.0
+    net_gain        = current_value + total_withdrawn + dividend_total - total_invested
     simple_return   = (net_gain / total_invested * 100) if total_invested > 0 else 0
 
     # First investment date + period
@@ -758,9 +781,14 @@ def compute_portfolio_stats(outflows, inflows, current_value, nifty_data=None):
     n_investments = len(outflows)
     n_withdrawals = len(inflows)
 
-    cash_flows = list(outflows["amount"]) + list(inflows["amount"]) + [current_value]
+    # XIRR uses broker inflows + dividend inflows together
+    xirr_inflows = (
+        pd.concat([inflows, dividend_cashflows], ignore_index=True)
+        if has_dividends else inflows
+    )
+    cash_flows = list(outflows["amount"]) + list(xirr_inflows["amount"]) + [current_value]
     dates      = [pd.to_datetime(d) for d in outflows["date"]] + \
-                 [pd.to_datetime(d) for d in inflows["date"]] + \
+                 [pd.to_datetime(d) for d in xirr_inflows["date"]] + \
                  [today]
 
     xirr_pct = None
@@ -773,9 +801,10 @@ def compute_portfolio_stats(outflows, inflows, current_value, nifty_data=None):
 
     return {
         "total_invested":          total_invested,
-        "total_withdrawn":         total_withdrawn,
+        "total_withdrawn":         total_withdrawn,   # broker only
+        "dividend_total":          dividend_total,    # dividend income (separate from withdrawals)
         "current_value":           current_value,
-        "net_gain":                net_gain,
+        "net_gain":                net_gain,          # broker + dividends
         "simple_return":           simple_return,
         "xirr_percentage":         xirr_pct,
         "nifty_xirr_percentage":   nifty["xirr_percentage"]   if nifty else None,
@@ -1247,9 +1276,27 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
             manual_total    = sum(float(me["amount"]) for me in linked_manual) if linked_manual else 0
             broker_invested = stats["total_invested"] - manual_total
 
-            # Dividend income total for this account (shown as a row in the metrics table)
-            div_details = stats.get("dividend_details", [])
-            total_div   = sum(d["amount"] for d in div_details) if div_details else 0
+            # Dividend income: use stats["dividend_total"] (set by compute_portfolio_stats)
+            total_div = stats.get("dividend_total", 0.0)
+
+            # Row layout (0-indexed):
+            # 0  header
+            # 1  Investment Period
+            # 2  Total Transactions
+            # 3  Total Invested
+            # 4,5 optional: └ Broker / └ Outside (if linked_manual)
+            # (4+sub) Total Withdrawn
+            # (5+sub) Current Value
+            # (6+sub) Dividend Income  ← only if total_div > 0
+            # (6+sub or 7+sub) Net Gain / Loss
+            # (7+sub or 8+sub) XIRR
+            sub_rows    = 2 if linked_manual else 0
+            div_present = total_div > 0
+            withdrawn_idx = 4 + sub_rows
+            cv_idx        = 5 + sub_rows
+            div_row_idx   = (6 + sub_rows) if div_present else None
+            gain_idx      = (7 + sub_rows) if div_present else (6 + sub_rows)
+            xirr_idx      = gain_idx + 1
 
             elements.append(Paragraph(stats.get("account_name", "Account"), acct_h_s))
             rows = [
@@ -1261,19 +1308,12 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
             if linked_manual:
                 rows.append(["\u2514 Broker transactions",   _fmt_inr(broker_invested)])
                 rows.append(["\u2514 Outside investments",   _fmt_inr(manual_total)])
-            rows.extend([
-                ["Total Withdrawn",    _fmt_inr(stats["total_withdrawn"])],
-                ["Current Value",      _fmt_inr(stats["current_value"])],
-                ["Net Gain / Loss",    _fmt_inr(stats["net_gain"])],
-                ["XIRR (Annualised)",  acc_xirr],
-            ])
-            if total_div > 0:
+            rows.append(["Total Withdrawn",    _fmt_inr(stats["total_withdrawn"])])
+            rows.append(["Current Value",      _fmt_inr(stats["current_value"])])
+            if div_present:
                 rows.append(["Dividend Income", _fmt_inr(total_div)])
-
-            sub_rows   = 2 if linked_manual else 0
-            gain_idx   = 6 + sub_rows
-            xirr_idx   = 7 + sub_rows
-            div_row_idx = (8 + sub_rows) if total_div > 0 else None
+            rows.append(["Net Gain / Loss",    _fmt_inr(stats["net_gain"])])
+            rows.append(["XIRR (Annualised)",  acc_xirr])
 
             at = Table(rows, colWidths=[page_w * 0.56, page_w * 0.44])
             at.setStyle(_base_table_style("#1e293b"))
@@ -1313,7 +1353,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                 ))
             if total_div > 0:
                 elements.append(Paragraph(
-                    "Dividend income included as inflows in the XIRR calculation.",
+                    "Dividend income is included in Net Gain / Loss and in the XIRR calculation.",
                     note_s
                 ))
 
