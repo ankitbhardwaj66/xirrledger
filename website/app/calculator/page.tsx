@@ -270,6 +270,8 @@ export default function CalculatorPage() {
   const [step, setStep] = useState<Step>('auth');
   const [user, setUser] = useState<User | null>(null);
   const [files, setFiles] = useState<UploadedFile[]>([]);
+  const [dividendFiles, setDividendFiles] = useState<File[]>([]);
+  const [dividendKeyMap, setDividendKeyMap] = useState<Record<string, string>>({});
   const [filePans, setFilePans] = useState<Record<string, string>>({});
   const [samePanForAll, setSamePanForAll] = useState(false);
   const [sharedPan, setSharedPan] = useState('');
@@ -370,9 +372,27 @@ export default function CalculatorPage() {
     setStep('upload');
   }
 
+  const isDividendFile = (file: File) =>
+    file.name.toLowerCase().endsWith('.xlsx') &&
+    file.name.toLowerCase().startsWith('dividends-');
+
   const addFiles = useCallback(async (incoming: FileList | File[]) => {
+    const all = Array.from(incoming);
+    // Separate dividend XLSX files from broker files
+    const divFiles = all.filter(f => isDividendFile(f));
+    const brokerFiles = all.filter(f => !isDividendFile(f));
+
+    if (divFiles.length > 0) {
+      setDividendFiles(prev => {
+        const existingNames = new Set(prev.map(f => f.name));
+        return [...prev, ...divFiles.filter(f => !existingNames.has(f.name))];
+      });
+    }
+
+    if (brokerFiles.length === 0) return;
+
     const withHashes = await Promise.all(
-      Array.from(incoming).map(async file => {
+      brokerFiles.map(async file => {
         const [detected, hash] = await Promise.all([detectBrokerFromContent(file), hashFile(file)]);
         return { file, hash, ...detected };
       })
@@ -488,30 +508,39 @@ export default function CalculatorPage() {
     if (hasFormatErrors) return;
     setIsUploading(true);
     try {
-      // Upload files to S3
-      const fileList = files.map(f => ({ name: f.file.name, type: f.file.type || 'application/octet-stream' }));
+      // Upload broker files + dividend files to S3 in one session
+      const allFilesToUpload = [
+        ...files.map(f => ({ name: f.file.name, type: f.file.type || 'application/octet-stream' })),
+        ...dividendFiles.map(f => ({ name: f.name, type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })),
+      ];
       const sessionRes = await fetch(`${API_BASE}/session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ files: fileList }),
+        body: JSON.stringify({ files: allFilesToUpload }),
       });
       if (!sessionRes.ok) throw new Error('Upload failed — please try again.');
       const { session_id, upload_urls } = await sessionRes.json();
 
       const keyMap: Record<string, string> = {};
+      const divKeyMap: Record<string, string> = {};
       await Promise.all(
         (upload_urls as { name: string; url: string; key: string }[]).map(async ({ name, url, key }) => {
           const uf = files.find(f => f.file.name === name);
-          if (!uf) return;
+          const df = dividendFiles.find(f => f.name === name);
+          const fileObj = uf?.file ?? df;
+          if (!fileObj) return;
+          const contentType = uf?.file.type || 'application/octet-stream';
           const putRes = await fetch(url, {
-            method: 'PUT', body: uf.file,
-            headers: { 'Content-Type': uf.file.type || 'application/octet-stream' },
+            method: 'PUT', body: fileObj,
+            headers: { 'Content-Type': contentType },
           });
           if (!putRes.ok) throw new Error(`Failed to upload ${name}`);
-          keyMap[name] = key;
+          if (uf) keyMap[name] = key;
+          if (df) divKeyMap[name] = key;
         })
       );
       setUploadedSession({ sessionId: session_id, keyMap });
+      setDividendKeyMap(divKeyMap);
 
       // Deep-validate non-Groww files via Lambda immediately
       const nonGrowwFiles = files.filter(f => f.broker !== 'groww');
@@ -601,15 +630,33 @@ export default function CalculatorPage() {
         body: JSON.stringify({ session_id, name: user?.name, email: user?.email, broker: detectedBroker, google_token: user?.googleToken }),
       }).catch(() => {});
 
-      const accountsPayload = accounts.map(acc => ({
-        id: acc.id,
-        broker: acc.broker,
-        pan: acc.broker === 'groww' ? acc.id : null,
-        pan_password: acc.broker === 'groww' ? acc.id : null,
-        file_keys: acc.fileNames.map(n => keyMap[n]).filter(Boolean),
-        holdings: parseFloat(acc.holdings) || 0,
-        cash: parseFloat(acc.cash) || 0,
-      }));
+      // Auto-link dividend files to Zerodha accounts by client ID
+      // Zerodha account id looks like "ledger-GZW478.csv" → client ID = "GZW478"
+      // Dividend file looks like "dividends-GZW478-2025_2026.xlsx" → client ID = "GZW478"
+      const getZerodhaClientId = (accountId: string) =>
+        accountId.match(/ledger[-_](.+?)\.csv/i)?.[1]?.toUpperCase() ?? null;
+      const getDividendClientId = (filename: string) =>
+        filename.match(/dividends[-_](.+?)[-_]\d{4}/i)?.[1]?.toUpperCase() ?? null;
+
+      const accountsPayload = accounts.map(acc => {
+        const zerodhaClientId = acc.broker === 'zerodha' ? getZerodhaClientId(acc.id) : null;
+        const divKeys = zerodhaClientId
+          ? dividendFiles
+              .filter(f => getDividendClientId(f.name) === zerodhaClientId)
+              .map(f => dividendKeyMap[f.name])
+              .filter(Boolean)
+          : [];
+        return {
+          id: acc.id,
+          broker: acc.broker,
+          pan: acc.broker === 'groww' ? acc.id : null,
+          pan_password: acc.broker === 'groww' ? acc.id : null,
+          file_keys: acc.fileNames.map(n => keyMap[n]).filter(Boolean),
+          dividend_file_keys: divKeys,
+          holdings: parseFloat(acc.holdings) || 0,
+          cash: parseFloat(acc.cash) || 0,
+        };
+      });
 
       const manualEntriesPayload = manualEntries
         .filter(e => e.amount.trim() && e.date.trim())
@@ -834,9 +881,9 @@ export default function CalculatorPage() {
                   Drop files here or click to browse
                 </p>
                 <p style={{ color: '#334155', fontSize: '0.78rem', margin: 0 }}>
-                  Zerodha CSV, Groww PDF and Fyers CSV supported
+                  Zerodha CSV · Groww PDF · Fyers CSV · Zerodha dividend XLSX (optional)
                 </p>
-                <input ref={fileInputRef} type="file" multiple accept=".csv,.pdf"
+                <input ref={fileInputRef} type="file" multiple accept=".csv,.pdf,.xlsx"
                   onChange={e => e.target.files && addFiles(e.target.files)} style={{ display: 'none' }} />
               </div>
 
@@ -890,6 +937,29 @@ export default function CalculatorPage() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+
+              {/* ── Dividend files section ── */}
+              {dividendFiles.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <p style={{ margin: '0 0 8px', fontSize: '0.78rem', color: GOLD, fontWeight: 600 }}>
+                    Dividend statements detected — inflows will be included in XIRR
+                  </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {dividendFiles.map((f, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 14px', ...innerCard, border: '1px solid rgba(245,158,11,0.2)' }}>
+                        <div style={{ width: 32, height: 32, borderRadius: 7, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(245,158,11,0.12)', fontSize: '0.6rem', fontWeight: 700, color: GOLD }}>
+                          XLSX
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</p>
+                          <p style={{ margin: 0, fontSize: '0.75rem', color: '#475569' }}>Zerodha dividend statement · {(f.size / 1024).toFixed(0)} KB</p>
+                        </div>
+                        <button onClick={() => setDividendFiles(prev => prev.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: 4, fontSize: '1.2rem', lineHeight: 1 }}>×</button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

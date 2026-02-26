@@ -15,6 +15,7 @@ Called from handler.py with:
         "pan": str | None,
         "pan_password": str | None,   # for Groww PDFs (Fyers doesn't need this)
         "file_keys": [str],           # S3 keys in uploads bucket
+        "dividend_file_keys": [str],  # optional — Zerodha dividend XLSX S3 keys
         "holdings": float,
         "cash": float
       }
@@ -44,6 +45,7 @@ import pandas as pd
 import numpy as np
 from scipy.optimize import newton, brentq
 import pdfplumber
+import openpyxl
 # yfinance removed — Nifty 50 data is read from the S3 daily cache
 # (populated by the nifty-refresher Lambda, see refresher.py)
 from reportlab.lib import colors
@@ -178,6 +180,21 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             all_outflows.append(acc_out)
             all_inflows.append(acc_inf)
 
+            # ── Inject dividend inflows (Zerodha dividend XLSX) ──
+            dividend_file_keys = account.get("dividend_file_keys", [])
+            dividend_details   = []
+            for dk in dividend_file_keys:
+                try:
+                    obj     = s3_client.get_object(Bucket=uploads_bucket, Key=dk)
+                    div_df, div_detail = parse_zerodha_dividends_xlsx(obj["Body"].read())
+                    if not div_df.empty:
+                        acc_inf = pd.concat([acc_inf, div_df], ignore_index=True)
+                        all_inflows[-1] = pd.concat([all_inflows[-1], div_df], ignore_index=True)
+                        dividend_details.extend(div_detail)
+                        logger.info("Injected %d dividend inflow rows from %s", len(div_df), dk)
+                except Exception as e:
+                    logger.warning("Failed to parse dividend file %s: %s", dk, e)
+
             # Extract Zerodha account number from filename: ledger-ACCTNUM.csv
             zerodha_acct = None
             if broker == "zerodha" and file_keys:
@@ -215,6 +232,7 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                 "outflows": acc_out,
                 "inflows": acc_inf,
                 "current_value": current_value,
+                "dividend_details": dividend_details,
             })
 
         if not all_outflows:
@@ -271,8 +289,9 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
         individual_stats = []
         for acc in account_stats_list:
             stats = compute_portfolio_stats(acc["outflows"], acc["inflows"], acc["current_value"], nifty_data)
-            stats["account_name"] = acc["name"]
-            stats["account_id"]   = acc.get("id", "")
+            stats["account_name"]     = acc["name"]
+            stats["account_id"]       = acc.get("id", "")
+            stats["dividend_details"] = acc.get("dividend_details", [])
             individual_stats.append(stats)
 
         # ── Generate PDF ──────────────────────────────────────
@@ -425,6 +444,53 @@ def parse_zerodha_csv(file_bytes):
         raise ValueError("No 'Funds added' entries found in Zerodha CSV.")
 
     return fund_additions, inflows
+
+
+def parse_zerodha_dividends_xlsx(file_bytes: bytes):
+    """Parse a Zerodha dividend XLSX report.
+
+    Returns:
+        xirr_df   — DataFrame(date, amount) with positive inflow rows for XIRR
+        details   — list of {"symbol": str, "amount": float} for PDF display
+    """
+    wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
+    ws = wb.active
+    rows = list(ws.iter_rows(values_only=True))
+
+    # Find header row dynamically (contains "Ex-Date")
+    header_idx = None
+    for i, row in enumerate(rows):
+        if row and any(str(c).strip() == "Ex-Date" for c in row if c is not None):
+            header_idx = i
+            break
+    if header_idx is None:
+        raise ValueError("Not a valid Zerodha dividend file — 'Ex-Date' column not found.")
+
+    headers = [str(c).strip() if c is not None else "" for c in rows[header_idx]]
+    try:
+        date_col   = headers.index("Ex-Date")
+        amt_col    = headers.index("Net Dividend Amount")
+        symbol_col = headers.index("Symbol")
+    except ValueError as e:
+        raise ValueError(f"Zerodha dividend file missing expected column: {e}") from e
+
+    xirr_rows   = []
+    detail_rows = []
+    for row in rows[header_idx + 1:]:
+        if not row or row[date_col] is None or row[amt_col] is None:
+            continue
+        try:
+            dt  = str(row[date_col])[:10]   # YYYY-MM-DD
+            amt = float(row[amt_col])
+            sym = str(row[symbol_col]).strip() if row[symbol_col] else "Unknown"
+            if amt > 0:
+                xirr_rows.append({"date": dt, "amount": amt})   # positive = inflow
+                detail_rows.append({"symbol": sym, "amount": amt})
+        except (ValueError, TypeError):
+            continue
+
+    xirr_df = pd.DataFrame(xirr_rows) if xirr_rows else pd.DataFrame(columns=["date", "amount"])
+    return xirr_df, detail_rows
 
 
 def parse_groww_pdf(file_bytes, password=None):
@@ -1231,6 +1297,41 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                     f"Outside investments linked to this account:  {entries_note}",
                     note_s
                 ))
+
+            # ── Dividend Income Table ──────────────────────────
+            div_details = stats.get("dividend_details", [])
+            if div_details:
+                # Aggregate by symbol
+                sym_totals: dict = {}
+                for d in div_details:
+                    sym_totals[d["symbol"]] = sym_totals.get(d["symbol"], 0) + d["amount"]
+                total_div = sum(sym_totals.values())
+
+                div_h_s = ParagraphStyle("DH", fontSize=9, fontName="Helvetica-Bold",
+                                         textColor=colors.HexColor("#f59e0b"),
+                                         spaceBefore=10, spaceAfter=4)
+                elements.append(Paragraph("Dividend Income", div_h_s))
+
+                div_rows = [["Symbol", "Dividend Received (₹)"]]
+                for sym, amt in sorted(sym_totals.items()):
+                    div_rows.append([sym, _fmt_inr(amt)])
+                div_rows.append(["Total", _fmt_inr(total_div)])
+
+                total_idx = len(div_rows) - 1
+                dt = Table(div_rows, colWidths=[page_w * 0.56, page_w * 0.44])
+                dt.setStyle(_base_table_style("#1e293b"))
+                dt.setStyle(TableStyle([
+                    ("BACKGROUND", (0, total_idx), (-1, total_idx), colors.HexColor("#0f172a")),
+                    ("TEXTCOLOR",  (0, total_idx), (-1, total_idx), colors.HexColor("#f59e0b")),
+                    ("FONTNAME",   (0, total_idx), (-1, total_idx), "Helvetica-Bold"),
+                    ("LINEABOVE",  (0, total_idx), (-1, total_idx), 1, colors.HexColor("#f59e0b")),
+                ]))
+                elements.append(dt)
+                elements.append(Paragraph(
+                    "Dividend amounts are included as inflows in the XIRR calculation above.",
+                    note_s
+                ))
+
             elements.append(Spacer(1, 10))
 
         # ── Account Comparison (multi-account only) ────────────
