@@ -134,12 +134,145 @@
 - API Gateway HTTP API: `https://3cvw6sp1sf.execute-api.ap-south-1.amazonaws.com/`
 - Lambda function: `xirr-processor` (512MB, 120s timeout)
 - Lambda function: `nifty-refresher` (256MB, 300s timeout)
-- Lambda layer: `xirrledger-deps` (pandas, numpy, scipy, reportlab, pdfplumber, requests)
+- Lambda layer: `xirrledger-deps` (pandas, numpy, scipy, reportlab, pdfplumber, openpyxl, requests)
 - 4 S3 buckets with lifecycle rules
 - IAM role with S3 + SES + self-invoke permissions
 - EventBridge rule for daily Nifty refresh
 - SES domain identity (verified), email template `xirrledger-report-ready` (Navy + Gold theme, full results data)
 - CloudWatch log groups (7-day retention)
+
+---
+
+## XIRR Calculation Architecture
+
+### Cash Flow Sign Convention
+
+| Direction | Sign | Examples |
+|---|---|---|
+| Outflow (money leaves pocket) | **negative** | Broker deposits, SGB purchases, manual entries |
+| Inflow (money returns to pocket) | **positive** | Broker withdrawals, dividends, current portfolio value |
+
+All cash flow DataFrames store amounts with this sign already applied:
+- `acc_out["amount"]` — negative values
+- `acc_inf["amount"]` — positive values
+- `dividend_cashflows["amount"]` — positive values
+
+---
+
+### Pipeline: per account
+
+```
+For each account (zerodha / groww / fyers):
+  1. Parse broker files → acc_out (outflows), acc_inf (broker inflows)
+  2. Parse dividend XLSX files → dividend_cashflows (separate from acc_inf)
+  3. Inject linked manual_entries into acc_out (outflows only)
+  4. Store in account_stats_list:
+       { outflows: acc_out, inflows: acc_inf, dividend_cashflows, dividend_details }
+```
+
+Dividends are **never merged into `acc_inf`**. They are kept separate so that:
+- `total_withdrawn` (PDF display) = broker inflows only (clean, no dividend noise)
+- `net_gain` = current_value + total_withdrawn + dividend_total − total_invested
+- XIRR cash flows = broker outflows + broker inflows + dividends + current_value (today)
+
+---
+
+### Pipeline: combined portfolio
+
+```
+combined_outflows = concat(all acc_out)
+combined_inflows  = concat(all acc_inf)          # broker only
+combined_div_cfs  = concat(all dividend_cashflows)
+
+compute_portfolio_stats(combined_outflows, combined_inflows, combined_value,
+                        dividend_cashflows=combined_div_cfs)
+```
+
+---
+
+### `compute_portfolio_stats(outflows, inflows, current_value, nifty_data, dividend_cashflows)`
+
+```python
+total_invested  = -outflows["amount"].sum()
+total_withdrawn = inflows["amount"].sum()        # broker withdrawals only
+dividend_total  = dividend_cashflows["amount"].sum() if provided else 0
+
+net_gain = current_value + total_withdrawn + dividend_total - total_invested
+
+# XIRR cash flows = broker outflows + (broker inflows + dividends) + terminal value
+xirr_inflows = concat(inflows, dividend_cashflows)
+cash_flows = [outflows] + [xirr_inflows] + [current_value]   # current_value = positive
+dates      = [outflow dates] + [inflow+div dates] + [today]
+
+xirr_rate = calculate_xirr(cash_flows, dates)   # Newton-Raphson + Brent fallback
+```
+
+Returns: `total_withdrawn` (broker only), `dividend_total`, `net_gain` (all-in), `xirr_percentage`.
+
+---
+
+### XIRR Solver (`calculate_xirr`)
+
+```
+xNPV(r) = Σ CF_i / (1+r)^(days_i / 365.25) = 0
+
+Solvers tried in order:
+1. Newton-Raphson — 5 starting guesses: [0.1, 0.0, -0.5, 0.5, 1.0]
+2. Brent method   — brackets: lo ∈ {-0.999, -0.99, -0.95}, hi ∈ {10, 5, 2}
+
+Result accepted if: |xNPV(r)| < 1.0 AND -0.99 < r < 10
+Returns None (N/A) if no convergence.
+```
+
+Common reasons for N/A: current_value = 0 with heavy losses (Fyers closed account),
+future-dated cash flows beyond `today`, all cash flows same sign.
+
+---
+
+### Dividend XLSX Parsing (`parse_zerodha_dividends_xlsx`)
+
+- Source: Zerodha `dividends-{CLIENT_ID}-{FY_START}_{FY_END}.xlsx`
+- Header row detected dynamically by scanning for `"Ex-Date"` column
+- Required columns: `Symbol`, `Ex-Date`, `Net Dividend Amount`
+- **Filters applied:**
+  - `amt > 0` — skip zero/negative entries
+  - `dt <= today` — skip future ex-dates (upcoming FY files have future entries)
+  - `"total" not in sym.lower()` — skip Excel summary/total rows
+- Returns: `(xirr_df, detail_list)` — xirr_df has `{date, amount}`, detail_list has `{symbol, amount}`
+- Multiple FY files can be uploaded per account — all are concatenated
+- Client ID matching: `dividends-GZW478-2025_2026.xlsx` → client_id = `GZW478` → linked to `ledger-GZW478.csv`
+
+---
+
+### Nifty 50 Benchmark
+
+```
+compute_nifty_stats(outflows, inflows, nifty_data):
+  - Mirror every outflow date/amount as a Nifty 50 buy (units = amount / price_on_date)
+  - Mirror every inflow date as a proportional sell
+  - Terminal value = units_held × current_Nifty_price
+  - Nifty XIRR = calculate_xirr on these mirrored cash flows
+```
+
+Data: daily close prices from S3 cache (`xirrledger-jobs/nifty50_cache.csv`), refreshed daily at 6 AM IST by `nifty-refresher` Lambda. If cache unavailable, Nifty XIRR = N/A (graceful degradation).
+
+---
+
+### PDF Report Layout (per account table)
+
+```
+Metric              │ Value
+Investment Period   │ 1315 days  (3.60 years)
+Total Transactions  │ 105 investments,  138 withdrawals
+Total Invested      │ 46,73,336.00
+  └ Broker          │ XX,XX,XXX       ← only if manual entries linked
+  └ Outside invest  │ XX,XX,XXX       ← only if manual entries linked
+Total Withdrawn     │ 11,16,123.16    ← broker only
+Current Value       │ 37,67,643.00
+Dividend Income     │ 27,743.91       ← only if dividend file uploaded; amber colour
+Net Gain / Loss     │ 2,38,174.07     ← includes dividend income
+XIRR (Annualised)   │ 7.94%           ← amber, bold; uses all cash flows incl. dividends
+```
 
 ---
 
@@ -346,3 +479,4 @@ AWS_PROFILE=ankit aws logs tail /aws/lambda/xirr-processor --follow --region ap-
 | Lambda ValueError/Exception split + empty outflows guard | `39a07a1` | `git revert 39a07a1` + redeploy Lambda |
 | Outside investments account linking (required, per-account XIRR) | (2026-02-25) | Revert frontend + Lambda changes |
 | PDF breakdown sub-rows + fix empty page 2 | (2026-02-25) | Lambda-only — redeploy previous processor.py |
+| Dividend XLSX inflows (Zerodha) | `8fa0468` | Revert frontend (dividendFiles state) + Lambda (processor.py) |
