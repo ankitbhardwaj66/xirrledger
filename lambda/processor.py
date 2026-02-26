@@ -474,6 +474,7 @@ def parse_zerodha_dividends_xlsx(file_bytes: bytes):
     except ValueError as e:
         raise ValueError(f"Zerodha dividend file missing expected column: {e}") from e
 
+    today_str   = datetime.now().strftime("%Y-%m-%d")
     xirr_rows   = []
     detail_rows = []
     for row in rows[header_idx + 1:]:
@@ -483,7 +484,8 @@ def parse_zerodha_dividends_xlsx(file_bytes: bytes):
             dt  = str(row[date_col])[:10]   # YYYY-MM-DD
             amt = float(row[amt_col])
             sym = str(row[symbol_col]).strip() if row[symbol_col] else "Unknown"
-            if amt > 0:
+            # Skip summary/total rows and future-dated entries (e.g. upcoming FY)
+            if amt > 0 and dt <= today_str and "total" not in sym.lower():
                 xirr_rows.append({"date": dt, "amount": amt})   # positive = inflow
                 detail_rows.append({"symbol": sym, "amount": amt})
         except (ValueError, TypeError):
@@ -1245,6 +1247,10 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
             manual_total    = sum(float(me["amount"]) for me in linked_manual) if linked_manual else 0
             broker_invested = stats["total_invested"] - manual_total
 
+            # Dividend income total for this account (shown as a row in the metrics table)
+            div_details = stats.get("dividend_details", [])
+            total_div   = sum(d["amount"] for d in div_details) if div_details else 0
+
             elements.append(Paragraph(stats.get("account_name", "Account"), acct_h_s))
             rows = [
                 ["Metric",            "Value"],
@@ -1261,10 +1267,13 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                 ["Net Gain / Loss",    _fmt_inr(stats["net_gain"])],
                 ["XIRR (Annualised)",  acc_xirr],
             ])
+            if total_div > 0:
+                rows.append(["Dividend Income", _fmt_inr(total_div)])
 
             sub_rows   = 2 if linked_manual else 0
             gain_idx   = 6 + sub_rows
             xirr_idx   = 7 + sub_rows
+            div_row_idx = (8 + sub_rows) if total_div > 0 else None
 
             at = Table(rows, colWidths=[page_w * 0.56, page_w * 0.44])
             at.setStyle(_base_table_style("#1e293b"))
@@ -1275,6 +1284,11 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                 ("FONTSIZE",   (1, xirr_idx), (1, xirr_idx),  10),
                 ("TEXTCOLOR",  (1, xirr_idx), (1, xirr_idx),  colors.HexColor("#f59e0b")),
             ]
+            if div_row_idx is not None:
+                style_cmds.extend([
+                    ("TEXTCOLOR", (1, div_row_idx), (1, div_row_idx), colors.HexColor("#f59e0b")),
+                    ("FONTNAME",  (1, div_row_idx), (1, div_row_idx), "Helvetica-Bold"),
+                ])
             if linked_manual:
                 sub_bg = colors.HexColor("#eef2f7")
                 for r in (4, 5):
@@ -1297,38 +1311,9 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                     f"Outside investments linked to this account:  {entries_note}",
                     note_s
                 ))
-
-            # ── Dividend Income Table ──────────────────────────
-            div_details = stats.get("dividend_details", [])
-            if div_details:
-                # Aggregate by symbol
-                sym_totals: dict = {}
-                for d in div_details:
-                    sym_totals[d["symbol"]] = sym_totals.get(d["symbol"], 0) + d["amount"]
-                total_div = sum(sym_totals.values())
-
-                div_h_s = ParagraphStyle("DH", fontSize=9, fontName="Helvetica-Bold",
-                                         textColor=colors.HexColor("#f59e0b"),
-                                         spaceBefore=10, spaceAfter=4)
-                elements.append(Paragraph("Dividend Income", div_h_s))
-
-                div_rows = [["Symbol", "Dividend Received (₹)"]]
-                for sym, amt in sorted(sym_totals.items()):
-                    div_rows.append([sym, _fmt_inr(amt)])
-                div_rows.append(["Total", _fmt_inr(total_div)])
-
-                total_idx = len(div_rows) - 1
-                dt = Table(div_rows, colWidths=[page_w * 0.56, page_w * 0.44])
-                dt.setStyle(_base_table_style("#1e293b"))
-                dt.setStyle(TableStyle([
-                    ("BACKGROUND", (0, total_idx), (-1, total_idx), colors.HexColor("#0f172a")),
-                    ("TEXTCOLOR",  (0, total_idx), (-1, total_idx), colors.HexColor("#f59e0b")),
-                    ("FONTNAME",   (0, total_idx), (-1, total_idx), "Helvetica-Bold"),
-                    ("LINEABOVE",  (0, total_idx), (-1, total_idx), 1, colors.HexColor("#f59e0b")),
-                ]))
-                elements.append(dt)
+            if total_div > 0:
                 elements.append(Paragraph(
-                    "Dividend amounts are included as inflows in the XIRR calculation above.",
+                    "Dividend income included as inflows in the XIRR calculation.",
                     note_s
                 ))
 
