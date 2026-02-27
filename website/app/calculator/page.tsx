@@ -1101,14 +1101,16 @@ export default function CalculatorPage() {
                   Enter the PAN for each Groww PDF. Files with the same PAN will be merged into one account.
                 </p>
 
-                <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 16, userSelect: 'none' }}>
-                  <input
-                    type="checkbox" checked={samePanForAll}
-                    onChange={e => setSamePanForAll(e.target.checked)}
-                    style={{ width: 15, height: 15, accentColor: GOLD, cursor: 'pointer' }}
-                  />
-                  <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#94a3b8' }}>Same PAN for all Groww files</span>
-                </label>
+                {growwFiles.length > 1 && (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 16, userSelect: 'none' }}>
+                    <input
+                      type="checkbox" checked={samePanForAll}
+                      onChange={e => setSamePanForAll(e.target.checked)}
+                      style={{ width: 15, height: 15, accentColor: GOLD, cursor: 'pointer' }}
+                    />
+                    <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#94a3b8' }}>Same PAN for all Groww files</span>
+                  </label>
+                )}
 
                 {samePanForAll ? (
                   <div style={{ ...innerCard, padding: '14px 16px' }}>
