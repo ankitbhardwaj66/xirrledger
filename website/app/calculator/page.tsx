@@ -525,6 +525,12 @@ export default function CalculatorPage() {
     if (hasFormatErrors) return;
     setIsUploading(true);
     setUploadPhase('uploading');
+
+    const allFiles = [...files.map(f => f.file), ...dividendFiles];
+    const totalSizeBytes = allFiles.reduce((sum, f) => sum + f.size, 0);
+    const totalSizeMB = (totalSizeBytes / 1024 / 1024).toFixed(2);
+    const t0 = performance.now();
+
     try {
       // Upload broker files + dividend files to S3 in one session
       const xlsxMime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -565,6 +571,9 @@ export default function CalculatorPage() {
           if (df) divKeyMap[name] = key;
         })
       );
+      const tUploadDone = performance.now();
+      console.log(`[XIRR] Upload done — ${allFiles.length} file(s), ${totalSizeMB} MB, took ${((tUploadDone - t0) / 1000).toFixed(2)}s`);
+
       setUploadedSession({ sessionId: session_id, keyMap });
       setDividendKeyMap(divKeyMap);
       setUploadPhase('validating');
@@ -576,6 +585,7 @@ export default function CalculatorPage() {
 
       await Promise.all(nonGrowwFiles.map(async (f) => {
         newStatuses[f.file.name] = 'validating';
+        const tFile = performance.now();
         try {
           const res = await fetch(`${API_BASE}/validate`, {
             method: 'POST',
@@ -583,6 +593,8 @@ export default function CalculatorPage() {
             body: JSON.stringify({ session_id, file_key: keyMap[f.file.name], broker: f.broker }),
           });
           const result = await res.json();
+          const fileSizeMB = (f.file.size / 1024 / 1024).toFixed(2);
+          console.log(`[XIRR] Validated ${f.file.name} (${f.broker}, ${fileSizeMB} MB) — ${((performance.now() - tFile) / 1000).toFixed(2)}s — valid: ${result.valid}${result.transactions_found != null ? `, txns: ${result.transactions_found}` : ''}`);
           if (result.valid) {
             newStatuses[f.file.name] = 'valid';
             if (f.broker === 'zerodha' && result.client_id) {
@@ -597,10 +609,14 @@ export default function CalculatorPage() {
             newErrors[f.file.name] = result.error || 'Invalid file — please check you uploaded the correct statement.';
           }
         } catch {
+          console.log(`[XIRR] Validate ${f.file.name} — network error after ${((performance.now() - tFile) / 1000).toFixed(2)}s`);
           newStatuses[f.file.name] = 'invalid';
           newErrors[f.file.name] = 'Could not validate file — please check your connection and try again.';
         }
       }));
+
+      const tValidateDone = performance.now();
+      console.log(`[XIRR] Validation done — ${nonGrowwFiles.length} file(s) validated in ${((tValidateDone - tUploadDone) / 1000).toFixed(2)}s — total: ${((tValidateDone - t0) / 1000).toFixed(2)}s`);
 
       setFileValidationStatus(prev => ({ ...prev, ...newStatuses }));
       setFileValidationErrors(prev => ({ ...prev, ...newErrors }));
