@@ -24,12 +24,19 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 AWS_REGION = os.environ.get("AWS_REGION_NAME", "ap-south-1")
-s3 = boto3.client(
+
+# Standard client for Lambda-side S3 ops (get_object, put_object)
+s3 = boto3.client("s3", region_name=AWS_REGION)
+
+# Separate client for presigned URL generation — forces regional endpoint
+# so browser PUT URLs use s3.ap-south-1.amazonaws.com (no CORS redirect)
+s3_presign = boto3.client(
     "s3",
     region_name=AWS_REGION,
     endpoint_url=f"https://s3.{AWS_REGION}.amazonaws.com",
     config=Config(signature_version="s3v4"),
 )
+
 lambda_client = boto3.client("lambda")
 
 UPLOADS_BUCKET = os.environ["S3_UPLOADS_BUCKET"]
@@ -84,7 +91,7 @@ def handle_create_session(event):
             content_type = f.get("type", "application/octet-stream")
             s3_key = f"uploads/{session_id}/{file_name}"
 
-            presigned_url = s3.generate_presigned_url(
+            presigned_url = s3_presign.generate_presigned_url(
                 "put_object",
                 Params={
                     "Bucket": UPLOADS_BUCKET,
