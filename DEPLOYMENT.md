@@ -411,13 +411,35 @@ XIRR (Annualised)   │ 7.94%           ← amber, bold; uses all cash flows inc
 
 ---
 
+## Dev vs Prod Environment
+
+| Flag | Dev | Prod |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | `https://wu3hy4822m.execute-api.ap-south-1.amazonaws.com` | `https://3cvw6sp1sf.execute-api.ap-south-1.amazonaws.com/` |
+| `NEXT_PUBLIC_DEBUG` | `true` (baked in `.env.dev`) | not set (devLog is a no-op) |
+| `SEND_EMAIL` (Lambda env) | `false` | `true` (default) |
+| DB writes (`save-user.php`) | skipped when `NEXT_PUBLIC_DEBUG=true` | always runs |
+| Lambda function | `xirr-processor-dev` | `xirr-processor` |
+| S3 jobs bucket | `xirrledger-jobs-dev` | `xirrledger-jobs` |
+| Terraform dir | `terraform-dev/` | `terraform/` |
+
+**SES email template** (`xirrledger-report-ready`) is managed as a single source of truth in `lambda/email/report-ready.html` — referenced via `file()` in `terraform/ses.tf`. Never edit the template directly in AWS Console or it will be reverted on next `terraform apply`.
+
+---
+
 ## Common Operations
 
 ### Deploy Lambda code change
 ```bash
 zip -j lambda/dist/lambda.zip lambda/handler.py lambda/processor.py lambda/refresher.py
-AWS_PROFILE=ankit aws lambda update-function-code \
+# Prod:
+aws --profile ankit lambda update-function-code \
   --function-name xirr-processor \
+  --zip-file fileb://lambda/dist/lambda.zip \
+  --region ap-south-1
+# Dev:
+aws --profile ankit lambda update-function-code \
+  --function-name xirr-processor-dev \
   --zip-file fileb://lambda/dist/lambda.zip \
   --region ap-south-1
 ```
@@ -432,13 +454,22 @@ cd ../terraform && AWS_PROFILE=ankit terraform apply -auto-approve
 ```bash
 cd website
 rm -rf out/
-npm run build    # NEXT_PUBLIC_API_URL is read from .env.production automatically
+npm run build          # main branch (prod env)
+# OR: npm run build:dev  # dev branch (dev env)
 git add out/     # IMPORTANT: always commit the full out/ folder, not just source files
 git commit -m "Rebuild out/"
 git push
 ```
 > Note: `deploy.sh` runs on the **remote Hostinger server** — never run it locally.
 > The server does `git pull` and copies `out/*` to public_html.
+
+### Deploy to Hostinger (SSH)
+```bash
+# Prod (main):
+ssh -p 65002 u889244618@46.28.45.163 "cd /home/u889244618/domains/xirrledger.com/public_html/xirrcalculator/website && git pull origin main && ./deploy.sh"
+# Dev:
+ssh -p 65002 u889244618@46.28.45.163 "cd /home/u889244618/domains/xirrledger.com/public_html/dev/xirrcalculator/website && git pull origin dev && ./deploy.sh"
+```
 
 ### Apply Terraform changes
 ```bash
@@ -461,10 +492,10 @@ AWS_PROFILE=ankit aws logs tail /aws/lambda/xirr-processor --follow --region ap-
 
 ## Git Branches
 
-| Branch | Purpose |
-|---|---|
-| `main` | Single active branch — all work merged here |
-| `feature/manual-entries` | Merged into main (2026-02-23) — kept for reference |
+| Branch | URL | Build command | Hostinger path |
+|---|---|---|---|
+| `main` | xirrledger.com | `npm run build` | `/home/u889244618/domains/xirrledger.com/public_html/xirrcalculator/` |
+| `dev` | dev.xirrledger.com | `npm run build:dev` | `/home/u889244618/domains/xirrledger.com/public_html/dev/xirrcalculator/` |
 
 ### Feature Revert Reference
 
@@ -480,3 +511,7 @@ AWS_PROFILE=ankit aws logs tail /aws/lambda/xirr-processor --follow --region ap-
 | Outside investments account linking (required, per-account XIRR) | (2026-02-25) | Revert frontend + Lambda changes |
 | PDF breakdown sub-rows + fix empty page 2 | (2026-02-25) | Lambda-only — redeploy previous processor.py |
 | Dividend XLSX inflows (Zerodha) | `8fa0468` | Revert frontend (dividendFiles state) + Lambda (processor.py) |
+| Upload overlay + sequential validation | (2026-02-27) | Revert `calculator/page.tsx` + `globals.css` overlay/animation code |
+| devLog / timing logs | (2026-02-27) | Remove `devLog()` calls and `performance.now()` timing in `calculator/page.tsx` |
+| SEND_EMAIL flag (Lambda) | (2026-02-27) | Remove env var check in `processor.py`; set `SEND_EMAIL` back to `true` on dev |
+| SES template → file() | (2026-02-27) | Revert `terraform/ses.tf` to inline HTML; update to match `report-ready.html` |
