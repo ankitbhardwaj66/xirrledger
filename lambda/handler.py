@@ -17,13 +17,14 @@ import uuid
 import os
 import boto3
 import logging
+from botocore.config import Config
 from datetime import datetime, timezone
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 AWS_REGION = os.environ.get("AWS_REGION_NAME", "ap-south-1")
-s3 = boto3.client("s3", region_name=AWS_REGION)
+s3 = boto3.client("s3", region_name=AWS_REGION, config=Config(signature_version="s3v4"))
 lambda_client = boto3.client("lambda")
 
 UPLOADS_BUCKET = os.environ["S3_UPLOADS_BUCKET"]
