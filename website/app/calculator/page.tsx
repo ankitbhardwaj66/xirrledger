@@ -193,9 +193,12 @@ function buildAccounts(files: UploadedFile[], filePans: Record<string, string>, 
   files.filter(f => f.broker === 'zerodha').forEach(f => {
     const id = f.file.name;
     const prev = existingMap.get(id);
+    const displayId = f.file.name
+      .replace(/\.(csv|xlsx)$/i, '')
+      .replace(/^ledger[-_]/i, '');
     accounts.push({
       id,
-      name: `Zerodha — ${f.file.name.replace(/\.(csv|xlsx)$/i, '')}`,
+      name: `Zerodha — ${displayId}`,
       broker: 'zerodha',
       fileNames: [f.file.name],
       holdings: prev?.holdings ?? '',
