@@ -166,7 +166,19 @@ async function detectBrokerFromContent(file: File): Promise<Pick<UploadedFile, '
     }
   }
 
-  return { broker: 'unknown', formatError: 'Unrecognized file — please upload a Zerodha CSV, Groww PDF, or Fyers CSV.' };
+  const isXlsx = name.endsWith('.xlsx');
+  if (isXlsx) {
+    // Verify ZIP/XLSX signature (PK = 0x50 0x4B)
+    try {
+      const header = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+      if (header[0] !== 0x50 || header[1] !== 0x4B) {
+        return { broker: 'unknown', formatError: 'Not a valid XLSX file. Please upload the Zerodha ledger XLSX.' };
+      }
+    } catch { /* fall through */ }
+    return { broker: 'zerodha' };
+  }
+
+  return { broker: 'unknown', formatError: 'Unrecognized file — please upload a Zerodha XLSX, Groww PDF, or Fyers CSV.' };
 }
 
 function formatINR(amount: number): string {
@@ -182,7 +194,7 @@ function buildAccounts(files: UploadedFile[], filePans: Record<string, string>, 
     const prev = existingMap.get(id);
     accounts.push({
       id,
-      name: `Zerodha — ${f.file.name.replace(/\.csv$/i, '')}`,
+      name: `Zerodha — ${f.file.name.replace(/\.(csv|xlsx)$/i, '')}`,
       broker: 'zerodha',
       fileNames: [f.file.name],
       holdings: prev?.holdings ?? '',
@@ -509,9 +521,13 @@ export default function CalculatorPage() {
     setIsUploading(true);
     try {
       // Upload broker files + dividend files to S3 in one session
+      const xlsxMime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
       const allFilesToUpload = [
-        ...files.map(f => ({ name: f.file.name, type: f.file.type || 'application/octet-stream' })),
-        ...dividendFiles.map(f => ({ name: f.name, type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })),
+        ...files.map(f => ({
+          name: f.file.name,
+          type: f.file.name.toLowerCase().endsWith('.xlsx') ? xlsxMime : (f.file.type || 'application/octet-stream'),
+        })),
+        ...dividendFiles.map(f => ({ name: f.name, type: xlsxMime })),
       ];
       const sessionRes = await fetch(`${API_BASE}/session`, {
         method: 'POST',
@@ -530,7 +546,9 @@ export default function CalculatorPage() {
           const fileObj = uf?.file ?? df;
           if (!fileObj) return;
           const contentType = uf
-            ? (uf.file.type || 'application/octet-stream')
+            ? (uf.file.name.toLowerCase().endsWith('.xlsx')
+                ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                : (uf.file.type || 'application/octet-stream'))
             : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
           const putRes = await fetch(url, {
             method: 'PUT', body: fileObj,
@@ -560,6 +578,13 @@ export default function CalculatorPage() {
           const result = await res.json();
           if (result.valid) {
             newStatuses[f.file.name] = 'valid';
+            if (f.broker === 'zerodha' && result.client_id) {
+              setAccounts(prev => prev.map(a =>
+                a.fileNames.includes(f.file.name) && a.broker === 'zerodha'
+                  ? { ...a, id: result.client_id, name: `Zerodha — ${result.client_id}` }
+                  : a
+              ));
+            }
           } else {
             newStatuses[f.file.name] = 'invalid';
             newErrors[f.file.name] = result.error || 'Invalid file — please check you uploaded the correct statement.';
@@ -614,9 +639,12 @@ export default function CalculatorPage() {
           upload_urls.map(async ({ name, url, key }) => {
             const uf = files.find(f => f.file.name === name);
             if (!uf) return;
+            const ct = uf.file.name.toLowerCase().endsWith('.xlsx')
+              ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+              : (uf.file.type || 'application/octet-stream');
             const putRes = await fetch(url, {
               method: 'PUT', body: uf.file,
-              headers: { 'Content-Type': uf.file.type || 'application/octet-stream' },
+              headers: { 'Content-Type': ct },
             });
             if (!putRes.ok) throw new Error(`Failed to upload ${name}`);
             keyMap[name] = key;
@@ -633,10 +661,9 @@ export default function CalculatorPage() {
       }).catch(() => {});
 
       // Auto-link dividend files to Zerodha accounts by client ID
-      // Zerodha account id looks like "ledger-GZW478.csv" → client ID = "GZW478"
+      // After validation, acc.id is the content-extracted client ID (e.g. "GZW478")
       // Dividend file looks like "dividends-GZW478-2025_2026.xlsx" → client ID = "GZW478"
-      const getZerodhaClientId = (accountId: string) =>
-        accountId.match(/ledger[-_](.+?)\.csv/i)?.[1]?.toUpperCase() ?? null;
+      const getZerodhaClientId = (accountId: string) => accountId.toUpperCase();
       const getDividendClientId = (filename: string) =>
         filename.match(/dividends[-_](.+?)[-_]\d{4}/i)?.[1]?.toUpperCase() ?? null;
 
@@ -883,7 +910,7 @@ export default function CalculatorPage() {
                   Drop files here or click to browse
                 </p>
                 <p style={{ color: '#334155', fontSize: '0.78rem', margin: 0 }}>
-                  Zerodha CSV · Groww PDF · Fyers CSV · Zerodha dividend XLSX (optional)
+                  Zerodha XLSX · Groww PDF · Fyers CSV · Zerodha dividend XLSX (optional)
                 </p>
                 <input ref={fileInputRef} type="file" multiple accept=".csv,.pdf,.xlsx"
                   onChange={e => e.target.files && addFiles(e.target.files)} style={{ display: 'none' }} />
@@ -916,7 +943,7 @@ export default function CalculatorPage() {
                             fontSize: '0.65rem', fontWeight: 700,
                             color: f.broker === 'zerodha' ? '#10b981' : f.broker === 'groww' ? GOLD : f.broker === 'fyers' ? '#818cf8' : '#64748b',
                           }}>
-                            {f.broker === 'zerodha' ? 'CSV' : f.broker === 'groww' ? 'PDF' : f.broker === 'fyers' ? 'CSV' : '?'}
+                            {f.broker === 'zerodha' ? 'XLS' : f.broker === 'groww' ? 'PDF' : f.broker === 'fyers' ? 'CSV' : '?'}
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.file.name}</p>
@@ -1541,12 +1568,12 @@ export default function CalculatorPage() {
               {/* Zerodha */}
               {activeGuideTab === 'zerodha' && (
                 <div>
-                  <p style={{ margin: '0 0 18px', fontSize: '0.8rem', color: '#64748b' }}>CSV format · no password required</p>
+                  <p style={{ margin: '0 0 18px', fontSize: '0.8rem', color: '#64748b' }}>XLSX format · no password required</p>
                   {[
                     <><a href="https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 700 }}>Open Zerodha Statement →</a> (logs in automatically if you're signed in)</>,
                     <>Select <strong style={{ color: '#e2e8f0' }}>All Segments</strong> as category</>,
                     <>Set date range — <strong style={{ color: '#e2e8f0' }}>from your first investment till today</strong></>,
-                    <>Click the <strong style={{ color: '#e2e8f0' }}>blue arrow →</strong> then click <strong style={{ color: '#e2e8f0' }}>CSV</strong></>,
+                    <>Click the <strong style={{ color: '#e2e8f0' }}>blue arrow →</strong> then click <strong style={{ color: '#e2e8f0' }}>XLSX</strong></>,
                   ].map((item, i, arr) => (
                     <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 14 : 0 }}>
                       <span style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', color: GOLD, width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
@@ -1554,7 +1581,7 @@ export default function CalculatorPage() {
                     </div>
                   ))}
                   <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                    <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>✓ One CSV covers all years &nbsp;·&nbsp; Password: not required</p>
+                    <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>✓ One XLSX covers all years &nbsp;·&nbsp; Password: not required</p>
                   </div>
                 </div>
               )}

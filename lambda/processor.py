@@ -127,9 +127,10 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             cash         = float(account.get("cash", 0))
             current_value = holdings + cash
 
-            account_outflows = []
-            account_inflows  = []
-            fyers_client_id  = None
+            account_outflows  = []
+            account_inflows   = []
+            fyers_client_id   = None
+            zerodha_client_id = None
 
             for file_idx, s3_key in enumerate(file_keys):
                 logger.info("Downloading s3://%s/%s", uploads_bucket, s3_key)
@@ -148,6 +149,10 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                     out, inf = parse_fyers_csv(file_bytes)
                 elif file_name.endswith(".pdf"):
                     out, inf = parse_groww_pdf(file_bytes, password=pan_password)
+                elif broker == "zerodha" and file_name.endswith(".xlsx"):
+                    out, inf, _cid = parse_zerodha_ledger_xlsx(file_bytes)
+                    if _cid:
+                        zerodha_client_id = _cid
                 elif file_name.endswith(".csv"):
                     out, inf = parse_zerodha_csv(file_bytes)
                 else:
@@ -198,11 +203,11 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                 except Exception as e:
                     logger.warning("Failed to parse dividend file %s: %s", dk, e)
 
-            # Extract Zerodha account number from filename: ledger-ACCTNUM.csv
-            zerodha_acct = None
-            if broker == "zerodha" and file_keys:
+            # Use client ID extracted from XLSX content; fall back to filename for legacy CSV
+            zerodha_acct = zerodha_client_id
+            if not zerodha_acct and broker == "zerodha" and file_keys:
                 fname = file_keys[0].split("/")[-1]
-                m = re.search(r'ledger[_\-](.+?)\.csv', fname, re.IGNORECASE)
+                m = re.search(r'ledger[_\-](.+?)\.(?:csv|xlsx)', fname, re.IGNORECASE)
                 zerodha_acct = m.group(1) if m else None
 
             if broker == "fyers":
@@ -463,6 +468,98 @@ def parse_zerodha_csv(file_bytes):
         raise ValueError("No 'Funds added' entries found in Zerodha CSV.")
 
     return fund_additions, inflows
+
+
+def parse_zerodha_ledger_xlsx(file_bytes: bytes):
+    """Parse a Zerodha ledger XLSX file.
+
+    The XLSX contains:
+      - Row 7: ('Client ID', '<ACCT_ID>', ...)  — client ID in column C
+      - Row 15: ('Particulars', 'Posting Date', 'Cost Center', 'Voucher Type', 'Debit', 'Credit', 'Net Balance')
+      - Row 16+: data rows
+
+    Returns:
+        outflows  — DataFrame(date, amount) fund additions (negative = money invested)
+        inflows   — DataFrame(date, amount) payouts + quarterly settlements
+        client_id — str, e.g. "GZW478"
+    """
+    from datetime import datetime as _dt
+    wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
+    ws = wb.active
+    rows = list(ws.iter_rows(values_only=True))
+
+    # Extract client ID from first 15 rows
+    client_id = ""
+    for row in rows[:15]:
+        if not row:
+            continue
+        for j, cell in enumerate(row):
+            if cell is not None and str(cell).strip() == "Client ID":
+                if j + 1 < len(row) and row[j + 1] is not None:
+                    client_id = str(row[j + 1]).strip()
+                break
+
+    # Find header row containing "Particulars"
+    header_idx = None
+    for i, row in enumerate(rows):
+        if row and any(c is not None and str(c).strip().lower() == "particulars" for c in row):
+            header_idx = i
+            break
+    if header_idx is None:
+        raise ValueError("Not a valid Zerodha ledger XLSX — 'Particulars' column not found.")
+
+    headers = [str(c).strip().lower() if c is not None else "" for c in rows[header_idx]]
+    try:
+        particulars_col = headers.index("particulars")
+        date_col        = headers.index("posting date")
+        credit_col      = headers.index("credit")
+        debit_col       = headers.index("debit")
+    except ValueError as e:
+        raise ValueError(f"Zerodha ledger XLSX missing expected column: {e}") from e
+
+    fund_rows     = []
+    payout_rows   = []
+    quarterly_rows = []
+
+    for row in rows[header_idx + 1:]:
+        if not row or row[particulars_col] is None:
+            continue
+        particulars = str(row[particulars_col])
+        date_val    = row[date_col]
+        credit_val  = row[credit_col]
+        debit_val   = row[debit_col]
+
+        # Normalize date to YYYY-MM-DD string
+        if isinstance(date_val, _dt):
+            date_str = date_val.strftime("%Y-%m-%d")
+        else:
+            date_str = str(date_val).strip() if date_val is not None else ""
+        if not date_str or date_str.lower() == "none":
+            continue
+
+        if "Funds added" in particulars:
+            amt = float(credit_val or 0)
+            if amt > 0:
+                fund_rows.append({"date": date_str, "amount": -amt})
+        elif "Payout" in particulars:
+            amt = float(debit_val or 0)
+            if amt > 0:
+                payout_rows.append({"date": date_str, "amount": amt})
+        elif "quarterly settlement" in particulars.lower():
+            amt = float(debit_val or 0)
+            if amt > 0:
+                quarterly_rows.append({"date": date_str, "amount": amt})
+
+    outflows = pd.DataFrame(fund_rows) if fund_rows else pd.DataFrame(columns=["date", "amount"])
+    inflows  = pd.concat(
+        [pd.DataFrame(payout_rows), pd.DataFrame(quarterly_rows)],
+        ignore_index=True
+    ) if payout_rows or quarterly_rows else pd.DataFrame(columns=["date", "amount"])
+
+    if outflows.empty:
+        raise ValueError("No 'Funds added' entries found in Zerodha ledger XLSX.")
+
+    return outflows, inflows, client_id
 
 
 def parse_zerodha_dividends_xlsx(file_bytes: bytes):

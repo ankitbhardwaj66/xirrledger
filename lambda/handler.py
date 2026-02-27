@@ -179,11 +179,15 @@ def handle_validate(event):
         file_bytes = obj["Body"].read()
 
         # Import parsers
-        from processor import parse_zerodha_csv, parse_groww_pdf, parse_fyers_csv
+        from processor import parse_zerodha_csv, parse_zerodha_ledger_xlsx, parse_groww_pdf, parse_fyers_csv
 
         if broker == "zerodha":
-            outflows, _ = parse_zerodha_csv(file_bytes)
-            return _response(200, {"valid": True, "transactions_found": len(outflows)})
+            if file_key.lower().endswith('.xlsx'):
+                outflows, _, client_id = parse_zerodha_ledger_xlsx(file_bytes)
+                return _response(200, {"valid": True, "transactions_found": len(outflows), "client_id": client_id})
+            else:
+                outflows, _ = parse_zerodha_csv(file_bytes)
+                return _response(200, {"valid": True, "transactions_found": len(outflows)})
 
         if broker == "fyers":
             outflows, _ = parse_fyers_csv(file_bytes)
