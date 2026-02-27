@@ -661,9 +661,14 @@ export default function CalculatorPage() {
       }).catch(() => {});
 
       // Auto-link dividend files to Zerodha accounts by client ID
-      // After validation, acc.id is the content-extracted client ID (e.g. "GZW478")
+      // After XLSX validation, acc.id is already the client ID (e.g. "GZW478").
+      // For CSV accounts (no client_id returned from validate), acc.id is still
+      // the filename (e.g. "ledger-GZW478.csv") — extract via regex in that case.
       // Dividend file looks like "dividends-GZW478-2025_2026.xlsx" → client ID = "GZW478"
-      const getZerodhaClientId = (accountId: string) => accountId.toUpperCase();
+      const getZerodhaClientId = (accountId: string) => {
+        const m = accountId.match(/ledger[-_](.+?)\.(?:csv|xlsx)/i);
+        return m ? m[1].toUpperCase() : accountId.toUpperCase();
+      };
       const getDividendClientId = (filename: string) =>
         filename.match(/dividends[-_](.+?)[-_]\d{4}/i)?.[1]?.toUpperCase() ?? null;
 
