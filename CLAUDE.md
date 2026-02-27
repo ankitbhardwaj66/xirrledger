@@ -28,8 +28,33 @@ AWS_PROFILE=ankit aws lambda update-function-code \
 ```
 No frontend build needed for Lambda-only changes.
 
+## Branches
+
+| Branch | URL | Hostinger path |
+|---|---|---|
+| `main` | xirrledger.com | `/home/u889244618/domains/xirrledger.com/public_html/xirrcalculator/` |
+| `dev` | dev.xirrledger.com | `/home/u889244618/domains/xirrledger.com/public_html/dev/xirrcalculator/` |
+
+- All new development goes on the `dev` branch.
+- Merge `dev` → `main` only when ready for production.
+- When the user says "push" without specifying a branch, push the **current branch** (could be `dev` or `main`).
+
+## Hostinger Deploy (frontend — run on server via SSH)
+
+**Production (main):**
+```bash
+cd /home/u889244618/domains/xirrledger.com/public_html/xirrcalculator/website
+git pull origin main && ./deploy.sh
+```
+
+**Dev (dev branch):**
+```bash
+cd /home/u889244618/domains/xirrledger.com/public_html/dev/xirrcalculator/website
+git pull origin dev && ./deploy.sh
+```
+
 ## General Rules
 
 - **Never run `deploy.sh` locally** — it runs on the remote Hostinger server only.
-- Build command: `cd website && npm run build` (reads `.env.production` automatically).
+- Build command: `cd website && rm -rf out/ && npm run build` (reads `.env.production` automatically).
 - The `website/out/` directory is committed to git and served by Hostinger via `git pull`.
