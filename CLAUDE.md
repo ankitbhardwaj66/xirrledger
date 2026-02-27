@@ -7,7 +7,7 @@ When the user says "push" (or "deploy frontend", "push frontend"):
 1. Check `git status` / `git diff --stat` for any changes under `website/` (i.e. `website/app/`, `website/content/`, `website/lib/`, etc.)
 2. If there are frontend changes (anything inside `website/` **except** `website/out/`):
    - `cd website && rm -rf out/`
-   - `npm run build`
+   - On `dev` branch: `npm run build:dev` — on `main` branch: `npm run build`
    - `cd ..` (back to repo root)
    - `git add website/out/`
    - Commit the rebuilt `out/` together with the source changes (or as a follow-up commit if source was already committed)
@@ -59,28 +59,29 @@ git pull origin dev && ./deploy.sh
 - For `terraform` commands: `cd terraform-dev && AWS_PROFILE=ankit terraform plan/apply`
 - For `aws` CLI commands: `aws --profile ankit <command> --region ap-south-1`
 
-## How .env.production works
+## How env files work
 
 `NEXT_PUBLIC_*` values are **baked into `out/` at build time on your local machine**.
 The server never runs a build — it just does `git pull` to get the pre-built `out/`.
-So `website/.env.production` is a **local file only** (gitignored). The server's copy doesn't matter.
 
-**Before building for `dev` branch** — `website/.env.production` should contain:
-```
-NEXT_PUBLIC_API_URL=https://wu3hy4822m.execute-api.ap-south-1.amazonaws.com
-NEXT_PUBLIC_JOBS_BASE_URL=https://xirrledger-jobs-dev.s3.ap-south-1.amazonaws.com
+Two env files are committed to git:
+- `website/.env.dev` — dev API (dev.xirrledger.com), no GA
+- `website/.env.production` — prod API (xirrledger.com), with GA
+
+**Build for `dev` branch:**
+```bash
+cd website && rm -rf out/ && npm run build:dev
 ```
 
-**Before building for `main` branch** (after merging from dev) — swap to:
+**Build for `main` branch:**
+```bash
+cd website && rm -rf out/ && npm run build
 ```
-NEXT_PUBLIC_API_URL=https://3cvw6sp1sf.execute-api.ap-south-1.amazonaws.com
-NEXT_PUBLIC_JOBS_BASE_URL=https://xirrledger-jobs.s3.ap-south-1.amazonaws.com
-NEXT_PUBLIC_GA_ID=G-2YGVB963RE
-```
-Then rebuild: `cd website && rm -rf out/ && npm run build` and commit `out/`.
+
+No manual file swapping needed — just use the right build command.
 
 ## General Rules
 
 - **Never run `deploy.sh` locally** — it runs on the remote Hostinger server only.
-- Build command: `cd website && rm -rf out/ && npm run build` (reads `.env.production` automatically).
+- Build commands: `npm run build:dev` (dev branch) or `npm run build` (main branch).
 - The `website/out/` directory is committed to git and served by Hostinger via `git pull`.

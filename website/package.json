@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:dev": "cp .env.dev .env.local && next build && rm -f .env.local",
     "start": "next start",
     "export": "next build && next export",
     "lint": "next lint"
