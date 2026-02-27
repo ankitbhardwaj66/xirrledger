@@ -53,6 +53,12 @@ cd /home/u889244618/domains/xirrledger.com/public_html/dev/xirrcalculator/websit
 git pull origin dev && ./deploy.sh
 ```
 
+## AWS / Terraform
+
+- Always use `--profile ankit` for AWS CLI commands and set `AWS_PROFILE=ankit` for Terraform.
+- For `terraform` commands: `cd terraform-dev && AWS_PROFILE=ankit terraform plan/apply`
+- For `aws` CLI commands: `aws --profile ankit <command> --region ap-south-1`
+
 ## General Rules
 
 - **Never run `deploy.sh` locally** — it runs on the remote Hostinger server only.

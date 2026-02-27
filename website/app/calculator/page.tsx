@@ -5,6 +5,7 @@ import { FaTrophy, FaDumbbell, FaChartLine } from 'react-icons/fa';
 
 const GOOGLE_CLIENT_ID = '1030081614603-onnmmupafevkn0hojoj4qk023tuohius.apps.googleusercontent.com';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+const JOBS_BASE_URL = process.env.NEXT_PUBLIC_JOBS_BASE_URL || 'https://xirrledger-jobs.s3.ap-south-1.amazonaws.com';
 
 type Step = 'auth' | 'upload' | 'details' | 'processing' | 'results';
 
@@ -715,7 +716,7 @@ export default function CalculatorPage() {
   }
 
   function pollStatus(sid: string) {
-    const statusUrl = `https://xirrledger-jobs.s3.ap-south-1.amazonaws.com/jobs/${sid}/status.json`;
+    const statusUrl = `${JOBS_BASE_URL}/jobs/${sid}/status.json`;
     pollingRef.current = setInterval(async () => {
       try {
         const res = await fetch(statusUrl, { cache: 'no-store' });
