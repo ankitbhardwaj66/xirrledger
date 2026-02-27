@@ -1198,7 +1198,7 @@ export default function CalculatorPage() {
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                         <div>
-                          <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 5 }}>Current holdings value (₹) *</label>
+                          <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 5 }}>Holdings value (₹) *</label>
                           <input
                             type="number" placeholder="e.g. 350000" min="0"
                             value={account.holdings}
