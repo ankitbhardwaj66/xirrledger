@@ -2,6 +2,7 @@
 # API Gateway — HTTP API (cheaper + faster than REST API)
 # Routes:
 #   POST /session  → synchronous Lambda (create session + presigned URLs)
+#   POST /validate → synchronous Lambda (deep file format check)
 #   POST /process  → synchronous Lambda (trigger async job)
 # ─────────────────────────────────────────────────────────────
 resource "aws_apigatewayv2_api" "main" {
@@ -37,6 +38,13 @@ resource "aws_apigatewayv2_route" "session" {
 resource "aws_apigatewayv2_route" "process" {
   api_id    = aws_apigatewayv2_api.main.id
   route_key = "POST /process"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+# POST /validate
+resource "aws_apigatewayv2_route" "validate" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /validate"
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 

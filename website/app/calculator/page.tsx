@@ -594,7 +594,8 @@ export default function CalculatorPage() {
             newErrors[f.file.name] = result.error || 'Invalid file — please check you uploaded the correct statement.';
           }
         } catch {
-          newStatuses[f.file.name] = 'valid'; // network error — don't block
+          newStatuses[f.file.name] = 'invalid';
+          newErrors[f.file.name] = 'Could not validate file — please check your connection and try again.';
         }
       }));
 
