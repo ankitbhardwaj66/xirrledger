@@ -253,6 +253,9 @@ function buildAccounts(files: UploadedFile[], filePans: Record<string, string>, 
 
 /* ── Shared style tokens ── */
 const GOLD = '#f59e0b';
+const devLog = (...args: unknown[]) => {
+  if (process.env.NEXT_PUBLIC_DEBUG === 'true') console.log(...args);
+};
 const card: React.CSSProperties = {
   background: 'rgba(255,255,255,0.04)',
   border: '1px solid rgba(255,255,255,0.09)',
@@ -572,7 +575,7 @@ export default function CalculatorPage() {
         })
       );
       const tUploadDone = performance.now();
-      console.log(`[XIRR] Upload done — ${allFiles.length} file(s), ${totalSizeMB} MB, took ${((tUploadDone - t0) / 1000).toFixed(2)}s`);
+      devLog(`[XIRR] Upload done — ${allFiles.length} file(s), ${totalSizeMB} MB, took ${((tUploadDone - t0) / 1000).toFixed(2)}s`);
 
       setUploadedSession({ sessionId: session_id, keyMap });
       setDividendKeyMap(divKeyMap);
@@ -595,7 +598,7 @@ export default function CalculatorPage() {
           });
           const result = await res.json();
           const fileSizeMB = (f.file.size / 1024 / 1024).toFixed(2);
-          console.log(`[XIRR] Validated ${f.file.name} (${f.broker}, ${fileSizeMB} MB) — ${((performance.now() - tFile) / 1000).toFixed(2)}s — valid: ${result.valid}${result.transactions_found != null ? `, txns: ${result.transactions_found}` : ''}`);
+          devLog(`[XIRR] Validated ${f.file.name} (${f.broker}, ${fileSizeMB} MB) — ${((performance.now() - tFile) / 1000).toFixed(2)}s — valid: ${result.valid}${result.transactions_found != null ? `, txns: ${result.transactions_found}` : ''}`);
           if (result.valid) {
             newStatuses[f.file.name] = 'valid';
             if (f.broker === 'zerodha' && result.client_id) {
@@ -610,14 +613,14 @@ export default function CalculatorPage() {
             newErrors[f.file.name] = result.error || 'Invalid file — please check you uploaded the correct statement.';
           }
         } catch {
-          console.log(`[XIRR] Validate ${f.file.name} — network error after ${((performance.now() - tFile) / 1000).toFixed(2)}s`);
+          devLog(`[XIRR] Validate ${f.file.name} — network error after ${((performance.now() - tFile) / 1000).toFixed(2)}s`);
           newStatuses[f.file.name] = 'invalid';
           newErrors[f.file.name] = 'Could not validate file — please check your connection and try again.';
         }
       }
 
       const tValidateDone = performance.now();
-      console.log(`[XIRR] Validation done — ${nonGrowwFiles.length} file(s) validated in ${((tValidateDone - tUploadDone) / 1000).toFixed(2)}s — total: ${((tValidateDone - t0) / 1000).toFixed(2)}s`);
+      devLog(`[XIRR] Validation done — ${nonGrowwFiles.length} file(s) validated in ${((tValidateDone - tUploadDone) / 1000).toFixed(2)}s — total: ${((tValidateDone - t0) / 1000).toFixed(2)}s`);
 
       setFileValidationStatus(prev => ({ ...prev, ...newStatuses }));
       setFileValidationErrors(prev => ({ ...prev, ...newErrors }));
