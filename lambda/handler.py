@@ -24,7 +24,12 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 AWS_REGION = os.environ.get("AWS_REGION_NAME", "ap-south-1")
-s3 = boto3.client("s3", region_name=AWS_REGION, config=Config(signature_version="s3v4"))
+s3 = boto3.client(
+    "s3",
+    region_name=AWS_REGION,
+    endpoint_url=f"https://s3.{AWS_REGION}.amazonaws.com",
+    config=Config(signature_version="s3v4"),
+)
 lambda_client = boto3.client("lambda")
 
 UPLOADS_BUCKET = os.environ["S3_UPLOADS_BUCKET"]
