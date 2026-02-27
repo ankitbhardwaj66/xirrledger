@@ -312,6 +312,7 @@ export default function CalculatorPage() {
   const [fileValidationStatus, setFileValidationStatus] = useState<Record<string, 'validating' | 'valid' | 'invalid'>>({});
   const [fileValidationErrors, setFileValidationErrors] = useState<Record<string, string>>({});
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadPhase, setUploadPhase] = useState<'uploading' | 'validating'>('uploading');
   const googleBtnRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
@@ -523,6 +524,7 @@ export default function CalculatorPage() {
     const hasFormatErrors = files.some(f => f.formatError);
     if (hasFormatErrors) return;
     setIsUploading(true);
+    setUploadPhase('uploading');
     try {
       // Upload broker files + dividend files to S3 in one session
       const xlsxMime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -565,6 +567,7 @@ export default function CalculatorPage() {
       );
       setUploadedSession({ sessionId: session_id, keyMap });
       setDividendKeyMap(divKeyMap);
+      setUploadPhase('validating');
 
       // Deep-validate non-Groww files via Lambda immediately
       const nonGrowwFiles = files.filter(f => f.broker !== 'groww');
@@ -1505,6 +1508,24 @@ export default function CalculatorPage() {
         )}
 
       </div>
+
+      {/* ── Upload / Validation Overlay ── */}
+      {isUploading && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, backdropFilter: 'blur(6px)' }}>
+          <div style={{ textAlign: 'center' }}>
+            <svg width="48" height="48" viewBox="0 0 72 72" style={{ animation: 'spin 1s linear infinite', display: 'block', margin: '0 auto 20px' }}>
+              <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(245,158,11,0.2)" strokeWidth="7" />
+              <circle cx="36" cy="36" r="30" fill="none" stroke={GOLD} strokeWidth="7" strokeDasharray="60 120" strokeLinecap="round" />
+            </svg>
+            <p style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#ffffff' }}>
+              {uploadPhase === 'uploading' ? 'Uploading your files…' : 'Please wait, validating your files…'}
+            </p>
+            <p style={{ margin: '8px 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+              This may take a few seconds
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Processing Error Modal ── */}
       {processingError && (
