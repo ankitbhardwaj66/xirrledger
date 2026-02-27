@@ -70,6 +70,7 @@ SES_FROM_EMAIL       = os.environ.get("SES_FROM_EMAIL", "reports@xirrledger.com"
 HOSTINGER_API_URL    = os.environ.get("HOSTINGER_API_URL", "")
 HOSTINGER_API_SECRET = os.environ.get("HOSTINGER_API_SECRET", "")
 TEST_EMAILS          = {e.strip().lower() for e in os.environ.get("TEST_EMAILS", "").split(",") if e.strip()}
+SEND_EMAIL           = os.environ.get("SEND_EMAIL", "true").lower() == "true"
 
 
 # ─────────────────────────────────────────────────────────────
@@ -377,8 +378,10 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                 logger.warning("PHP bridge notification failed: %s", e)
 
         # ── Send email ────────────────────────────────────────
-        if email:
+        if email and SEND_EMAIL:
             send_report_email(name, email, final_status, report_url)
+        elif email and not SEND_EMAIL:
+            logger.info("Email skipped (SEND_EMAIL=false) for session %s", session_id)
 
         logger.info("Processing complete for session %s — XIRR: %s%%", session_id, xirr_pct)
 
