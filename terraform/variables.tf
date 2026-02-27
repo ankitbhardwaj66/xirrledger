@@ -34,6 +34,12 @@ variable "hostinger_api_secret" {
   sensitive   = true
 }
 
+variable "test_emails" {
+  description = "Comma-separated list of test email addresses — DB entry skipped for these"
+  type        = string
+  default     = ""
+}
+
 variable "lambda_memory_mb" {
   description = "Lambda function memory in MB"
   type        = number

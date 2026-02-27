@@ -69,6 +69,7 @@ ses = boto3.client("ses", region_name=os.environ.get("AWS_REGION_NAME", "ap-sout
 SES_FROM_EMAIL       = os.environ.get("SES_FROM_EMAIL", "reports@xirrledger.com")
 HOSTINGER_API_URL    = os.environ.get("HOSTINGER_API_URL", "")
 HOSTINGER_API_SECRET = os.environ.get("HOSTINGER_API_SECRET", "")
+TEST_EMAILS          = {e.strip().lower() for e in os.environ.get("TEST_EMAILS", "").split(",") if e.strip()}
 
 
 # ─────────────────────────────────────────────────────────────
@@ -357,7 +358,8 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
         update_status(final_status)
 
         # ── Notify PHP bridge ─────────────────────────────────
-        if HOSTINGER_API_URL and email:
+        is_test = email.lower() in TEST_EMAILS
+        if HOSTINGER_API_URL and email and not is_test:
             try:
                 requests.post(
                     f"{HOSTINGER_API_URL}/update-session.php",
