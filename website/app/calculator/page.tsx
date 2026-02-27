@@ -641,6 +641,7 @@ export default function CalculatorPage() {
     setProcessingError('');
     setStep('processing');
     setProcessingSteps(prev => prev.map((s, i) => ({ ...s, status: i === 0 ? 'active' : 'pending' })));
+    const tProcess = performance.now();
 
     try {
       // Reuse existing upload if already done in handleContinueToDetails
@@ -731,27 +732,35 @@ export default function CalculatorPage() {
           account_id: e.accountId || null,
         }));
 
+      const tProcessCall = performance.now();
       const processRes = await fetch(`${API_BASE}/process`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id, name: user?.name, email: user?.email, accounts: accountsPayload, manual_entries: manualEntriesPayload }),
       });
       if (!processRes.ok) throw new Error('Failed to start processing — please try again.');
-      pollStatus(session_id);
+      devLog(`[XIRR] /process triggered — ${((performance.now() - tProcessCall) / 1000).toFixed(2)}s`);
+      pollStatus(session_id, tProcess);
     } catch (err) {
       setProcessingError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
       setStep('details');
     }
   }
 
-  function pollStatus(sid: string) {
+  function pollStatus(sid: string, t0: number) {
     const statusUrl = `${JOBS_BASE_URL}/jobs/${sid}/status.json`;
+    let lastStatus = '';
     pollingRef.current = setInterval(async () => {
       try {
         const res = await fetch(statusUrl, { cache: 'no-store' });
         if (!res.ok) return;
         const data = await res.json();
         if (data.status === 'pending') return;
+        const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
+        if (data.status !== lastStatus) {
+          devLog(`[XIRR] Status: ${data.status} — ${elapsed}s`);
+          lastStatus = data.status;
+        }
         setProcessingSteps(prev =>
           prev.map(s => ({
             ...s,
@@ -762,10 +771,12 @@ export default function CalculatorPage() {
         );
         if (data.status === 'done') {
           clearInterval(pollingRef.current!);
+          devLog(`[XIRR] Done — total processing time: ${elapsed}s | XIRR: ${data.xirr}% | Nifty: ${data.nifty_xirr}%`);
           setResults(data);
           setStep('results');
         } else if (data.status === 'error') {
           clearInterval(pollingRef.current!);
+          devLog(`[XIRR] Error after ${elapsed}s — ${data.message}`);
           setProcessingError(data.message || 'Something went wrong. Please try again.');
           setStep('details');
         }
