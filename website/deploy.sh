@@ -39,9 +39,9 @@ fi
 
 # Remove old files from target directory (except hidden files and specific directories)
 echo "🧹 Cleaning target directory..."
-# Delete all non-hidden files and directories except xirrcalculator
+# Delete all non-hidden files and directories except xirrcalculator and dev
 shopt -s extglob
-rm -rf "$TARGET_DIR"/!(.|..|.*|xirrcalculator) 2>/dev/null || true
+rm -rf "$TARGET_DIR"/!(.|..|.*|xirrcalculator|dev) 2>/dev/null || true
 shopt -u extglob
 
 # Copy new files to target directory
