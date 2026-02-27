@@ -59,6 +59,26 @@ git pull origin dev && ./deploy.sh
 - For `terraform` commands: `cd terraform-dev && AWS_PROFILE=ankit terraform plan/apply`
 - For `aws` CLI commands: `aws --profile ankit <command> --region ap-south-1`
 
+## How .env.production works
+
+`NEXT_PUBLIC_*` values are **baked into `out/` at build time on your local machine**.
+The server never runs a build — it just does `git pull` to get the pre-built `out/`.
+So `website/.env.production` is a **local file only** (gitignored). The server's copy doesn't matter.
+
+**Before building for `dev` branch** — `website/.env.production` should contain:
+```
+NEXT_PUBLIC_API_URL=https://wu3hy4822m.execute-api.ap-south-1.amazonaws.com
+NEXT_PUBLIC_JOBS_BASE_URL=https://xirrledger-jobs-dev.s3.ap-south-1.amazonaws.com
+```
+
+**Before building for `main` branch** (after merging from dev) — swap to:
+```
+NEXT_PUBLIC_API_URL=https://3cvw6sp1sf.execute-api.ap-south-1.amazonaws.com
+NEXT_PUBLIC_JOBS_BASE_URL=https://xirrledger-jobs.s3.ap-south-1.amazonaws.com
+NEXT_PUBLIC_GA_ID=G-2YGVB963RE
+```
+Then rebuild: `cd website && rm -rf out/ && npm run build` and commit `out/`.
+
 ## General Rules
 
 - **Never run `deploy.sh` locally** — it runs on the remote Hostinger server only.
