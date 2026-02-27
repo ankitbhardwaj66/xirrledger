@@ -41,16 +41,16 @@ No frontend build needed for Lambda-only changes.
 
 ## Hostinger Deploy (frontend — run on server via SSH)
 
+**SSH command:** `ssh -p 65002 u889244618@46.28.45.163`
+
 **Production (main):**
 ```bash
-cd /home/u889244618/domains/xirrledger.com/public_html/xirrcalculator/website
-git pull origin main && ./deploy.sh
+ssh -p 65002 u889244618@46.28.45.163 "cd /home/u889244618/domains/xirrledger.com/public_html/xirrcalculator/website && git pull origin main && ./deploy.sh"
 ```
 
 **Dev (dev branch):**
 ```bash
-cd /home/u889244618/domains/xirrledger.com/public_html/dev/xirrcalculator/website
-git pull origin dev && ./deploy.sh
+ssh -p 65002 u889244618@46.28.45.163 "cd /home/u889244618/domains/xirrledger.com/public_html/dev/xirrcalculator/website && git pull origin dev && ./deploy.sh"
 ```
 
 ## AWS / Terraform
