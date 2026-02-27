@@ -22,7 +22,8 @@ from datetime import datetime, timezone
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-s3 = boto3.client("s3")
+AWS_REGION = os.environ.get("AWS_REGION_NAME", "ap-south-1")
+s3 = boto3.client("s3", region_name=AWS_REGION)
 lambda_client = boto3.client("lambda")
 
 UPLOADS_BUCKET = os.environ["S3_UPLOADS_BUCKET"]
