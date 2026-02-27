@@ -80,6 +80,24 @@ cd website && rm -rf out/ && npm run build
 
 No manual file swapping needed — just use the right build command.
 
+## Merging dev → main
+
+**Always delete `website/out/` from main before merging**, to avoid rename/rename and modify/delete conflicts (Next.js hashes change every build).
+
+```bash
+# On main branch:
+git rm -r --cached website/out/ && rm -rf website/out/
+git commit -m "Remove out/ before merge"
+git merge dev
+# If modify/delete conflicts remain in out/:
+git checkout dev -- website/out/
+git add website/out/ && git commit -m "Resolve out/ conflicts (take dev)"
+# Rebuild with prod env:
+cd website && npm run build && cd ..
+git add website/out/ && git commit -m "Rebuild out/ with prod env"
+git push origin main
+```
+
 ## General Rules
 
 - **Never run `deploy.sh` locally** — it runs on the remote Hostinger server only.
