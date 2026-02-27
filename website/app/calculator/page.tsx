@@ -583,7 +583,8 @@ export default function CalculatorPage() {
       const newStatuses: Record<string, 'validating' | 'valid' | 'invalid'> = {};
       const newErrors: Record<string, string> = {};
 
-      await Promise.all(nonGrowwFiles.map(async (f) => {
+      // Sequential validation — avoids spawning multiple cold Lambda containers in parallel
+      for (const f of nonGrowwFiles) {
         newStatuses[f.file.name] = 'validating';
         const tFile = performance.now();
         try {
@@ -613,7 +614,7 @@ export default function CalculatorPage() {
           newStatuses[f.file.name] = 'invalid';
           newErrors[f.file.name] = 'Could not validate file — please check your connection and try again.';
         }
-      }));
+      }
 
       const tValidateDone = performance.now();
       console.log(`[XIRR] Validation done — ${nonGrowwFiles.length} file(s) validated in ${((tValidateDone - tUploadDone) / 1000).toFixed(2)}s — total: ${((tValidateDone - t0) / 1000).toFixed(2)}s`);
@@ -1554,7 +1555,7 @@ export default function CalculatorPage() {
                 clipPath="url(#chartClip)"
               />
 
-              {/* Animated line drawing in */}
+              {/* Animated line — loops continuously */}
               <path
                 d="M 0,75 L 25,68 L 40,72 L 55,58 L 70,62 L 90,48 L 110,52 L 125,42 L 145,50 L 165,35 L 185,40 L 205,28 L 225,34 L 248,20 L 270,25 L 290,16 L 300,18"
                 fill="none"
@@ -1562,7 +1563,7 @@ export default function CalculatorPage() {
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                style={{ strokeDasharray: 420, strokeDashoffset: 420, animation: 'drawLine 2.2s ease-out forwards' }}
+                style={{ strokeDasharray: 420, strokeDashoffset: 420, animation: 'drawLineLoop 3s ease-in-out infinite' }}
               />
 
               {/* Pulsing tip dot */}

@@ -97,6 +97,14 @@
   to   { opacity: 1; }
 }
 
+/* Looping version of drawLine for the upload overlay */
+@keyframes drawLineLoop {
+  0%   { stroke-dashoffset: 420; }
+  65%  { stroke-dashoffset: 0; }
+  85%  { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 420; }
+}
+
 .feature-card {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
