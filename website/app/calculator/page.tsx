@@ -1527,18 +1527,84 @@ export default function CalculatorPage() {
 
       {/* ── Upload / Validation Overlay ── */}
       {isUploading && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.82)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, backdropFilter: 'blur(6px)' }}>
-          <div style={{ textAlign: 'center' }}>
-            <svg width="48" height="48" viewBox="0 0 72 72" style={{ animation: 'spin 1s linear infinite', display: 'block', margin: '0 auto 20px' }}>
-              <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(245,158,11,0.2)" strokeWidth="7" />
-              <circle cx="36" cy="36" r="30" fill="none" stroke={GOLD} strokeWidth="7" strokeDasharray="60 120" strokeLinecap="round" />
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2,8,20,0.93)', zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 16, backdropFilter: 'blur(6px)' }}>
+
+          {/* Stock chart */}
+          <div style={{ width: 300, marginBottom: 28, animation: 'chartFadeIn 0.4s ease forwards' }}>
+            <svg viewBox="0 0 300 100" width="300" height="100" style={{ overflow: 'visible' }}>
+              <defs>
+                <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="rgba(245,158,11,0.22)" />
+                  <stop offset="100%" stopColor="rgba(245,158,11,0)" />
+                </linearGradient>
+                <clipPath id="chartClip">
+                  <rect x="0" y="0" width="300" height="100" />
+                </clipPath>
+              </defs>
+
+              {/* Grid lines */}
+              {[20, 45, 70, 95].map(y => (
+                <line key={y} x1="0" y1={y} x2="300" y2={y} stroke="rgba(255,255,255,0.04)" strokeWidth="1" />
+              ))}
+
+              {/* Fill area under line */}
+              <path
+                d="M 0,75 L 25,68 L 40,72 L 55,58 L 70,62 L 90,48 L 110,52 L 125,42 L 145,50 L 165,35 L 185,40 L 205,28 L 225,34 L 248,20 L 270,25 L 290,16 L 300,18 L 300,100 L 0,100 Z"
+                fill="url(#chartFill)"
+                clipPath="url(#chartClip)"
+              />
+
+              {/* Animated line drawing in */}
+              <path
+                d="M 0,75 L 25,68 L 40,72 L 55,58 L 70,62 L 90,48 L 110,52 L 125,42 L 145,50 L 165,35 L 185,40 L 205,28 L 225,34 L 248,20 L 270,25 L 290,16 L 300,18"
+                fill="none"
+                stroke={GOLD}
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ strokeDasharray: 420, strokeDashoffset: 420, animation: 'drawLine 2.2s ease-out forwards' }}
+              />
+
+              {/* Pulsing tip dot */}
+              <circle cx="300" cy="18" r="4" fill={GOLD}
+                style={{ transformBox: 'fill-box', transformOrigin: 'center', animation: 'chartTipPulse 1.1s ease-in-out infinite' }} />
+              <circle cx="300" cy="18" r="11" fill="rgba(245,158,11,0.18)"
+                style={{ transformBox: 'fill-box', transformOrigin: 'center', animation: 'chartTipGlow 1.1s ease-in-out infinite' }} />
             </svg>
-            <p style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#ffffff' }}>
-              {uploadPhase === 'uploading' ? 'Uploading your files…' : 'Please wait, validating your files…'}
-            </p>
-            <p style={{ margin: '8px 0 0', fontSize: '0.8rem', color: '#64748b' }}>
-              This may take a few seconds
-            </p>
+          </div>
+
+          {/* Status text */}
+          <p style={{ margin: '0 0 6px', fontSize: '1rem', fontWeight: 700, color: '#ffffff' }}>
+            {uploadPhase === 'uploading' ? 'Uploading your files…' : 'Please wait, validating your files…'}
+          </p>
+          <p style={{ margin: '0 0 22px', fontSize: '0.8rem', color: '#475569' }}>
+            This may take a few seconds
+          </p>
+
+          {/* Scrolling ticker */}
+          <div style={{ width: 300, overflow: 'hidden', borderTop: '1px solid rgba(255,255,255,0.06)', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '7px 0' }}>
+            <div style={{ display: 'inline-flex', whiteSpace: 'nowrap', animation: 'tickerScroll 14s linear infinite' }}>
+              {[0, 1].map(i => (
+                <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 16, paddingRight: 32, fontSize: '0.72rem', fontFamily: 'monospace' }}>
+                  <span style={{ color: '#10b981' }}>NIFTY50 ▲ 1.24%</span>
+                  <span style={{ color: '#334155' }}>·</span>
+                  <span style={{ color: '#ef4444' }}>BANKNIFTY ▼ 0.34%</span>
+                  <span style={{ color: '#334155' }}>·</span>
+                  <span style={{ color: '#10b981' }}>SENSEX ▲ 0.87%</span>
+                  <span style={{ color: '#334155' }}>·</span>
+                  <span style={{ color: '#10b981' }}>RELIANCE ▲ 2.10%</span>
+                  <span style={{ color: '#334155' }}>·</span>
+                  <span style={{ color: '#ef4444' }}>TCS ▼ 0.43%</span>
+                  <span style={{ color: '#334155' }}>·</span>
+                  <span style={{ color: '#10b981' }}>HDFCBANK ▲ 1.05%</span>
+                  <span style={{ color: '#334155' }}>·</span>
+                  <span style={{ color: '#10b981' }}>INFY ▲ 0.66%</span>
+                  <span style={{ color: '#334155' }}>·</span>
+                  <span style={{ color: '#ef4444' }}>WIPRO ▼ 0.19%</span>
+                  <span style={{ color: '#334155' }}>·</span>
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       )}
