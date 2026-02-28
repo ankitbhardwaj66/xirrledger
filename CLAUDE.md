@@ -13,6 +13,9 @@ When the user says "push" (or "deploy frontend", "push frontend"):
    - Commit the rebuilt `out/` together with the source changes (or as a follow-up commit if source was already committed)
 3. Stage and commit any remaining uncommitted changes (Lambda, source files, etc.)
 4. `git push`
+5. SSH into Hostinger and deploy:
+   - **main branch:** `ssh -p 65002 u889244618@46.28.45.163 "cd /home/u889244618/domains/xirrledger.com/public_html/xirrcalculator/website && git pull origin main && ./deploy.sh"`
+   - **dev branch:** `ssh -p 65002 u889244618@46.28.45.163 "cd /home/u889244618/domains/xirrledger.com/public_html/dev/xirrcalculator/website && git pull origin dev && ./deploy.sh"`
 
 > Never skip `rm -rf out/` — stale files from previous builds must be cleared first.
 
