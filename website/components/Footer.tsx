@@ -25,7 +25,7 @@ export default function Footer() {
               </div>
               <span style={{ fontWeight: 700, fontSize: '1rem', color: '#f59e0b' }}>XIRR Ledger</span>
             </div>
-            <p style={{ color: '#475569', fontSize: '0.85rem', lineHeight: 1.7 }}>
+            <p style={{ color: '#94a3b8', fontSize: '0.85rem', lineHeight: 1.7 }}>
               The only ledger-based XIRR calculator for accurate portfolio returns. Built by investors, for investors.
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -72,7 +72,7 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h4 style={{ fontWeight: 600, fontSize: '0.85rem', color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '16px' }}>Quick Links</h4>
+            <h3 style={{ fontWeight: 600, fontSize: '0.85rem', color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '16px' }}>Quick Links</h3>
             <ul style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[
                 { href: '/', label: 'Home' },
@@ -82,9 +82,9 @@ export default function Footer() {
                 { href: '/contact', label: 'Contact' },
               ].map(({ href, label }) => (
                 <li key={href}>
-                  <Link href={href} style={{ color: '#475569', textDecoration: 'none', fontSize: '0.9rem', transition: 'color 0.2s' }}
+                  <Link href={href} style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.9rem', transition: 'color 0.2s' }}
                     onMouseEnter={e => (e.currentTarget.style.color = '#e2e8f0')}
-                    onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
+                    onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}
                   >
                     {label}
                   </Link>
@@ -95,7 +95,7 @@ export default function Footer() {
 
           {/* Resources */}
           <div>
-            <h4 style={{ fontWeight: 600, fontSize: '0.85rem', color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '16px' }}>Resources</h4>
+            <h3 style={{ fontWeight: 600, fontSize: '0.85rem', color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '16px' }}>Resources</h3>
             <ul style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[
                 { href: '/calculator', label: 'Launch Calculator' },
@@ -105,9 +105,9 @@ export default function Footer() {
                 { href: '/how-it-works#groww', label: 'Groww Guide' },
               ].map(({ href, label }) => (
                 <li key={href}>
-                  <Link href={href} style={{ color: '#475569', textDecoration: 'none', fontSize: '0.9rem', transition: 'color 0.2s' }}
+                  <Link href={href} style={{ color: '#94a3b8', textDecoration: 'none', fontSize: '0.9rem', transition: 'color 0.2s' }}
                     onMouseEnter={e => (e.currentTarget.style.color = '#e2e8f0')}
-                    onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
+                    onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}
                   >
                     {label}
                   </Link>
@@ -118,11 +118,11 @@ export default function Footer() {
 
           {/* Coming Soon */}
           <div>
-            <h4 style={{ fontWeight: 600, fontSize: '0.85rem', color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '16px' }}>Coming Soon</h4>
+            <h3 style={{ fontWeight: 600, fontSize: '0.85rem', color: '#94a3b8', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '16px' }}>Coming Soon</h3>
             <ul style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {['Angel One Support', 'Upstox Integration', 'Sensex Comparison', 'Sector Analysis', 'Risk Metrics'].map(item => (
-                <li key={item} style={{ fontSize: '0.875rem', color: '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ color: '#1e3a5f', fontSize: '10px' }}>●</span>
+                <li key={item} style={{ fontSize: '0.875rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ color: '#475569', fontSize: '10px' }}>●</span>
                   {item}
                 </li>
               ))}
@@ -140,12 +140,12 @@ export default function Footer() {
           flexDirection: 'column',
           gap: '8px',
         }}>
-          <p style={{ color: '#334155', fontSize: '0.85rem' }}>
+          <p style={{ color: '#64748b', fontSize: '0.85rem' }}>
             © {currentYear} XIRR Ledger by{' '}
             <a href="https://ankitbhardwaj.in" target="_blank" rel="noopener noreferrer"
-              style={{ color: '#64748b', textDecoration: 'none' }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#f59e0b')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#64748b')}
+              style={{ color: '#94a3b8', textDecoration: 'underline', textDecorationColor: 'rgba(148,163,184,0.4)' }}
+              onMouseEnter={e => { e.currentTarget.style.color = '#f59e0b'; e.currentTarget.style.textDecorationColor = 'rgba(245,158,11,0.4)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.textDecorationColor = 'rgba(148,163,184,0.4)'; }}
             >
               Ankit Bhardwaj
             </a>

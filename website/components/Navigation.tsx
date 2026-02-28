@@ -90,6 +90,8 @@ export default function Navigation() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
+            aria-label={isOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isOpen}
             style={{ color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}
             className="md:hidden"
           >

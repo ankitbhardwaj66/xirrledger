@@ -114,7 +114,7 @@ export default function Home() {
               </div>
 
               {/* Trust */}
-              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '13px', color: '#475569', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '13px', color: '#64748b', marginBottom: '10px' }}>
                 <span>✓ Free to use</span>
                 <span>✓ No registration</span>
                 <span>✓ Privacy-first</span>
