@@ -9,66 +9,65 @@
 
 | Item | Status | Notes |
 |------|--------|-------|
-| `sitemap.xml` | Submitted 2026-02-25 | Google Search Console accepted |
-| `robots.txt` | Live | Points to sitemap |
-| Indexing | Pending | Normal — takes 3–14 days after first submission |
-| First organic impressions | Pending | Appears in Performance tab 1–2 weeks after indexing |
-| Pages indexed so far | 0 | Check GSC → Coverage tab daily |
-
-**What to check in GSC (daily 1-min check):**
-- Coverage → Indexed count increasing?
-- URL Inspection → paste `https://xirrledger.com` → "Request Indexing" if not queued
-- Sitemaps → confirm status is "Success" (not "Couldn't fetch")
+| `sitemap.xml` | ✅ Submitted 2026-02-27 | 14 pages discovered, Status: Success |
+| `robots.txt` | ✅ Live | Points to sitemap |
+| Indexing | In progress | 1 impression at position 8 already (Feb 26) |
+| Pages indexed | 14 discovered | Check GSC → Coverage tab weekly |
+| Search Console linked | ✅ Done | xirrledger.com verified |
 
 **SEO quick wins still to do:**
-- [ ] Add `<meta name="description">` to every page (if not already set via Next.js metadata)
-- [ ] Verify all 6 blog posts have unique titles + descriptions in metadata
-- [ ] Add internal links between blog posts (helps Google crawl depth)
-- [ ] Get at least 1–2 external backlinks pointing to `xirrledger.com` (TradingQ&A profile counts)
+- [x] Meta descriptions on all pages (done via Next.js metadata)
+- [x] All blog posts have unique titles + descriptions
+- [ ] Add internal links between blog posts
+- [ ] Manually request indexing for top 2 blog posts via URL Inspection
+- [ ] Get more external backlinks (TradingQ&A profile + own topic = 2 so far)
 
 ---
 
 ## TradingQ&A (tradingqna.zerodha.com)
 
-**Account**: `xirrledger` (Ankit Bhardwaj) | Trust: Basic | Started: 2026-02-24
+**Account**: `xirrledger` (Ankit Bhardwaj) | **Trust: Member** (upgraded) | Started: 2026-02-24
+
+### Account Stats (as of 2026-02-28)
+| Metric | Value |
+|---|---|
+| Days visited | 4 |
+| Read time | 2h |
+| Topics viewed | 21 |
+| Posts read | 201 |
+| Likes given | 1 |
+| **Likes received** | **2** |
+| **Topics created** | **1** |
+| **Posts (replies) created** | **14** |
 
 ### Activity Log
 
-| Date | Thread | Type | Notes |
-|------|--------|------|-------|
-| 2026-02-24 | "Measuring Mutual Fund Returns (XIRR & CAGR)" | Reply | First replies, trust upgrade |
-| 2026-02-24 | "Need suggestions" | Reply | Helpful reply |
-| 2026-02-25 | Multiple XIRR threads | Reply | 4 more replies |
-| 2026-02-26 | "XIRR or CAGR return on COIN" | Reply ×3 | Explained XIRR vs CAGR, Coin's broken XIRR field |
-| 2026-02-26 | "Know your XIRR: Excel Calculations" | Reply | Fund statement approach |
-| 2026-02-26 | "How does XIRR work with stocks with dividends?" | Reply | Reinvested dividend = auto in fund statement |
+| Date | Thread | Type | Likes | Notes |
+|------|--------|------|-------|-------|
+| 2026-02-24 | "Measuring Mutual Fund Returns (XIRR & CAGR)" | Reply | 1 ❤ | First reply, got like |
+| 2026-02-24 | "Need suggestions" | Reply | — | Helpful reply |
+| 2026-02-25 | Multiple XIRR threads | Reply ×4 | — | Volume replies |
+| 2026-02-26 | "XIRR or CAGR return on COIN" | Reply ×3 | — | Explained XIRR vs CAGR, Coin's broken XIRR field |
+| 2026-02-26 | "Know your XIRR: Excel Calculations" | Reply | 1 ❤ | Fund statement approach — top reply |
+| 2026-02-26 | "How does XIRR work with stocks with dividends?" | Reply | — | Reinvested dividend explanation |
+| 2026-02-28 | "Overall Investment Performance" | Reply | — | — |
+| 2026-02-28 | "Stock Return Calculation" | Reply | — | CAGR vs absolute return explained (Stevo thread) |
+| 2026-02-28 | "Returns calculation for F&O Transactions" | Reply | — | F&O XIRR via ledger explained (badinvestor thread) |
+| 2026-02-28 | **Own topic created** | Topic | — | "How to calculate your true XIRR from your broker data (not the number your broker shows)" |
+| 2026-02-28 | "XIRR is the ultimate truth..." | Topic | — | Posted — not showing up yet (pending moderation/propagation) |
 
-### Thread ideas for today / this week
+### Milestones
+- ✅ **14 replies** — crossed the threshold, eligible to create own topics
+- ✅ **1 topic created** — "How to calculate your true XIRR from your broker data"
+- ✅ **2 likes received** — building reputation
+- ✅ **Top reply** on "Know your XIRR: Excel Calculations"
 
-**Reply targets** (search these on TradingQ&A):
-- [ ] Any thread asking "how to calculate returns on multiple investments"
-- [ ] Any thread about "Zerodha P&L vs actual returns"
-- [ ] Any thread asking about XIRR on Groww / Fyers
-- [ ] "Is my portfolio beating Nifty?" type questions
-
-**Create own topic** (ready when ~10 total replies done, Basic → Member trust):
-```
-Title: "Free tool to calculate your portfolio XIRR vs Nifty 50 — Zerodha/Groww/Fyers"
-Category: General or Coin - Direct MF
-
-Hook: "I kept seeing questions here about how to measure actual returns across brokers.
-I built a free tool that does it automatically — upload your fund statement CSV/PDF,
-it calculates XIRR and benchmarks against Nifty 50."
-
-Body:
-- What it does (1 para)
-- How it works: upload Zerodha CSV or Groww PDF → get XIRR + Nifty comparison
-- Supports: Zerodha, Groww, Fyers
-- Link: https://xirrledger.com
-- Ask for feedback / edge cases they want handled
-```
-
-**Rule**: Don't post own topic until you have ≥10 genuine replies. Don't mention the tool in every reply — only when it's the natural answer.
+### Next Actions
+- [ ] Monitor own topic — check if it gets views/replies in 24–48h
+- [ ] Monitor "XIRR ultimate truth" post once it shows up
+- [ ] Reply to any comments on own topics promptly
+- [ ] Continue replying to 2–3 threads/week to maintain presence
+- [ ] If own topic gets traction → share link in replies to relevant threads
 
 ---
 
@@ -76,8 +75,12 @@ Body:
 
 **Account**: u/xirrledger | Status: ✅ Created 2026-02-26, 2 achievements unlocked
 
-### Week 1 plan (karma building only, no tool mentions)
-- [ ] r/IndiaInvestments — answer 2–3 XIRR or returns questions
+### Progress
+- Account created, 0 karma-building replies made yet
+- Still in warm-up phase
+
+### Plan
+- [ ] r/IndiaInvestments — answer 2–3 XIRR or returns questions (no tool mention)
 - [ ] r/personalfinanceindia — answer 2–3 questions
 - [ ] r/zerodha — answer questions about fund statement, returns
 - [ ] r/FIRE_Ind — helpful reply on returns tracking
@@ -89,24 +92,23 @@ Body:
 
 ## Twitter / X
 
-**Account**: @XIRRLedger | Status: Not started
+**Account**: @XIRRLedger | Status: ❌ Not started
 
-**Today's task** (if starting today):
 - [ ] Create account, set bio + link
-- [ ] First tweet: the "Why I built this" 1-liner
-- [ ] Reply to 2–3 threads from @Nithin0dha or @ZerodhaVarsity with a genuine take
+- [ ] First tweet: draft below
+- [ ] Reply to 2–3 threads from @Nithin0dha or @ZerodhaVarsity
 
 ---
 
 ## LinkedIn
 
-**Account**: XIRRLedger page | Status: Not started
+**Account**: XIRRLedger page | Status: ❌ Not started
 
 ---
 
 ## Instagram
 
-**Account**: @xirr.ledger | Status: Not started
+**Account**: @xirr.ledger | Status: ❌ Not started
 
 ---
 
@@ -116,22 +118,24 @@ Body:
 | Source | URL / Context | Date |
 |--------|--------------|------|
 | TradingQ&A profile | xirrledger user profile bio | 2026-02-24 |
+| TradingQ&A topic | "How to calculate your true XIRR from your broker data" | 2026-02-28 |
+| TradingQ&A topic | "XIRR is the ultimate truth..." post | 2026-02-28 |
 
 ---
 
-## Today's Priority Actions (2026-02-26)
+## Priority Actions — Week of 2026-03-01
 
 ### High priority
-1. **TradingQ&A**: Reply to 2–3 more threads today — look for "how do I track returns across Zerodha and Groww" or similar. Aim for total ≥10 replies before creating own topic.
-2. ~~**GSC check**: Open Google Search Console → URL Inspection → request indexing for homepage.~~ ✅ **DONE** — "Indexing requested" confirmed, added to priority crawl queue (2026-02-26)
-3. ~~**Reddit**: Create u/XIRRLedger account.~~ ✅ **DONE** — u/xirrledger account created (2026-02-26), 2 achievements unlocked. Next: make 2–3 karma-building replies in r/IndiaInvestments (no tool mention yet).
+1. **TradingQ&A**: Monitor own 2 topics — reply to any comments within a few hours
+2. **Reddit**: Make 3–4 genuine karma-building replies (no tool mention yet)
+3. **UTM links**: Set up UTM links for each platform so GA can track traffic source
 
 ### Medium priority
-4. **Twitter**: Create @XIRRLedger account. Write first tweet (draft below).
-5. **Blog internal links**: Add a link from 1 blog post to another where it makes sense.
+4. **Twitter**: Create @XIRRLedger account + post first tweet (draft below)
+5. **Blog internal links**: Add links between blog posts to improve crawl depth
 
 ### Can wait
-6. Instagram / LinkedIn — start next week once Twitter and Reddit are moving.
+6. Instagram / LinkedIn — start once Twitter and Reddit are active
 
 ---
 
@@ -153,7 +157,7 @@ for Zerodha, Groww, and Fyers.
 
 ## Draft: Reddit r/IndiaInvestments reply (for XIRR questions)
 
-> Don't paste this verbatim — adapt it naturally to the thread.
+> Don't paste verbatim — adapt naturally to the thread.
 
 ```
 XIRR is the right metric here. Unlike CAGR, it accounts for the exact dates
@@ -171,4 +175,17 @@ for Zerodha, Groww, and Fyers — xirrledger.com
 
 ---
 
-*Last updated: 2026-02-26*
+## UTM Links (to create)
+
+```
+TradingQNA:  https://xirrledger.com?utm_source=tradingqna&utm_medium=referral&utm_campaign=community
+Reddit:      https://xirrledger.com?utm_source=reddit&utm_medium=social&utm_campaign=community
+Twitter:     https://xirrledger.com?utm_source=twitter&utm_medium=social&utm_campaign=launch
+Instagram:   https://xirrledger.com?utm_source=instagram&utm_medium=social&utm_campaign=launch
+LinkedIn:    https://xirrledger.com?utm_source=linkedin&utm_medium=social&utm_campaign=launch
+```
+> ⚠ Not set up yet — all social traffic currently showing as "Direct" in GA
+
+---
+
+*Last updated: 2026-02-28*
