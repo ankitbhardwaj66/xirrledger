@@ -73,19 +73,45 @@
 
 ## Reddit
 
-**Account**: u/xirrledger | Status: ✅ Created 2026-02-26, 2 achievements unlocked
+**Account**: u/xirrledger | Status: ✅ Active | Created 2026-02-26, 3 achievements unlocked
 
-### Progress
-- Account created, 0 karma-building replies made yet
-- Still in warm-up phase
+### Account Stats (as of 2026-02-28)
+| Metric | Value |
+|---|---|
+| Karma | 1 (+ in progress) |
+| Contributions | 0 (+ 3 replies + 1 post today) |
+| Account age | 2 days |
+| Achievements | 3 unlocked |
+
+### Activity Log
+
+| Date | Subreddit | Type | Title / Context | Notes |
+|------|-----------|------|-----------------|-------|
+| 2026-02-28 | r/Optionswheel | Reply | "Using XIRR to calculate the rate of return?" | Explained sign convention for wheel trades (CSP/CC premiums), how to handle open positions. No tool mention. |
+| 2026-02-28 | r/MutualfundsIndia | Reply | "What is your XIRR right now? How much has it fallen?" | Added broker XIRR accuracy caveat + manual calc method. No tool mention. |
+| 2026-02-28 | r/personalfinanceindia | Reply | "Portfolio Review: Low XIRR" | Specific stock analysis (RELAXO -58%, ADANIGREEN -51% etc.), rebalancing advice + XIRR accuracy angle. No tool mention. |
+| 2026-02-28 | r/personalfinanceindia | **Post** | "PSA: The XIRR shown by Zerodha, Groww, and Coin is often wrong — here's why and how to fix it" | First own post. 1 upvote, 6 views within 1 min. No tool link. Pure educational. |
+
+### Milestones
+- ✅ **First post live** — r/personalfinanceindia, 1 upvote in first minute
+- ✅ **3 replies posted** — across 3 subreddits
+- ✅ **3 achievements unlocked**
+
+### Next Actions
+- [ ] Monitor PSA post — check views/upvotes/comments in 24h
+- [ ] Reply to any comments on PSA post promptly
+- [ ] If someone asks "is there a tool for this?" — that's when to mention xirrledger.com
+- [ ] Continue 2–3 replies/week, karma-build to 50–100 before dropping links in posts
+- [ ] r/IndiaInvestments — find XIRR/returns threads to reply to
+- [ ] r/zerodha — answer fund statement / returns questions
 
 ### Plan
+- [x] r/personalfinanceindia — first post + reply done
 - [ ] r/IndiaInvestments — answer 2–3 XIRR or returns questions (no tool mention)
-- [ ] r/personalfinanceindia — answer 2–3 questions
 - [ ] r/zerodha — answer questions about fund statement, returns
 - [ ] r/FIRE_Ind — helpful reply on returns tracking
 
-**Week 2+**: Organic mention only when directly relevant.
+**Week 2+**: Organic mention only when directly relevant (e.g. someone asks "is there a tool?").
 **Week 3–4**: Transparent showcase post ("I built XIRRLedger — feedback welcome").
 
 ---
@@ -188,4 +214,4 @@ LinkedIn:    https://xirrledger.com?utm_source=linkedin&utm_medium=social&utm_ca
 
 ---
 
-*Last updated: 2026-02-28*
+*Last updated: 2026-02-28 (evening — Reddit session 1)*

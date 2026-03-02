@@ -1,3 +1,20 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'How It Works — XIRR Ledger | 4 Simple Steps',
+  description: 'Learn how XIRR Ledger calculates your portfolio returns in 4 steps: download your broker ledger, upload files, enter current holdings value, and get your XIRR with Nifty 50 comparison.',
+  keywords: ['how XIRR calculator works', 'download Zerodha ledger', 'upload broker ledger', 'calculate portfolio XIRR', 'XIRR steps India'],
+  openGraph: {
+    title: 'How It Works — XIRR Ledger | 4 Simple Steps',
+    description: 'Download your broker ledger, upload it, enter current holdings, and get accurate XIRR with Nifty 50 benchmark comparison.',
+    type: 'website',
+    url: 'https://xirrledger.com/how-it-works/',
+  },
+  alternates: {
+    canonical: 'https://xirrledger.com/how-it-works/',
+  },
+};
+
 import Link from 'next/link';
 import { FaDownload, FaUpload, FaWallet, FaChartLine, FaCheckCircle, FaExclamationTriangle, FaArrowRight, FaFileCsv, FaFilePdf } from 'react-icons/fa';
 

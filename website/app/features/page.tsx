@@ -1,3 +1,20 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Features — XIRR Ledger | Ledger-Based XIRR Calculator',
+  description: 'Explore XIRR Ledger features: ledger-based calculation, multi-broker support (Zerodha, Groww, Fyers), Nifty 50 benchmark, multi-account analysis, and professional PDF reports.',
+  keywords: ['XIRR calculator features', 'ledger based XIRR', 'multi-broker XIRR', 'Nifty 50 benchmark', 'portfolio PDF report', 'Zerodha Groww XIRR'],
+  openGraph: {
+    title: 'Features — XIRR Ledger | Ledger-Based XIRR Calculator',
+    description: 'Ledger-based XIRR calculation, multi-broker support, Nifty 50 benchmark, and professional PDF reports — all in one free tool.',
+    type: 'website',
+    url: 'https://xirrledger.com/features/',
+  },
+  alternates: {
+    canonical: 'https://xirrledger.com/features/',
+  },
+};
+
 import {
   FaFileAlt, FaExchangeAlt, FaUsers, FaChartLine,
   FaFilePdf, FaChartBar, FaShieldAlt, FaMagic, FaLock,

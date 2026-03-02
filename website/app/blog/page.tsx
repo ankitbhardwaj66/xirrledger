@@ -1,3 +1,20 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Blog — XIRR Ledger | XIRR, Returns & Portfolio Analysis',
+  description: 'Articles on XIRR calculations, comparing XIRR vs CAGR, beating Nifty 50, broker ledger tips, and how to truly measure your portfolio returns.',
+  keywords: ['XIRR blog', 'portfolio returns India', 'XIRR vs CAGR', 'beating Nifty 50', 'broker ledger tips', 'investment returns blog'],
+  openGraph: {
+    title: 'Blog — XIRR Ledger | XIRR, Returns & Portfolio Analysis',
+    description: 'Articles on XIRR, CAGR, Nifty 50 benchmarks, broker ledger tips, and measuring true portfolio returns.',
+    type: 'website',
+    url: 'https://xirrledger.com/blog/',
+  },
+  alternates: {
+    canonical: 'https://xirrledger.com/blog/',
+  },
+};
+
 import Link from 'next/link';
 import { getAllPosts } from '@/lib/blog';
 import { FaArrowRight } from 'react-icons/fa';
