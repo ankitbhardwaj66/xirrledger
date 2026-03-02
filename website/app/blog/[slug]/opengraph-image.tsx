@@ -47,37 +47,32 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         <polyline
           points={niftyPoints}
           fill="none"
-          stroke="rgba(129,140,248,0.45)"
-          strokeWidth="1.8"
+          stroke="rgba(129,140,248,0.65)"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
         <polyline
           points={portfolioPoints}
           fill="none"
-          stroke="rgba(245,158,11,0.55)"
-          strokeWidth="1.8"
+          stroke="rgba(245,158,11,0.75)"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
       </svg>
 
-      {/* ── Dark overlay ── */}
-      <div style={{
-        position: 'absolute',
-        top: 0, left: 0,
-        width: '1200px', height: '630px',
-        background: 'rgba(15,23,42,0.80)',
-      }} />
-
-      {/* ── Centered text ── */}
+      {/* ── Centered text on frosted panel ── */}
       <div style={{
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         textAlign: 'center',
-        padding: '0 100px',
+        background: 'rgba(15,23,42,0.78)',
+        border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: '28px',
+        padding: '52px 88px',
       }}>
         {/* Badge */}
         <div style={{
