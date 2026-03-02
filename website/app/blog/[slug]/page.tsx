@@ -54,8 +54,32 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
 
   if (!post) notFound();
 
+  const articleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    description: post.excerpt,
+    datePublished: post.date,
+    dateModified: post.date,
+    author: {
+      '@type': 'Person',
+      name: 'Ankit Bhardwaj',
+      url: 'https://xirrledger.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'XIRR Ledger',
+      url: 'https://xirrledger.com',
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `https://xirrledger.com/blog/${slug}/`,
+    },
+  };
+
   return (
     <article style={{ background: '#0f172a', minHeight: '100vh', paddingTop: '4rem', paddingBottom: '6rem' }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
       <div className="container-custom">
 
         {/* ── Back button ── */}
