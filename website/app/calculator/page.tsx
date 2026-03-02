@@ -9,6 +9,7 @@ export const metadata: Metadata = {
     title: 'XIRR Calculator — Upload Your Broker Ledger | XIRR Ledger',
     description: 'Upload your Zerodha, Groww, or Fyers ledger file and instantly get your portfolio XIRR with Nifty 50 benchmark comparison.',
     type: 'website',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630 }],
     url: 'https://xirrledger.com/calculator/',
   },
   alternates: {

@@ -8,6 +8,7 @@ export const metadata: Metadata = {
     title: 'Blog — XIRR Ledger | XIRR, Returns & Portfolio Analysis',
     description: 'Articles on XIRR, CAGR, Nifty 50 benchmarks, broker ledger tips, and measuring true portfolio returns.',
     type: 'website',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630 }],
     url: 'https://xirrledger.com/blog/',
   },
   alternates: {

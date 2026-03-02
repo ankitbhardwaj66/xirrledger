@@ -8,6 +8,7 @@ export const metadata: Metadata = {
     title: 'Features — XIRR Ledger | Ledger-Based XIRR Calculator',
     description: 'Ledger-based XIRR calculation, multi-broker support, Nifty 50 benchmark, and professional PDF reports — all in one free tool.',
     type: 'website',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630 }],
     url: 'https://xirrledger.com/features/',
   },
   alternates: {

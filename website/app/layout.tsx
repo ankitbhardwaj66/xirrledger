@@ -8,6 +8,7 @@ import Footer from '@/components/Footer';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://xirrledger.com'),
   title: 'XIRR Ledger - The Only Ledger-Based XIRR Calculator',
   description: 'Calculate accurate portfolio returns from your actual trading ledger. Multi-broker support with Nifty 50 benchmark comparison. No manual entry required.',
   keywords: ['XIRR calculator', 'portfolio returns', 'trading ledger', 'Zerodha', 'Groww', 'Nifty 50', 'investment returns'],
@@ -16,6 +17,7 @@ export const metadata: Metadata = {
     title: 'XIRR Ledger - Ledger-Based XIRR Calculator',
     description: 'Calculate accurate portfolio returns from your actual trading ledger',
     type: 'website',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630 }],
   },
 };
 

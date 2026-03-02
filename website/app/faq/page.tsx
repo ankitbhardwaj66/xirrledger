@@ -72,6 +72,7 @@ export const metadata: Metadata = {
     title: 'FAQ — XIRR Ledger | Common Questions Answered',
     description: 'Answers to the most common questions about XIRR Ledger — supported brokers, data privacy, and how to interpret your XIRR results.',
     type: 'website',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630 }],
     url: 'https://xirrledger.com/faq/',
   },
   alternates: {

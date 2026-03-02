@@ -8,6 +8,7 @@ export const metadata: Metadata = {
     title: 'How It Works — XIRR Ledger | 4 Simple Steps',
     description: 'Download your broker ledger, upload it, enter current holdings, and get accurate XIRR with Nifty 50 benchmark comparison.',
     type: 'website',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630 }],
     url: 'https://xirrledger.com/how-it-works/',
   },
   alternates: {
