@@ -1,6 +1,6 @@
 # SEO Status — XIRR Ledger
 
-Last updated: 2026-03-02
+Last updated: 2026-03-02 (session complete)
 
 ---
 
@@ -9,45 +9,51 @@ Last updated: 2026-03-02
 | Element | Status | Notes |
 |---|---|---|
 | Root layout metadata | ✅ | Title, description, keywords, OG tags in `website/app/layout.tsx` |
+| Page-level metadata — all pages | ✅ Done 2026-03-02 | All 6 pages now have unique title, description, keywords, OG, canonical |
 | Dynamic blog metadata | ✅ | `generateMetadata` in `website/app/blog/[slug]/page.tsx` — title, description, OG, canonical, Twitter card, publishedTime |
 | sitemap.ts | ✅ | `website/app/sitemap.ts` — all static pages + 7 blog posts with priorities |
 | robots.txt | ✅ | `website/public/robots.txt` — allows all, points to `https://xirrledger.com/sitemap.xml` |
 | Trailing slashes | ✅ | `next.config.ts` — `trailingSlash: true` |
 | Cache headers | ✅ | `.htaccess` — 1yr for `/_next/static/*`, no-cache for HTML |
 | Google Analytics 4 | ✅ | Lazy-loaded via `NEXT_PUBLIC_GA_ID`, disabled on dev |
+| Google Search Console | ✅ | Property verified, sitemap submitted, 14 pages indexed |
+| JSON-LD structured data | ✅ Done 2026-03-02 | WebSite schema (homepage), FAQPage schema (/faq), Article schema (all blog posts) |
+| OG images | ✅ Done 2026-03-02 | Default 1200×630 image for all static pages; unique per-post image for all 7 blog posts |
+
+### Page metadata added (2026-03-02)
+
+| Page | Title |
+|---|---|
+| `/calculator` | XIRR Calculator — Upload Your Broker Ledger \| XIRR Ledger |
+| `/faq` | FAQ — XIRR Ledger \| Common Questions Answered |
+| `/contact` | Contact Us — XIRR Ledger |
+| `/features` | Features — XIRR Ledger \| Ledger-Based XIRR Calculator |
+| `/how-it-works` | How It Works — XIRR Ledger \| 4 Simple Steps |
+| `/blog` | Blog — XIRR Ledger \| XIRR, Returns & Portfolio Analysis |
+
+Pattern used: `page.tsx` = server component with `metadata` export. Client logic extracted to `CalculatorClient.tsx` and `FAQClient.tsx`.
 
 ---
 
-## Critical Gaps
+## Remaining Gaps
 
-### 1. Missing page-level metadata (High impact)
-These pages have no `metadata` export — they fall back to root layout defaults:
+### 1. No structured data / JSON-LD (High impact — rich snippets)
+- No `FAQPage` schema on `/faq` — unlocks accordion rich results in Google
+- No `Article` schema on blog posts — shows author, date, breadcrumb in SERP
+- No `WebSite` / `Organization` schema on homepage — sitelinks searchbox
 
-| Page | File |
-|---|---|
-| `/calculator` | `website/app/calculator/page.tsx` |
-| `/features` | `website/app/features/page.tsx` |
-| `/faq` | `website/app/faq/page.tsx` |
-| `/how-it-works` | `website/app/how-it-works/page.tsx` |
-| `/contact` | `website/app/contact/page.tsx` |
-| `/blog` | `website/app/blog/page.tsx` |
+### 2. ~~Google Search Console verification~~ — ✅ Already done
+- Property `xirrledger.com` verified, sitemap submitted (14 pages discovered, last read 2 Mar 2026)
 
-### 2. No structured data / JSON-LD (High impact — rich snippets)
-- No `FAQPage` schema on `/faq`
-- No `Article` schema on blog posts
-- No `Organization` or `WebSite` schema on homepage
+### 3. ~~OG images~~ — ✅ Done 2026-03-02
+- `app/opengraph-image.tsx` — full-screen portfolio vs Nifty 50 chart as background, frosted dark panel behind centered text, "Free Ledger-Based XIRR Calculator / Compare your returns with Nifty 50"
+- `app/blog/[slug]/opengraph-image.tsx` — same chart background, post title centered on frosted panel, font size adapts to title length
+- `metadataBase` set in root layout; all pages have explicit `openGraph.images`
+- Verified working on WhatsApp and Twitter/X previews
 
-### 3. No Google Search Console verification (High impact)
-- No `google-site-verification` meta tag in layout
-- No HTML verification file in `website/public/`
-
-### 4. No OG images (Medium impact)
-- OG metadata exists but no `image` property on any page
-- No featured images for blog posts
-- No social sharing fallback image
-
-### 5. No RSS feed (Low impact)
+### 4. RSS feed (Low impact — skipped for now)
 - Blog has no `/feed.xml` for subscribers/aggregators
+- Can revisit if needed
 
 ---
 
@@ -85,6 +91,8 @@ These pages have no `metadata` export — they fall back to root layout defaults
 | Purpose | Path |
 |---|---|
 | Root metadata | `website/app/layout.tsx` |
+| Calculator client component | `website/app/calculator/CalculatorClient.tsx` |
+| FAQ client component | `website/app/faq/FAQClient.tsx` |
 | Blog dynamic metadata | `website/app/blog/[slug]/page.tsx` |
 | Sitemap generator | `website/app/sitemap.ts` |
 | robots.txt | `website/public/robots.txt` |
@@ -92,14 +100,3 @@ These pages have no `metadata` export — they fall back to root layout defaults
 | Blog loader | `website/lib/blog.ts` |
 | Next.js config | `website/next.config.ts` |
 | Cache headers | `website/public/.htaccess` |
-
----
-
-## Recommended Next Steps
-
-1. **Add `metadata` exports** to the 6 pages missing them — biggest quick win
-2. **Add JSON-LD schema** — `FAQPage` on `/faq`, `Article` on blog posts, `WebSite` on homepage
-3. **Set up Google Search Console** — add verification, submit sitemap
-4. **Add OG image** — at minimum a default fallback image for social sharing
-5. **Monitor Core Web Vitals** via Search Console / Lighthouse
-6. **RSS feed** for blog (`/feed.xml`)

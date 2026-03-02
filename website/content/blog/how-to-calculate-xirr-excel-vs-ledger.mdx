@@ -1,0 +1,204 @@
+---
+title: "How to Calculate XIRR: Why Excel Gets It Wrong and the Ledger Method Gets It Right"
+date: "2026-03-02"
+author: "XIRR Ledger Team"
+excerpt: "Most investors who try calculating XIRR in Excel track their stock purchases and sales — and quietly miss thousands of rupees in charges. Brokerage, STT, GST, stamp duty all reduce your real returns. The ledger already has all of this. Here's why it matters."
+category: "Investment Insights"
+keywords:
+  - how to calculate xirr
+  - how to calculate xirr manually
+  - how is xirr calculated
+  - xirr excel calculation
+  - calculate xirr from broker ledger
+  - xirr formula excel
+  - how to calculate xirr in mutual fund
+  - xirr calculation india
+  - xirr ledger method
+  - broker charges in xirr
+---
+
+If you search "how to calculate XIRR" you'll find dozens of tutorials. Almost all of them tell you the same thing: download your transactions, make two columns in Excel (Date, Amount), enter your stock buys as negative and your portfolio value as positive, and run `=XIRR()`.
+
+That method works. But it gives you the wrong number.
+
+Not because the formula is wrong — XIRR is XIRR. But because **the data going into it is incomplete.**
+
+Here's what every Excel tutorial misses.
+
+## The Excel Approach (How Most People Do It)
+
+Most investors who try to calculate XIRR do something like this:
+
+**Step 1:** Open a spreadsheet. Create two columns: Date and Amount.
+
+**Step 2:** Enter every stock purchase as a negative cash flow:
+
+```
+01-Jan-2023   -10,000   (bought HDFC Bank)
+15-Feb-2023   -8,500    (bought Infosys)
+10-Apr-2023   -12,000   (bought Reliance)
+...and so on
+```
+
+**Step 3:** Add the current portfolio value as a positive:
+
+```
+02-Mar-2026   +65,000   (portfolio value today)
+```
+
+**Step 4:** Run `=XIRR(amounts, dates)` and get a number like 18.3%.
+
+This looks right. You put in ₹30,500 over time, your portfolio is ₹65,000 today. 18.3% sounds plausible.
+
+**But here's what you didn't include.**
+
+## What You're Missing: Every Rupee the Broker and Government Took
+
+Every single trade you made came with a set of charges. These weren't optional. They were deducted silently from your account, directly from your ledger balance.
+
+### Brokerage
+Zerodha charges ₹20 per executed order (flat fee model). If you've made 100 buy orders over 3 years, that's ₹2,000 in brokerage before you've even counted the other charges. Active traders making 5–10 trades a month: ₹1,200–₹2,400/year in brokerage alone.
+
+### STT — Securities Transaction Tax
+This is the big one. For delivery trades (stocks you hold overnight), STT is 0.1% on both buy and sell value. On ₹10,000 worth of stock:
+- Buy side STT: ₹10
+- Sell side STT: ₹10
+- Total: ₹20 per round trip
+
+For a ₹5 lakh portfolio with normal churn, STT alone can be ₹1,000–₹5,000 per year.
+
+### Exchange Transaction Charges
+NSE charges approximately 0.00322% on equity delivery. Small number — but it's there on every trade and it adds up across years.
+
+### GST (18% on brokerage + exchange charges)
+The government taxes your transaction costs. On ₹20 brokerage + ₹5 exchange charges, you pay ₹4.50 in GST. Per trade. Every trade.
+
+### Stamp Duty
+0.015% on the buy value for delivery trades. On ₹10,000: ₹1.50. Not huge per trade — but across 3 years of investing, it's real money leaving your account.
+
+### SEBI Turnover Fees
+₹10 per crore of turnover. Tiny, but present.
+
+---
+
+**Let's add this up for a realistic example.**
+
+Assume you've made 80 trades over 3 years, averaging ₹15,000 per trade. Total turnover: ₹12,00,000.
+
+| Charge | Estimated Amount |
+|---|---|
+| Brokerage (80 trades × ₹20) | ₹1,600 |
+| STT (0.1% buy + 0.1% sell × ₹12L) | ₹2,400 |
+| Exchange charges (~0.003%) | ₹360 |
+| GST (18% on brokerage + exchange) | ₹353 |
+| Stamp duty (0.015% on buys) | ₹900 |
+| **Total charges** | **≈ ₹5,613** |
+
+That's **₹5,613 that left your account and never went into a stock.** It reduced your returns directly.
+
+If you only tracked stock purchases and sales in your Excel sheet, **you never counted these as an investment cost.** Your XIRR calculation is pretending these charges didn't happen.
+
+The real XIRR is lower. How much lower depends on your trading activity, but for most retail investors: **0.5% to 1.5% per year in missed costs.**
+
+That gap compounds. Over 10 years, 1% per year means your "real" XIRR might be 14% when your spreadsheet says 15%. That's not a small rounding error — it changes your entire read on whether your stock-picking is actually working.
+
+## The Ledger Method: Why It's More Accurate
+
+Your broker keeps a ledger. It's the master record of every rupee that moved in or out of your account.
+
+Every fund transfer in: recorded. Every fund transfer out: recorded. Every charge: recorded as a debit. Every STT payment: recorded. Every payout: recorded.
+
+The ledger doesn't care about your individual stock positions. It just tracks money.
+
+When you download your Zerodha ledger (CSV), Groww balance statement (PDF), or Fyers ledger (CSV), you get a complete record of:
+
+- All your deposits (exact dates, exact amounts)
+- All your withdrawals (exact dates, exact amounts)
+- All charges already deducted (they show up as negative balance movements)
+
+**The key insight: you don't need to add charges separately. They're already gone from the ledger balance.**
+
+When you calculate XIRR from ledger cash flows:
+- The deposits are your actual outflows — including all the money that went to charges
+- The withdrawals are your actual inflows
+- Your current portfolio value is what's left
+
+**The XIRR from this data is your true net return after every cost.**
+
+## A Side-by-Side Comparison
+
+Let's use a concrete example with the same investor.
+
+**Rahul's 3-year investing history:**
+- Regular SIPs + occasional lump sums
+- Total money transferred in: ₹8,00,000
+- Total money transferred out: ₹50,000
+- Current portfolio value: ₹12,40,000
+- Charges paid over 3 years: ₹14,200 (STT, brokerage, GST etc.)
+
+### Excel method (tracking individual stocks)
+
+Rahul lists every buy and sell. He captures when he bought which stocks and for how much. He adds today's portfolio value.
+
+His XIRR comes out to: **19.1%**
+
+But he never accounted for the ₹14,200 in charges. In his spreadsheet, that money seems to have never existed.
+
+### Ledger method (tracking actual cash flows)
+
+Rahul downloads his Zerodha ledger. He uses XIRRLedger, which reads his fund transfers and deposits — not his stock trades.
+
+The deposits column in the ledger shows ₹8,00,000 going in. The ₹14,200 in charges were already deducted from his ledger balance over the years — they reduced his actual gains, not just his Excel model.
+
+His XIRR from the ledger: **17.4%**
+
+Same portfolio. Same 3 years. **1.7% difference — purely because the Excel method didn't count what the government and broker actually took.**
+
+## Why Zerodha and Groww Don't Show This Automatically
+
+You might wonder: why don't the apps just show the right XIRR?
+
+The honest answer is that it's a design choice. Showing a lower-but-accurate number is less appealing than showing a higher-but-simplified number. A 19% XIRR on the app looks better than a 17.4% "true after-cost XIRR."
+
+There's also a technical reason: XIRR calculation requires defining a terminal value — the current portfolio worth as of today, entered by you. The app shows live market value, but the XIRR formula needs you to declare the date you're measuring to. It can't do that without your input.
+
+So the app shows approximations. The ledger shows the truth.
+
+## How to Do It Right
+
+### Option 1: Excel (Manual)
+
+1. Download your Zerodha Fund Statement (All Segments → CSV)
+2. Open in Excel. Look for rows where the "Particulars" column says "Funds transferred" or "UPI" — these are your actual deposits. Find all withdrawal rows too.
+3. Create a Date/Amount table with deposits as negative and withdrawals as positive
+4. Add today's portfolio value as a positive amount on today's date
+5. Run `=XIRR(amounts_column, dates_column)`
+
+This takes 45–90 minutes the first time. You have to know which rows to include and which to ignore.
+
+### Option 2: XIRRLedger (Automatic)
+
+Upload your broker ledger file to [xirrledger.com](/). The tool:
+
+- Reads your ledger and automatically identifies fund transfers (deposits and withdrawals)
+- Strips out all non-cash-flow rows (stock trades, charges, dividends — these are already reflected in your account balance)
+- Adds your current portfolio value (you enter it once)
+- Calculates XIRR on the complete data
+- Compares it against the Nifty 50 XIRR on the same cash flows
+
+The output tells you not just your XIRR — but whether your actual net-of-cost return beat the index. That's the number that actually matters.
+
+## The Bottom Line
+
+XIRR is not complicated. But what you feed into it determines whether the answer is honest.
+
+Track individual stocks → miss charges → overstate your returns.
+Read the ledger → catch everything → know your real returns.
+
+The difference might be 0.5%. It might be 2%. You won't know until you calculate it the right way.
+
+---
+
+**Ready to calculate your true XIRR including all charges?** [Upload your ledger →](/calculator)
+
+**Want to understand the formula first?** [How XIRR is calculated →](/how-to-calculate-xirr)

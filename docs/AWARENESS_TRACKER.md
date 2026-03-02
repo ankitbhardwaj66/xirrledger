@@ -11,16 +11,79 @@
 |------|--------|-------|
 | `sitemap.xml` | ✅ Submitted 2026-02-27 | 14 pages discovered, Status: Success |
 | `robots.txt` | ✅ Live | Points to sitemap |
-| Indexing | In progress | 1 impression at position 8 already (Feb 26) |
+| Indexing | In progress | 1 click, 2 impressions, avg position 6 (as of Mar 2) |
 | Pages indexed | 14 discovered | Check GSC → Coverage tab weekly |
 | Search Console linked | ✅ Done | xirrledger.com verified |
+| Page-level metadata | ✅ Done 2026-03-02 | All 6 pages have unique title, description, OG, canonical |
+| JSON-LD structured data | ✅ Done 2026-03-02 | FAQPage, Article, WebSite schemas |
+| OG images | ✅ Done 2026-03-02 | Dynamic chart-bg image for all pages + per-post blog images |
 
 **SEO quick wins still to do:**
-- [x] Meta descriptions on all pages (done via Next.js metadata)
+- [x] Meta descriptions on all pages
 - [x] All blog posts have unique titles + descriptions
+- [x] Page-level metadata on all 6 static pages
+- [x] JSON-LD structured data
+- [x] OG images (dynamic, with portfolio vs Nifty chart)
 - [ ] Add internal links between blog posts
 - [ ] Manually request indexing for top 2 blog posts via URL Inspection
 - [ ] Get more external backlinks (TradingQ&A profile + own topic = 2 so far)
+
+### Target keywords — Real data (Google Keyword Planner, 2026-03-02)
+
+> Source: two Keyword Planner exports (seed keywords + website URL). Data = Feb 2025–Jan 2026.
+
+#### Tier 1 — High volume (50k/month), Low competition
+| Keyword | Vol | Comp index | CPC high | Action |
+|---|---|---|---|---|
+| `xirr calculator` | 50,000 | 1 | ₹123 | Calculator page — primary target |
+| `xirr` | 50,000 | 3 | ₹1.51 | Homepage + all XIRR content |
+| `returns calculator` | 50,000 | 12 | ₹23 | Broad — optimize homepage |
+
+#### Tier 2 — Medium-high (5k/month), Low competition
+| Keyword | Vol | Comp index | CPC high | Trend | Action |
+|---|---|---|---|---|---|
+| `xirr in sip` | 5,000 | 8 | ₹1.24 | **+900% YoY** | Blog post needed |
+| `mutual fund xirr` | 5,000 | 10 | ₹13 | Stable | Blog/FAQ content |
+| `xirr in mutual fund` | 5,000 | 10 | ₹13 | Stable | Same cluster |
+| `xirr meaning in mutual fund` | 5,000 | 7 | ₹1.88 | Stable | FAQ page |
+| `xirr vs cagr` + `cagr vs xirr` | 5,000 each | 17–18 | ₹1.39 | Stable | Blog post exists ✅ |
+| `xirr formula` | 5,000 | 0 | — | Stable | FAQ/blog |
+| `nifty 50 calculator` | 5,000 | 27 | ₹20 | Stable | Direct feature match |
+| `annualized returns` | 5,000 | 0 | **₹268** | Stable | Very high commercial intent |
+
+#### Tier 3 — Medium (500/month), Low competition
+| Keyword | Vol | Comp index | CPC high | Notes |
+|---|---|---|---|---|
+| `how to calculate xirr` | 500 | 2 | ₹30 | Tutorial intent → calculator adoption |
+| `xirr calculator groww` | 500 | 1 | — | Broker-specific, YoY -90% |
+| `nifty 50 returns calculator` | 500 | 22 | ₹30 | Exact feature match |
+| `nifty returns calculator` | 500 | 16 | ₹23 | Same cluster |
+| `good xirr in mutual fund` | 500 | 3 | ₹478 | **+900% 3m** — rising fast |
+| `xirr meaning in sip` | 500 | 8 | — | **+900% YoY** |
+| `nifty 50 xirr` | 500 | 0 | — | **+900% 3m + YoY** |
+| `how to calculate xirr in mutual fund` | 500 | 13 | ₹150 | Tutorial intent |
+| `sip xirr calculator` | 500 | 21 | ₹18 | Tool intent |
+
+#### Keywords with ZERO search volume (do not target)
+- `ledger based xirr` — 0 searches (our term, not what users search)
+- `xirr from broker ledger` — 0 searches
+- `beat nifty 50` — 0 searches
+- `broker xirr wrong` — 0 searches
+- `zerodha xirr` — 50 searches (too low to prioritize)
+
+### Competitor landscape
+- Groww, Zerodha, Bajaj Finserv, PolicyBazaar dominate "XIRR calculator"
+- **None do ledger-based, multi-broker, Nifty-benchmarked XIRR** — that's our moat
+- "ledger based" is our internal language — users search `xirr calculator`, `xirr in sip`, `mutual fund xirr`
+- Strategy: rank for what users search, then show why ledger-based is more accurate
+
+### Blog posts needed (keyword-driven)
+- [ ] "XIRR in SIP: What It Means and How to Calculate It" → `xirr in sip` (5k/month, +900% YoY)
+- [ ] "Mutual Fund XIRR: What It Is and Why Your App Gets It Wrong" → `mutual fund xirr` (5k/month)
+- [ ] "Nifty 50 XIRR: Are You Actually Beating the Index?" → `nifty 50 xirr` (+900% trend)
+- [ ] "Zerodha XIRR Calculator — Why Console Gets It Wrong" → `zerodha xirr`
+- [ ] "Groww XIRR Calculator — The Missing Piece" → `xirr calculator groww`
+- [x] "XIRR vs CAGR" → blog post exists ✅
 
 ---
 
@@ -214,4 +277,4 @@ LinkedIn:    https://xirrledger.com?utm_source=linkedin&utm_medium=social&utm_ca
 
 ---
 
-*Last updated: 2026-02-28 (evening — Reddit session 1)*
+*Last updated: 2026-03-02 — keyword data from Google Keyword Planner added (real volumes + CPCs)*

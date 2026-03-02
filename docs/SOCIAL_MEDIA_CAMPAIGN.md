@@ -313,4 +313,73 @@ Find out yours → xirrcalculator.com
 
 ---
 
-*Last updated: 2026-02-23*
+---
+
+## Keyword Research (added 2026-03-02)
+
+### What people are actually searching for
+
+| Keyword | Volume | Competition | Difficulty | Our angle |
+|---|---|---|---|---|
+| `XIRR calculator` | Very High | Very High | Hard | Groww/Zerodha dominate — need differentiation |
+| `SIP returns calculator` | Very High | Very High | Hard | Adjacent — link XIRR to SIP use case |
+| `mutual fund returns calculator` | Very High | Very High | Hard | Same — educational content play |
+| `XIRR vs CAGR` | High | Medium-High | Medium | **Already have a blog post — push this** |
+| `how to calculate XIRR` | High | Medium | Medium | Tutorial content, step-by-step guide |
+| `XIRR calculator India` | High | Medium-High | Medium | Localised copy, India-specific context |
+| `XIRR calculator online` | Medium-High | Medium | Medium | Tool discovery intent |
+| `beat Nifty 50` | Medium-High | High | Hard | **Already have a blog post — push this** |
+| `portfolio returns calculator India` | Medium-High | High | Medium-Hard | Benchmarking focus |
+| `XIRR calculator Zerodha` | Medium | Medium | Medium | Broker-specific landing content |
+| `XIRR calculator Groww` | Medium | Medium | Medium | Broker-specific landing content |
+| `XIRR from broker ledger` | Medium | **Low** | **Easy** | **Our moat — nobody else does this** |
+| `ledger based XIRR` | Low-Medium | **Very Low** | **Very Easy** | **Own this keyword entirely** |
+
+### Key insight
+The top keywords (`XIRR calculator`, `SIP returns calculator`) are dominated by Groww, Zerodha, Bajaj Finserv, PolicyBazaar — impossible to outrank head-to-head.
+
+**Our opportunity is to own the niche**: `XIRR from broker ledger` / `ledger based XIRR` / `Zerodha XIRR accurate`. Low competition, exactly what we do, and no other tool does it properly.
+
+### Competitors ranking for "XIRR calculator"
+| Competitor | Strength | Weakness vs us |
+|---|---|---|
+| Groww calculator | Brand + traffic | Manual entry, not ledger-based, misses brokerage fees |
+| Zerodha Console | Integrated, trusted | Only Zerodha data, no cross-broker, no PDF report |
+| Bajaj Finserv | Trust, MF focus | MF-only, no stock ledger support |
+| ClearTax | Content depth | Generic XIRR, no broker integration |
+| PolicyBazaar | Scale | Insurance-focused, generic tool |
+| Angel One, 5Paisa | Content | Broker-specific, no cross-broker |
+
+**None of them do ledger-based, multi-broker, Nifty-benchmarked XIRR. That's our moat.**
+
+### Keyword → content mapping
+
+| Keyword to target | Where to target it |
+|---|---|
+| `ledger based XIRR` | Homepage title, calculator page, blog posts |
+| `XIRR from broker ledger` | Blog post needed: "How to calculate XIRR from your broker ledger" |
+| `XIRR calculator Zerodha` | Blog post needed: "Zerodha XIRR calculator — the accurate way" |
+| `XIRR calculator Groww` | Blog post needed: "Groww XIRR calculator — why the app number is wrong" |
+| `XIRR vs CAGR` | Existing blog post — promote heavily |
+| `beat Nifty 50` | Existing blog post — promote heavily |
+| `how to calculate XIRR` | How It Works page + Reddit/community content |
+| `broker XIRR wrong` | Existing blog post: "Your broker's XIRR is lying to you" |
+
+### Suggested new blog posts (keyword-driven)
+1. **"Zerodha XIRR Calculator — Why Console Gets It Wrong (And How to Fix It)"** → targets `XIRR calculator Zerodha`
+2. **"How to Calculate XIRR from Your Broker Ledger in 3 Steps"** → targets `how to calculate XIRR`, `XIRR from broker ledger`
+3. **"Groww XIRR Calculator — The Missing Piece"** → targets `XIRR calculator Groww`
+4. **"SIP XIRR vs CAGR: What Your Mutual Fund App Hides"** → targets `SIP returns calculator`, `XIRR vs CAGR`
+
+### Community keyword opportunities
+People actively searching/asking in communities:
+- "how do I calculate XIRR for my portfolio?" (r/IndiaInvestments, TradingQ&A)
+- "is the XIRR shown by Zerodha/Groww accurate?" (Reddit, TradingQ&A)
+- "XIRR Excel formula for SIPs"
+- "did I beat Nifty this year?" (r/personalfinanceindia)
+
+These are exact trigger phrases to monitor and reply to.
+
+---
+
+*Last updated: 2026-03-02*
