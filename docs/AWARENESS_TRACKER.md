@@ -78,7 +78,8 @@
 - Strategy: rank for what users search, then show why ledger-based is more accurate
 
 ### Blog posts needed (keyword-driven)
-- [ ] "XIRR in SIP: What It Means and How to Calculate It" → `xirr in sip` (5k/month, +900% YoY)
+- [x] "XIRR in SIP: The Smarter Way to Invest" → `xirr in sip` (5k/month, +900% YoY) ✅ 2026-03-02
+- [x] "How to Calculate XIRR: Why Excel Gets It Wrong and the Ledger Method Gets It Right" → `how to calculate xirr` (500/month) ✅ 2026-03-02
 - [ ] "Mutual Fund XIRR: What It Is and Why Your App Gets It Wrong" → `mutual fund xirr` (5k/month)
 - [ ] "Nifty 50 XIRR: Are You Actually Beating the Index?" → `nifty 50 xirr` (+900% trend)
 - [ ] "Zerodha XIRR Calculator — Why Console Gets It Wrong" → `zerodha xirr`
@@ -277,4 +278,29 @@ LinkedIn:    https://xirrledger.com?utm_source=linkedin&utm_medium=social&utm_ca
 
 ---
 
-*Last updated: 2026-03-02 — keyword data from Google Keyword Planner added (real volumes + CPCs)*
+---
+
+## Session Log — 2026-03-02
+
+### Content created
+| Type | URL | Target keyword |
+|---|---|---|
+| New page | `/how-to-calculate-xirr` | `how to calculate xirr` (500/mo), `xirr formula` (5k/mo) |
+| New blog | `/blog/xirr-in-sip-the-smarter-way-to-invest` | `xirr in sip` (5k/mo, +900% YoY) |
+| New blog | `/blog/how-to-calculate-xirr-excel-vs-ledger` | `how to calculate xirr` (500/mo), `xirr ledger method` |
+
+### Technical fixes
+- **remark-gfm** added (`npm install remark-gfm`) — markdown tables now render correctly in all blog posts
+- Blog `[slug]/page.tsx` — added `remarkPlugins: [remarkGfm]` to MDXRemote + table Tailwind prose classes
+
+### Navigation
+- Added "XIRR Formula" link → `/how-to-calculate-xirr` in both desktop and mobile nav
+
+### Sitemap
+- `/how-to-calculate-xirr` added at priority 0.8, changeFrequency monthly
+
+### Blog count: 7 → 9
+
+---
+
+*Last updated: 2026-03-02 (evening) — keyword research, 2 blogs + 1 page + nav + remark-gfm fix*

@@ -1,6 +1,6 @@
 # SEO Status — XIRR Ledger
 
-Last updated: 2026-03-02 (session complete)
+Last updated: 2026-03-02 (evening — new page + 2 blogs + remark-gfm)
 
 ---
 
@@ -11,14 +11,16 @@ Last updated: 2026-03-02 (session complete)
 | Root layout metadata | ✅ | Title, description, keywords, OG tags in `website/app/layout.tsx` |
 | Page-level metadata — all pages | ✅ Done 2026-03-02 | All 6 pages now have unique title, description, keywords, OG, canonical |
 | Dynamic blog metadata | ✅ | `generateMetadata` in `website/app/blog/[slug]/page.tsx` — title, description, OG, canonical, Twitter card, publishedTime |
-| sitemap.ts | ✅ | `website/app/sitemap.ts` — all static pages + 7 blog posts with priorities |
+| sitemap.ts | ✅ | `website/app/sitemap.ts` — all static pages + 9 blog posts with priorities |
 | robots.txt | ✅ | `website/public/robots.txt` — allows all, points to `https://xirrledger.com/sitemap.xml` |
 | Trailing slashes | ✅ | `next.config.ts` — `trailingSlash: true` |
 | Cache headers | ✅ | `.htaccess` — 1yr for `/_next/static/*`, no-cache for HTML |
 | Google Analytics 4 | ✅ | Lazy-loaded via `NEXT_PUBLIC_GA_ID`, disabled on dev |
 | Google Search Console | ✅ | Property verified, sitemap submitted, 14 pages indexed |
 | JSON-LD structured data | ✅ Done 2026-03-02 | WebSite schema (homepage), FAQPage schema (/faq), Article schema (all blog posts) |
-| OG images | ✅ Done 2026-03-02 | Default 1200×630 image for all static pages; unique per-post image for all 7 blog posts |
+| OG images | ✅ Done 2026-03-02 | Default 1200×630 image for all static pages; unique per-post image for all 9 blog posts |
+| MDX table rendering | ✅ Done 2026-03-02 | `remark-gfm` added — GFM tables render in all blog posts; prose-table Tailwind classes added |
+| `/how-to-calculate-xirr` page | ✅ Done 2026-03-02 | Dedicated formula page with full metadata, JSON-LD, sitemap entry (priority 0.8) |
 
 ### Page metadata added (2026-03-02)
 
@@ -30,6 +32,7 @@ Last updated: 2026-03-02 (session complete)
 | `/features` | Features — XIRR Ledger \| Ledger-Based XIRR Calculator |
 | `/how-it-works` | How It Works — XIRR Ledger \| 4 Simple Steps |
 | `/blog` | Blog — XIRR Ledger \| XIRR, Returns & Portfolio Analysis |
+| `/how-to-calculate-xirr` | How to Calculate XIRR — Formula, Steps & Ledger Method \| XIRR Ledger |
 
 Pattern used: `page.tsx` = server component with `metadata` export. Client logic extracted to `CalculatorClient.tsx` and `FAQClient.tsx`.
 
@@ -37,10 +40,10 @@ Pattern used: `page.tsx` = server component with `metadata` export. Client logic
 
 ## Remaining Gaps
 
-### 1. No structured data / JSON-LD (High impact — rich snippets)
-- No `FAQPage` schema on `/faq` — unlocks accordion rich results in Google
-- No `Article` schema on blog posts — shows author, date, breadcrumb in SERP
-- No `WebSite` / `Organization` schema on homepage — sitelinks searchbox
+### 1. ~~No structured data / JSON-LD~~ — ✅ Done 2026-03-02
+- `FAQPage` schema on `/faq` ✅
+- `Article` schema on all blog posts ✅
+- `WebSite` schema on homepage ✅
 
 ### 2. ~~Google Search Console verification~~ — ✅ Already done
 - Property `xirrledger.com` verified, sitemap submitted (14 pages discovered, last read 2 Mar 2026)
@@ -68,6 +71,8 @@ Pattern used: `page.tsx` = server component with `metadata` export. Client logic
 | `are-you-beating-nifty50` | Are You Actually Beating Nifty 50? | 2026-02-18 | beating Nifty 50, XIRR vs Nifty 50, benchmark comparison |
 | `xirr-vs-cagr-which-one-shows-real-returns` | XIRR vs CAGR: Why the Return % on Your Portfolio App Is Lying to You | 2026-02-24 | XIRR vs CAGR, CAGR limitations, XIRR for SIP investors |
 | `how-dividends-and-sgb-interest-are-handled-in-xirr` | Dividends Are Part of Your Returns | 2026-02-27 | dividend XIRR, Zerodha dividend report, how dividends affect XIRR |
+| `xirr-in-sip-the-smarter-way-to-invest` | XIRR in SIP: The Smarter Way to Invest | 2026-03-02 | xirr in sip (5k/mo +900%), xirr meaning in sip (500/mo +900%) |
+| `how-to-calculate-xirr-excel-vs-ledger` | How to Calculate XIRR: Why Excel Gets It Wrong and the Ledger Method Gets It Right | 2026-03-02 | how to calculate xirr (500/mo), how to calculate xirr manually, xirr excel calculation |
 
 ---
 
@@ -79,7 +84,8 @@ Pattern used: `page.tsx` = server component with `metadata` export. Client logic
 /how-it-works/       - How It Works     priority 0.8, monthly
 /features/           - Features         priority 0.7, monthly
 /blog/               - Blog listing     priority 0.8, weekly
-/blog/[slug]/        - Blog post        priority 0.8, monthly (× 7)
+/blog/[slug]/        - Blog post        priority 0.8, monthly (× 9)
+/how-to-calculate-xirr/ - XIRR Formula priority 0.8, monthly
 /faq/                - FAQ              priority 0.7, monthly
 /contact/            - Contact          priority 0.5, yearly
 ```
@@ -93,7 +99,8 @@ Pattern used: `page.tsx` = server component with `metadata` export. Client logic
 | Root metadata | `website/app/layout.tsx` |
 | Calculator client component | `website/app/calculator/CalculatorClient.tsx` |
 | FAQ client component | `website/app/faq/FAQClient.tsx` |
-| Blog dynamic metadata | `website/app/blog/[slug]/page.tsx` |
+| Blog dynamic metadata | `website/app/blog/[slug]/page.tsx` (+ remarkGfm, table prose classes) |
+| XIRR Formula page | `website/app/how-to-calculate-xirr/page.tsx` |
 | Sitemap generator | `website/app/sitemap.ts` |
 | robots.txt | `website/public/robots.txt` |
 | Blog content (MDX) | `website/content/blog/*.mdx` |
