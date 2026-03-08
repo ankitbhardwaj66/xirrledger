@@ -1,4 +1,24 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: 'https://xirrledger.com/',
+  },
+};
+
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'XIRR Ledger',
+  url: 'https://xirrledger.com',
+  description: 'The only ledger-based XIRR calculator for Indian investors. Upload your Zerodha, Groww, or Fyers ledger and get accurate portfolio returns with Nifty 50 benchmark comparison.',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: 'https://xirrledger.com/blog/?q={search_term_string}',
+    'query-input': 'required name=search_term_string',
+  },
+};
 
 /* ─────────────────────────────────────────────
    Reusable glass card style
@@ -26,6 +46,7 @@ const niftyFill     = niftyPath     + ' L 490,215 L 40,215 Z';
 export default function Home() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       {/* ═══════════════════════════ HERO ═══════════════════════════ */}
       <section style={{ background: '#0f172a', position: 'relative', overflow: 'hidden', paddingTop: '6rem', paddingBottom: '6rem' }}>
 
@@ -114,7 +135,7 @@ export default function Home() {
               </div>
 
               {/* Trust */}
-              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '13px', color: '#475569', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '13px', color: '#64748b', marginBottom: '10px' }}>
                 <span>✓ Free to use</span>
                 <span>✓ No registration</span>
                 <span>✓ Privacy-first</span>

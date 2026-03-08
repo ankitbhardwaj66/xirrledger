@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getPostBySlug, getAllPosts } from '@/lib/blog';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import { FaArrowLeft, FaDownload, FaArrowRight } from 'react-icons/fa';
+import remarkGfm from 'remark-gfm';
 
 const GOLD = '#f59e0b';
 
@@ -54,8 +55,32 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
 
   if (!post) notFound();
 
+  const articleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    description: post.excerpt,
+    datePublished: post.date,
+    dateModified: post.date,
+    author: {
+      '@type': 'Person',
+      name: 'Ankit Bhardwaj',
+      url: 'https://xirrledger.com',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'XIRR Ledger',
+      url: 'https://xirrledger.com',
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': `https://xirrledger.com/blog/${slug}/`,
+    },
+  };
+
   return (
     <article style={{ background: '#0f172a', minHeight: '100vh', paddingTop: '4rem', paddingBottom: '6rem' }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
       <div className="container-custom">
 
         {/* ── Back button ── */}
@@ -95,9 +120,9 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
 
         {/* ── Article Content ── */}
         <div
-          className="max-w-[760px] mx-auto prose prose-invert prose-lg prose-headings:font-bold prose-headings:tracking-tight prose-a:text-amber-400 prose-a:no-underline hover:prose-a:underline prose-strong:text-white prose-li:text-slate-300 prose-p:text-slate-300 prose-headings:text-white prose-pre:bg-slate-800 prose-pre:text-gray-100 prose-blockquote:border-amber-500 prose-blockquote:text-slate-400"
+          className="max-w-[760px] mx-auto prose prose-invert prose-lg prose-headings:font-bold prose-headings:tracking-tight prose-a:text-amber-400 prose-a:no-underline hover:prose-a:underline prose-strong:text-white prose-li:text-slate-300 prose-p:text-slate-300 prose-headings:text-white prose-pre:bg-slate-800 prose-pre:text-gray-100 prose-blockquote:border-amber-500 prose-blockquote:text-slate-400 prose-table:w-full prose-thead:border-b prose-thead:border-slate-700 prose-th:text-amber-400 prose-th:font-semibold prose-th:py-2 prose-th:px-3 prose-th:text-left prose-td:py-2 prose-td:px-3 prose-td:text-slate-300 prose-tr:border-b prose-tr:border-slate-800"
         >
-          <MDXRemote source={post.content} />
+          <MDXRemote source={post.content} options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }} />
         </div>
 
         {/* ── CTA ── */}

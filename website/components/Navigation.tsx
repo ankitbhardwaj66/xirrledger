@@ -45,6 +45,7 @@ export default function Navigation() {
               { href: '/', label: 'Home' },
               { href: '/features', label: 'Features' },
               { href: '/how-it-works', label: 'How It Works' },
+              { href: '/how-to-calculate-xirr', label: 'XIRR Formula' },
               { href: '/blog', label: 'Blog' },
               { href: '/faq', label: 'FAQ' },
               { href: '/contact', label: 'Contact' },
@@ -90,6 +91,8 @@ export default function Navigation() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
+            aria-label={isOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isOpen}
             style={{ color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}
             className="md:hidden"
           >
@@ -117,6 +120,7 @@ export default function Navigation() {
               { href: '/', label: 'Home' },
               { href: '/features', label: 'Features' },
               { href: '/how-it-works', label: 'How It Works' },
+              { href: '/how-to-calculate-xirr', label: 'XIRR Formula' },
               { href: '/blog', label: 'Blog' },
               { href: '/faq', label: 'FAQ' },
               { href: '/contact', label: 'Contact' },

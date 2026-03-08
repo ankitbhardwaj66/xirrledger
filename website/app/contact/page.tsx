@@ -1,7 +1,21 @@
-'use client';
-
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { FaEnvelope, FaWhatsapp, FaQuestionCircle, FaCommentDots, FaClipboardList } from 'react-icons/fa';
+
+export const metadata: Metadata = {
+  title: 'Contact Us — XIRR Ledger',
+  description: 'Have questions or feedback about XIRR Ledger? Reach out via email or WhatsApp. We typically respond within 24 hours.',
+  openGraph: {
+    title: 'Contact Us — XIRR Ledger',
+    description: 'Have questions or feedback about XIRR Ledger? Reach out via email or WhatsApp.',
+    type: 'website',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630 }],
+    url: 'https://xirrledger.com/contact/',
+  },
+  alternates: {
+    canonical: 'https://xirrledger.com/contact/',
+  },
+};
 
 const GOLD = '#f59e0b';
 const NAVY = '#0f172a';

@@ -1,0 +1,174 @@
+---
+title: "How to Calculate XIRR: Why Excel Gets It Wrong and the Ledger Method Gets It Right"
+date: "2026-03-02"
+author: "XIRR Ledger Team"
+excerpt: "There are three ways to calculate XIRR. Two of them are wrong or incomplete. Tracking individual stock trades in Excel misses thousands in charges. Using the ledger with Excel works — but stops short. Here's the full picture."
+category: "Investment Insights"
+keywords:
+  - how to calculate xirr
+  - how to calculate xirr manually
+  - how is xirr calculated
+  - xirr excel calculation
+  - calculate xirr from broker ledger
+  - xirr formula excel
+  - how to calculate xirr in mutual fund
+  - xirr calculation india
+  - xirr ledger method
+  - broker charges in xirr
+---
+
+There are three ways most investors try to calculate XIRR. They're not equal.
+
+**Method 1** — Track individual stock trades in Excel. Fast to start. Gives you a number that feels right. But it's wrong, and the complexity explodes fast.
+
+**Method 2** — Use your broker ledger with Excel's `=XIRR()`. This works. The number is accurate. But it's slow, manual, and stops before giving you the full picture.
+
+**Method 3** — Upload your ledger to a tool that does it automatically, handles multiple accounts, counts dividends, and benchmarks correctly against Nifty 50.
+
+Here's why each one works — or doesn't.
+
+---
+
+## Method 1: Excel + Stock Trades (The Wrong Way)
+
+Most tutorials tell you to do this:
+
+**Step 1:** Open Excel. Two columns: Date and Amount.
+
+**Step 2:** Enter every stock purchase as a negative:
+
+```
+01-Jan-2023   -10,000   (bought HDFC Bank)
+15-Feb-2023   -8,500    (bought Infosys)
+10-Apr-2023   -12,000   (bought Reliance)
+```
+
+**Step 3:** Add your portfolio value as a positive:
+
+```
+02-Mar-2026   +65,000   (portfolio value today)
+```
+
+**Step 4:** Run `=XIRR()`. Get a number. Feel satisfied.
+
+### Why it goes wrong — and gets complex fast
+
+**Problem 1: You're missing every rupee the broker and government took.**
+
+Every trade comes with charges deducted directly from your account. You never see them as a separate line item when buying stocks — they just silently reduce your ledger balance.
+
+| Charge | Rate | On ₹10,000 trade |
+|---|---|---|
+| STT (delivery) | 0.1% buy + 0.1% sell | ₹20 per round trip |
+| Brokerage | ₹20/order (Zerodha flat) | ₹20 per order |
+| Exchange charges | ~0.003% | ₹0.30 |
+| GST (on brokerage + exchange) | 18% | ₹3.65 |
+| Stamp duty | 0.015% on buy | ₹1.50 |
+
+For a typical investor making 80 trades over 3 years (₹12L turnover), these charges add up to **₹5,000–₹6,000** — money that left your account and never went into a stock. If you only track stock purchases, your XIRR is pretending this money didn't exist. The result: your calculated XIRR is 1–2% higher than your real return.
+
+**Problem 2: Complexity explodes with a real portfolio.**
+
+Tracking individual stocks sounds simple until you face reality:
+
+- You've made 200+ buy orders across 3 years
+- You've sold some positions partially, others fully
+- You received dividends on some stocks (are those inflows? Where do they go?)
+- You have F&O trades mixed in with equity
+- You have two broker accounts — Zerodha for stocks, Groww for mutual funds
+
+Now you're managing a spreadsheet with 400+ rows, trying to figure out how to treat dividends, wrestling with whether inter-account transfers double-count your capital, and wondering why Excel keeps returning `#NUM!` errors because your cash flow signs are inconsistent.
+
+**The stock trade approach doesn't scale. It breaks.**
+
+---
+
+## Method 2: Excel + Ledger (Better — But Manual)
+
+Here's the correct approach for anyone willing to do it manually.
+
+Forget tracking individual stocks. **Use your ledger instead.**
+
+Your broker's ledger is the master record of every rupee that moved in or out of your account. Every fund transfer you made. Every withdrawal. All charges — already deducted. Dividends received — already credited.
+
+The ledger doesn't care what you bought or sold. It just tracks the actual flow of money.
+
+**How to do it:**
+
+1. Download your Zerodha Fund Statement (Console → Reports → Fund Statement → All Segments → CSV)
+2. Open in Excel. Filter for rows where "Particulars" shows "Funds transferred", "UPI", "IMPS" — these are your actual deposits into the account
+3. Find all withdrawal rows too
+4. Create a two-column table: Date | Amount (deposits = negative, withdrawals = positive)
+5. Add today's portfolio value as a positive entry on today's date
+6. Run `=XIRR(amounts_column, dates_column)`
+
+**Why this works:**
+
+Every charge you ever paid — STT, brokerage, GST, stamp duty — was deducted from your ledger balance. So when you transferred ₹1,00,000 in and the account only grew by ₹94,000 after charges, the ledger captured that. You don't need to track charges separately. They're already baked into the outcome.
+
+**The number this gives you is your true XIRR — net of all costs, on exact dates.**
+
+This typically takes 45–90 minutes the first time. You need to know which ledger rows are actual cash flows and which are just internal account movements. But the result is accurate.
+
+**Where it stops short:**
+
+The manual ledger method gives you your XIRR. But it doesn't answer the full question:
+- What if you have Zerodha *and* Groww *and* Fyers?
+- Your dividends — are they being counted correctly?
+- Did you actually beat Nifty 50, accounting for *when* you invested?
+
+That's where Method 3 comes in.
+
+---
+
+## Method 3: XIRRLedger (Ledger-Based, Automated, Complete)
+
+[XIRRLedger](/) does exactly what the ledger method does — but automated, multi-account, with dividends, and with a correct Nifty 50 benchmark.
+
+### What it does
+
+**Upload as many ledgers as you want.** Zerodha CSV, Groww PDF, Fyers CSV — one account or five, from different brokers. XIRRLedger merges all cash flows into one timeline and calculates a single combined XIRR. No manual merging. No risk of double-counting transfers between accounts.
+
+**Dividends are counted.** If you have a Zerodha dividend statement, upload it. Dividends are part of your return — they're cash that came back to you from your investments. XIRRLedger adds them as inflows on the correct dates, so your XIRR reflects the full picture including payouts.
+
+**The Nifty 50 comparison is done correctly.** This is the part most people get wrong.
+
+A lot of tools just show "Nifty 50 returned 14% this year." That's not a fair comparison. If you invested ₹1L in January and another ₹5L in October, your portfolio's opportunity cost isn't a simple annual return — it depends heavily on when your money entered the market.
+
+XIRRLedger takes your **exact cash flows on their exact dates** and calculates what your XIRR would have been if you had invested that same money into Nifty 50 instead. Same ₹1L in January, same ₹5L in October — just into the index instead of your stocks.
+
+This is an apples-to-apples benchmark. Your XIRR vs. what Nifty 50 would have given you on the same capital deployed at the same times.
+
+If your XIRR is higher — your stock picking is actually working. If it's lower — you'd have been better off in an index fund.
+
+---
+
+## Side-by-Side Summary
+
+| | Excel + Stock Trades | Excel + Ledger | XIRRLedger |
+|---|---|---|---|
+| **Accuracy** | ❌ Misses all charges | ✅ Fully accurate | ✅ Fully accurate |
+| **Complexity** | ❌ Explodes with real portfolios | ⚠️ Manual, 45–90 min | ✅ Automatic |
+| **Multi-account** | ❌ Nightmare to merge | ⚠️ Possible but painful | ✅ Upload all, done |
+| **Dividends counted** | ❌ Usually ignored | ⚠️ Manual to add | ✅ Upload dividend statement |
+| **Nifty 50 benchmark** | ❌ Not included | ❌ Not included | ✅ Correct cash-flow matched benchmark |
+
+---
+
+## The Bottom Line
+
+The formula isn't the problem. `=XIRR()` works the same in Excel as in XIRRLedger.
+
+The question is what data you feed it.
+
+- Feed it stock trades → you miss charges, complexity kills you
+- Feed it your ledger → you get an accurate number, but you stop there
+- Feed it all your ledgers + dividends, and let the tool benchmark against Nifty 50 on the same cash flows → you get the complete answer
+
+XIRR is not just a number. It's only useful when it reflects every cost, every account, and is benchmarked against what you could have done instead.
+
+---
+
+**Ready to calculate your true XIRR?** [Upload your ledger →](/calculator)
+
+**Want to understand the formula first?** [How XIRR is calculated →](/how-to-calculate-xirr)

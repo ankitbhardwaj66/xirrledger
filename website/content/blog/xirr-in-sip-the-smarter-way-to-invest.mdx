@@ -1,0 +1,182 @@
+---
+title: "XIRR in SIP: Why Smart Investors Are Ditching Fixed Dates (And How to Measure It)"
+date: "2026-03-02"
+author: "XIRR Ledger Team"
+excerpt: "A fixed monthly SIP date is convenient — but it's not optimal. Smarter investors buy on dips: specific stocks, irregular dates, triggered by market falls. The catch? Neither Zerodha nor Groww will tell you your real SIP returns. That's where XIRR comes in."
+category: "Investment Strategy"
+keywords:
+  - xirr in sip
+  - xirr meaning in sip
+  - sip xirr
+  - sip xirr calculator
+  - xirr calculator for sip
+  - how to calculate xirr for sip
+  - irregular sip returns
+  - xirr mutual fund sip
+  - smart sip strategy india
+  - sip returns calculator
+  - xirr ledger sip
+---
+
+Most investors treat SIP like a subscription. Pick a fund, pick a date, auto-debit. Every month, same day, same amount. Done.
+
+This works. But it's not the best you can do.
+
+There's a smarter way to SIP — one that uses the market's own volatility to your advantage. The catch is that it creates irregular cash flows that your broker can't (or won't) calculate returns for. That's where **XIRR in SIP** becomes the only metric that tells you the truth.
+
+## The Old Way: Regular SIP in a Mutual Fund
+
+A regular mutual fund SIP looks like this:
+
+```
+15th of every month → ₹5,000 → Nifty 50 Index Fund
+No matter what the market is doing.
+```
+
+The logic is sound: you remove emotion from investing. You don't try to time the market. You buy consistently and average out over time.
+
+But here's the problem: **you're buying even when valuations are stretched.** When the Nifty is at an all-time high and every analyst is screaming overvalued — your auto-debit still fires on the 15th. You buy at the top as faithfully as you buy at the bottom.
+
+A fixed SIP date treats every market condition as equal. The market disagrees.
+
+## The New Way: Irregular SIP in Specific Stocks
+
+Now consider a different approach.
+
+Instead of a mutual fund on a fixed date, you pick a fundamentally strong stock — say a large-cap you've researched and believe in for the next 5–7 years. And instead of buying every month on the 15th, you set a simple rule:
+
+> **Only buy when the stock is down 5% or more from its recent peak. Never buy just because the calendar says so.**
+
+Your buy triggers look like this:
+
+```
+March 2024:    No buy (market flat)
+April 2024:    ₹10,000 — stock fell 7% after weak quarterly results
+May 2024:      No buy (recovered)
+June 2024:     ₹15,000 — global selloff, stock down 9%
+July 2024:     No buy
+August 2024:   No buy
+September 2024: ₹8,000 — Fed rate decision triggered a 5% drop
+October 2024:  No buy
+November 2024: ₹20,000 — US election volatility, stock down 11%
+```
+
+In 9 months you bought 4 times — never on a fixed date, always at a discount.
+
+Compare this to a fixed SIP buyer who bought 9 times, including 5 times when the stock was near its highs. **You paid less per unit, on average, every single time.**
+
+## Why This Strategy Works
+
+Markets don't fall randomly. Big drops are usually caused by predictable triggers:
+
+- **Global events**: US Fed rate decisions, geopolitical news, oil shocks
+- **Domestic events**: RBI policy, election results, Budget announcements
+- **Earnings disappointments**: sector-wide or stock-specific quarterly misses
+- **Panic contagion**: when global markets fall 5%, Indian markets follow within hours
+
+These events are noisy and scary — but if you're holding a fundamentally good stock, they're buying opportunities. The business hasn't changed. The price has.
+
+A fixed SIP buyer misses these windows because the auto-debit doesn't care what the market did yesterday. A rule-based dip buyer exploits them systematically, without emotional second-guessing.
+
+**The result: a higher number of units purchased per rupee invested, compounded over years.**
+
+## The Problem: How Do You Calculate Returns from Irregular SIPs?
+
+This is where it gets tricky.
+
+Open Zerodha Console. Go to your P&L. It shows you absolute gain/loss and a percentage. But it doesn't show your annualized return on your irregular SIP.
+
+Open Groww. Same story — you get overall portfolio value, maybe a rough XIRR on your mutual funds, but not on your stock SIPs.
+
+**Why? Because calculating XIRR for irregular SIPs is genuinely hard.**
+
+A fixed SIP is easy to measure — same amount, same date, regular intervals. You can approximate it. But when you've invested ₹10,000 in April, ₹15,000 in June, ₹8,000 in September, and ₹20,000 in November — all on different dates, all different amounts — only one formula handles this correctly.
+
+That formula is **XIRR**.
+
+## What XIRR in SIP Actually Means
+
+XIRR — Extended Internal Rate of Return — treats each cash flow independently.
+
+It takes your actual buy dates, actual amounts, and your current holding value, and finds the single annualized rate that explains your exact outcome.
+
+```
+April 12, 2024:    -₹10,000  (bought on dip)
+June 3, 2024:      -₹15,000  (bought on global selloff)
+September 18, 2024: -₹8,000  (bought on Fed day)
+November 6, 2024:  -₹20,000  (bought on election volatility)
+March 2, 2026:     +₹85,000  (current value)
+
+XIRR = 28.4% annualized
+```
+
+If you had done a regular ₹5,000 monthly SIP instead, you'd have invested ₹55,000 over the same period and your XIRR would be around 19–21% — because you bought at all prices, not just the dips.
+
+Same stock. Same holding period. Smarter entry → better XIRR.
+
+**XIRR is the only way to compare these two strategies on an apples-to-apples basis.**
+
+## Why Zerodha and Groww Don't Show Your SIP XIRR
+
+Zerodha shows you absolute P&L. Groww shows you overall portfolio return. Neither shows you XIRR on your stock purchases — especially not irregular ones.
+
+The reason is simple: they don't have all the information they need.
+
+Your XIRR depends on:
+1. Every transaction date and amount (they have this)
+2. Your **net cash in and out** of the account (they have this per-account, but not across brokers)
+3. Your **current holding value** entered by you today (they show market value, but XIRR needs you to define the terminal point)
+
+More importantly, **your stock SIP might span multiple broker accounts.** If you bought HDFC Bank across Zerodha and Fyers, no single platform sees the full picture.
+
+So they either show you a rough approximation (which ignores timing) or nothing at all.
+
+## How to Calculate XIRR for Your SIP
+
+### The manual way (Excel)
+
+1. Download your ledger from Zerodha Console → Fund Statement → All Segments
+2. In a spreadsheet, create two columns: **Date** and **Amount**
+3. Every buy is negative (cash out): `-₹10,000`
+4. Your current portfolio value is positive (cash in today): `+₹85,000`
+5. Use `=XIRR(amounts_range, dates_range)`
+
+This works — but it takes 30–60 minutes the first time, and you have to redo it every time you want an updated number.
+
+### The automatic way (XIRRLedger)
+
+[XIRRLedger](/) is built specifically for this.
+
+Upload your broker ledger file — Zerodha CSV, Groww PDF, Fyers CSV. Enter your current holding value. XIRRLedger:
+
+- Reads your actual transaction dates and amounts from the ledger
+- Identifies your deposits and withdrawals automatically
+- Calculates your XIRR on the exact cash flows — no approximations
+- Compares your return against the Nifty 50 XIRR on the same cash flows
+
+So you don't just know your SIP XIRR — you know whether your dip-buying strategy actually beat the index, or whether you would have been better off in a plain index fund.
+
+**That comparison is what makes the number meaningful.**
+
+## The Verdict: Which SIP Style Is Better?
+
+There's no universal answer — it depends on your discipline and your stock selection. But here's the honest breakdown:
+
+| | Regular SIP (Mutual Fund) | Dip-Based SIP (Specific Stocks) |
+|---|---|---|
+| **Effort** | Zero — fully automated | Active — requires watching + rules |
+| **Diversification** | Built-in | You manage it |
+| **Average buy price** | Market average | Below market average (if disciplined) |
+| **Potential XIRR** | Index-level | Higher (if stock selection is right) |
+| **Risk** | Index risk only | Stock-specific risk |
+| **XIRR measurability** | Easy | Needs a tool like XIRRLedger |
+
+If you're willing to put in the work — follow global events, set clear dip rules, pick quality stocks you'll hold for years — a dip-based irregular SIP is worth doing. But only if you measure it correctly.
+
+Gut feel isn't a strategy. **Your XIRR is.**
+
+---
+
+**Ready to calculate your SIP XIRR?** Upload your broker ledger and get your actual annualized return in minutes. [Calculate Your XIRR →](/calculator)
+
+**Want to see what the report looks like?** [Download Sample Report →](/sample_report.pdf)
