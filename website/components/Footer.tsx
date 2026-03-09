@@ -151,15 +151,6 @@ export default function Footer() {
             </a>
             . All rights reserved.
           </p>
-          <p style={{
-            color: '#64748b', fontSize: '0.78rem',
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: '6px', padding: '6px 14px',
-            display: 'inline-block',
-          }}>
-            ⚠ Disclaimer: This tool is for informational purposes only. Always verify calculations independently and consult a financial advisor.
-          </p>
         </div>
       </div>
     </footer>
