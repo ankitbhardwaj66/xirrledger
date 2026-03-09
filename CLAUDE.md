@@ -5,19 +5,23 @@
 When the user says "push" (or "deploy frontend", "push frontend"):
 
 1. Check `git status` / `git diff --stat` for any changes under `website/` (i.e. `website/app/`, `website/content/`, `website/lib/`, etc.)
-2. If there are frontend changes (anything inside `website/` **except** `website/out/`):
+2. If there are frontend changes (anything inside `website/` — `out/` is gitignored, no need to stage it):
    - `cd website && rm -rf out/`
    - On `dev` branch: `npm run build:dev` — on `main` branch: `npm run build`
    - `cd ..` (back to repo root)
-   - `git add website/out/`
-   - Commit the rebuilt `out/` together with the source changes (or as a follow-up commit if source was already committed)
-3. Stage and commit any remaining uncommitted changes (Lambda, source files, etc.)
+3. Stage and commit any remaining uncommitted source changes (Lambda, source files, etc.)
 4. `git push`
-5. SSH into Hostinger and deploy:
-   - **main branch:** `ssh -p 65002 u889244618@46.28.45.163 "cd /home/u889244618/domains/xirrledger.com/public_html/xirrcalculator/website && git pull origin main && ./deploy.sh"`
-   - **dev branch:** `ssh -p 65002 u889244618@46.28.45.163 "cd /home/u889244618/domains/xirrledger.com/public_html/dev/xirrcalculator/website && git pull origin dev && ./deploy.sh"`
+5. Rsync the built `out/` to Hostinger:
+   - **main branch:**
+     ```bash
+     rsync -avz --delete --exclude=xirrcalculator --exclude=dev -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
+     ```
+   - **dev branch:**
+     ```bash
+     rsync -avz --delete --exclude=xirrcalculator -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/dev/
+     ```
 
-> Never skip `rm -rf out/` — stale files from previous builds must be cleared first.
+> `website/out/` is gitignored — never commit it. Always rsync it directly to the server.
 
 ## Lambda Deploy
 
@@ -33,28 +37,30 @@ No frontend build needed for Lambda-only changes.
 
 ## Branches
 
-| Branch | URL | Hostinger path |
+| Branch | URL | Web root on Hostinger |
 |---|---|---|
-| `main` | xirrledger.com | `/home/u889244618/domains/xirrledger.com/public_html/xirrcalculator/` |
-| `dev` | dev.xirrledger.com | `/home/u889244618/domains/xirrledger.com/public_html/dev/xirrcalculator/` |
+| `main` | xirrledger.com | `/home/u889244618/domains/xirrledger.com/public_html/` |
+| `dev` | dev.xirrledger.com | `/home/u889244618/domains/xirrledger.com/public_html/dev/` |
 
 - All new development goes on the `dev` branch.
 - Merge `dev` → `main` only when ready for production.
 - When the user says "push" without specifying a branch, push the **current branch** (could be `dev` or `main`).
 
-## Hostinger Deploy (frontend — run on server via SSH)
+## Hostinger Deploy (frontend — rsync from local)
 
 **SSH command:** `ssh -p 65002 u889244618@46.28.45.163`
 
 **Production (main):**
 ```bash
-ssh -p 65002 u889244618@46.28.45.163 "cd /home/u889244618/domains/xirrledger.com/public_html/xirrcalculator/website && git pull origin main && ./deploy.sh"
+rsync -avz --delete --exclude=xirrcalculator --exclude=dev -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
 ```
 
 **Dev (dev branch):**
 ```bash
-ssh -p 65002 u889244618@46.28.45.163 "cd /home/u889244618/domains/xirrledger.com/public_html/dev/xirrcalculator/website && git pull origin dev && ./deploy.sh"
+rsync -avz --delete --exclude=xirrcalculator -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/dev/
 ```
+
+> `--exclude=xirrcalculator` and `--exclude=dev` protect existing server directories from being deleted by `--delete`.
 
 ## AWS / Terraform
 
@@ -65,7 +71,7 @@ ssh -p 65002 u889244618@46.28.45.163 "cd /home/u889244618/domains/xirrledger.com
 ## How env files work
 
 `NEXT_PUBLIC_*` values are **baked into `out/` at build time on your local machine**.
-The server never runs a build — it just does `git pull` to get the pre-built `out/`.
+The server never runs a build — it receives files via rsync.
 
 Two env files are committed to git:
 - `website/.env.dev` — dev API (dev.xirrledger.com), no GA
@@ -85,24 +91,19 @@ No manual file swapping needed — just use the right build command.
 
 ## Merging dev → main
 
-**Always delete `website/out/` from main before merging**, to avoid rename/rename and modify/delete conflicts (Next.js hashes change every build).
+Since `out/` is now gitignored, merges are clean — no more `out/` conflicts.
 
 ```bash
 # On main branch:
-git rm -r --cached website/out/ && rm -rf website/out/
-git commit -m "Remove out/ before merge"
 git merge dev
-# If modify/delete conflicts remain in out/:
-git checkout dev -- website/out/
-git add website/out/ && git commit -m "Resolve out/ conflicts (take dev)"
-# Rebuild with prod env:
-cd website && npm run build && cd ..
-git add website/out/ && git commit -m "Rebuild out/ with prod env"
 git push origin main
+# Then rsync the freshly built out/ to prod:
+cd website && rm -rf out/ && npm run build && cd ..
+rsync -avz --delete --exclude=xirrcalculator --exclude=dev -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
 ```
 
 ## General Rules
 
-- **Never run `deploy.sh` locally** — it runs on the remote Hostinger server only.
+- **Never commit `website/out/`** — it is gitignored and deployed via rsync only.
 - Build commands: `npm run build:dev` (dev branch) or `npm run build` (main branch).
-- The `website/out/` directory is committed to git and served by Hostinger via `git pull`.
+- `deploy.sh` on the server is no longer used — rsync replaces it.

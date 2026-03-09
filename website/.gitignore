@@ -13,6 +13,9 @@
 # Production
 /build
 
+# Static export (deployed via rsync, not git)
+/out
+
 # Misc
 .DS_Store
 *.pem
