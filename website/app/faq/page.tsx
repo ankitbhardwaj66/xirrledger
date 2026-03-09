@@ -26,7 +26,7 @@ const faqSchema = {
       name: 'Is my data safe? Do you store my financial information?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Your ledger files are processed securely and never stored on our servers. Reports are auto-deleted after 24 hours. No registration or account creation is required.',
+        text: 'Your ledger files are processed securely on our servers. No registration or account creation is required.',
       },
     },
     {

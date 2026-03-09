@@ -140,16 +140,6 @@ export default function Home() {
                 <span>✓ No registration</span>
                 <span>✓ Privacy-first</span>
               </div>
-              <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: '7px',
-                background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)',
-                borderRadius: '8px', padding: '7px 12px', fontSize: '12px', color: '#86efac',
-              }}>
-                <svg style={{ width: '13px', height: '13px', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11V7a4 4 0 00-8 0v4M5 11h14a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1v-7a1 1 0 011-1z" />
-                </svg>
-                We never store your financial data.
-              </div>
             </div>
 
             {/* ── Right: Animated Chart Card ── */}
@@ -482,7 +472,7 @@ export default function Home() {
               {
                 icon: <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>,
                 title: '100% Private & Secure',
-                desc: 'Files processed on secure servers, deleted within 24 hours. No registration or account needed.',
+                desc: 'Files processed on secure servers. No registration or account needed.',
               },
             ].map(({ icon, title, desc }, i) => (
               <div key={i} className="feature-card" style={{ ...glass, padding: '24px' }}>

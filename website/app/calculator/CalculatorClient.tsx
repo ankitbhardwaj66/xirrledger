@@ -1185,7 +1185,7 @@ export default function CalculatorPage() {
                 )}
 
                 <p style={{ fontSize: '0.75rem', color: '#334155', marginTop: 10, marginBottom: 0 }}>
-                  Your PAN is used only to unlock the PDF. We never store it.
+                  Your PAN is used only to unlock the PDF.
                 </p>
 
                 {allGrowwPansEntered && (

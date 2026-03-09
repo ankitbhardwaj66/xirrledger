@@ -176,8 +176,7 @@ const faqCategories = [
           <div>
             <p style={{ marginBottom: '8px' }}><strong style={{ color: '#e2e8f0' }}>Absolutely safe!</strong> Your privacy and security are our top priorities:</p>
             <ul style={{ paddingLeft: '20px', lineHeight: 2 }}>
-              <li>Your ledger files are processed securely and <strong style={{ color: '#e2e8f0' }}>never stored</strong> on our servers</li>
-              <li>Reports are <strong style={{ color: '#e2e8f0' }}>auto-deleted after 24 hours</strong></li>
+              <li>Your ledger files are processed securely on our servers</li>
               <li>No registration or account creation required</li>
               <li>No tracking or analytics on your financial data</li>
             </ul>

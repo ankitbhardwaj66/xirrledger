@@ -68,7 +68,7 @@ const currentFeatures = [
   {
     icon: <FaShieldAlt size={24} color={GOLD} />,
     title: 'Privacy & Security',
-    description: 'Your financial data is never stored on our servers. Reports are auto-deleted 15 minutes after creation. No registration required.',
+    description: 'Your data is processed on secure servers. No registration required.',
   },
   {
     icon: <FaMagic size={24} color={GOLD} />,

@@ -41,7 +41,7 @@ const steps = [
     icon: <FaUpload size={22} color={GOLD} />,
     title: 'Upload Files',
     description: 'Upload your ledger files to the calculator. You can upload multiple files at once — from the same broker or different brokers. Files from the same account (PAN) are automatically combined.',
-    note: 'Your files are processed securely and never stored on our servers.',
+    note: 'Your files are processed securely on our servers.',
   },
   {
     icon: <FaWallet size={22} color={GOLD} />,
