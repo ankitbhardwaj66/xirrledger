@@ -14,11 +14,11 @@ When the user says "push" (or "deploy frontend", "push frontend"):
 5. Rsync the built `out/` to Hostinger:
    - **main branch:**
      ```bash
-     rsync -avz --delete --exclude=xirrcalculator --exclude=dev -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
+     rsync -avz --delete --exclude=dev -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
      ```
    - **dev branch:**
      ```bash
-     rsync -avz --delete --exclude=xirrcalculator -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/dev/
+     rsync -avz --delete -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/dev/
      ```
 
 > `website/out/` is gitignored — never commit it. Always rsync it directly to the server.
@@ -52,15 +52,15 @@ No frontend build needed for Lambda-only changes.
 
 **Production (main):**
 ```bash
-rsync -avz --delete --exclude=xirrcalculator --exclude=dev -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
+rsync -avz --delete --exclude=dev -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
 ```
 
 **Dev (dev branch):**
 ```bash
-rsync -avz --delete --exclude=xirrcalculator -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/dev/
+rsync -avz --delete -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/dev/
 ```
 
-> `--exclude=xirrcalculator` and `--exclude=dev` protect existing server directories from being deleted by `--delete`.
+> `--exclude=dev` on main protects the dev subdomain directory from being deleted by `--delete`.
 
 ## AWS / Terraform
 
@@ -99,7 +99,7 @@ git merge dev
 git push origin main
 # Then rsync the freshly built out/ to prod:
 cd website && rm -rf out/ && npm run build && cd ..
-rsync -avz --delete --exclude=xirrcalculator --exclude=dev -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
+rsync -avz --delete --exclude=dev -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
 ```
 
 ## General Rules
