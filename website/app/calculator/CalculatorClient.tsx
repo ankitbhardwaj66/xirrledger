@@ -311,6 +311,7 @@ export default function CalculatorPage() {
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [otpError, setOtpError] = useState('');
+  const [otpResent, setOtpResent] = useState(false);
   const [showDownloadGuide, setShowDownloadGuide] = useState(false);
   const [activeGuideTab, setActiveGuideTab] = useState<'zerodha' | 'groww' | 'fyers'>('zerodha');
   const [manualEntries, setManualEntries] = useState<ManualEntry[]>([]);
@@ -977,10 +978,31 @@ export default function CalculatorPage() {
               <button onClick={handleOtpVerify} disabled={otpVerifying} style={{ ...btnPrimary, padding: '13px', fontSize: '0.95rem', width: '100%', opacity: otpVerifying ? 0.6 : 1 }}>
                 {otpVerifying ? 'Verifying…' : 'Verify →'}
               </button>
+              {otpResent && (
+                <p style={{ color: '#10b981', fontSize: '0.82rem', margin: '12px 0 0' }}>✓ New code sent to {manualEmail}</p>
+              )}
               <button
-                onClick={() => { setOtpCode(''); setOtpError(''); handleManualContinue(); }}
+                onClick={async () => {
+                  setOtpCode(''); setOtpError(''); setOtpResent(false);
+                  setOtpSending(true);
+                  try {
+                    const res = await fetch(`${API_BASE}/send-otp`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ email: manualEmail.trim().toLowerCase(), name: manualName.trim() }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.sent) throw new Error(data.error || 'Failed to send OTP');
+                    setOtpResent(true);
+                    setTimeout(() => setOtpResent(false), 4000);
+                  } catch (err: unknown) {
+                    setOtpError(err instanceof Error ? err.message : 'Failed to resend. Please try again.');
+                  } finally {
+                    setOtpSending(false);
+                  }
+                }}
                 disabled={otpSending}
-                style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.82rem', cursor: 'pointer', marginTop: 16, textDecoration: 'underline' }}
+                style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.82rem', cursor: 'pointer', marginTop: 8, textDecoration: 'underline' }}
               >
                 {otpSending ? 'Sending…' : 'Resend code'}
               </button>
