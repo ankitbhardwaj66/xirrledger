@@ -262,10 +262,10 @@ def handle_send_otp(event):
         )
 
         ses.send_email(
-            Source=SES_FROM_EMAIL,
+            Source=f"XIRR Ledger <{SES_FROM_EMAIL}>",
             Destination={"ToAddresses": [email]},
             Message={
-                "Subject": {"Data": "Your XIRR Ledger verification code"},
+                "Subject": {"Data": f"{otp} is your XIRR Ledger verification code"},
                 "Body": {
                     "Html": {
                         "Data": f"""
