@@ -7,7 +7,7 @@ const GOOGLE_CLIENT_ID = '1030081614603-onnmmupafevkn0hojoj4qk023tuohius.apps.go
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 const JOBS_BASE_URL = process.env.NEXT_PUBLIC_JOBS_BASE_URL || 'https://xirrledger-jobs.s3.ap-south-1.amazonaws.com';
 
-type Step = 'auth' | 'upload' | 'details' | 'processing' | 'results';
+type Step = 'auth' | 'otp' | 'upload' | 'details' | 'processing' | 'results';
 
 interface User {
   name: string;
@@ -307,6 +307,10 @@ export default function CalculatorPage() {
   const [manualName, setManualName] = useState('');
   const [manualEmail, setManualEmail] = useState('');
   const [authError, setAuthError] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpSending, setOtpSending] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpError, setOtpError] = useState('');
   const [showDownloadGuide, setShowDownloadGuide] = useState(false);
   const [activeGuideTab, setActiveGuideTab] = useState<'zerodha' | 'groww' | 'fyers'>('zerodha');
   const [manualEntries, setManualEntries] = useState<ManualEntry[]>([]);
@@ -384,12 +388,49 @@ export default function CalculatorPage() {
     setStep('upload');
   }
 
-  function handleManualContinue() {
+  async function handleManualContinue() {
     if (!manualName.trim()) { setAuthError('Please enter your name.'); return; }
     if (!manualEmail.trim() || !manualEmail.includes('@')) { setAuthError('Please enter a valid email.'); return; }
     setAuthError('');
-    setUser({ name: manualName.trim(), email: manualEmail.trim() });
-    setStep('upload');
+    setOtpError('');
+    setOtpCode('');
+    setOtpSending(true);
+    try {
+      const res = await fetch(`${API_BASE}/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: manualEmail.trim().toLowerCase(), name: manualName.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.sent) throw new Error(data.error || 'Failed to send OTP');
+      setStep('otp');
+    } catch (err: unknown) {
+      setAuthError(err instanceof Error ? err.message : 'Failed to send verification code. Please try again.');
+    } finally {
+      setOtpSending(false);
+    }
+  }
+
+  async function handleOtpVerify() {
+    if (otpCode.length !== 6) { setOtpError('Please enter the 6-digit code.'); return; }
+    setOtpError('');
+    setOtpVerifying(true);
+    try {
+      const res = await fetch(`${API_BASE}/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: manualEmail.trim().toLowerCase(), otp: otpCode }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Verification failed');
+      if (!data.verified) { setOtpError(data.error || 'Incorrect code.'); return; }
+      setUser({ name: manualName.trim(), email: manualEmail.trim() });
+      setStep('upload');
+    } catch (err: unknown) {
+      setOtpError(err instanceof Error ? err.message : 'Verification failed. Please try again.');
+    } finally {
+      setOtpVerifying(false);
+    }
   }
 
   const isDividendFile = (file: File) =>
@@ -809,7 +850,7 @@ export default function CalculatorPage() {
   }
 
   const STEPS_LABELS = ['Sign In', 'Upload', 'Details'];
-  const stepIndex: Record<Step, number> = { auth: 0, upload: 1, details: 2, processing: 3, results: 4 };
+  const stepIndex: Record<Step, number> = { auth: 0, otp: 0, upload: 1, details: 2, processing: 3, results: 4 };
 
   /* ── pan input border helper ── */
   function panBorder(key: string) {
@@ -904,10 +945,45 @@ export default function CalculatorPage() {
                   style={{ ...inputBase, padding: '12px 14px', fontSize: '0.9rem', width: '100%', boxSizing: 'border-box' }}
                 />
                 {authError && <p style={{ color: '#ef4444', fontSize: '0.82rem', margin: 0 }}>{authError}</p>}
-                <button onClick={handleManualContinue} style={{ ...btnPrimary, padding: '13px', fontSize: '0.95rem', marginTop: 4 }}>
-                  Continue →
+                <button onClick={handleManualContinue} disabled={otpSending} style={{ ...btnPrimary, padding: '13px', fontSize: '0.95rem', marginTop: 4, opacity: otpSending ? 0.6 : 1 }}>
+                  {otpSending ? 'Sending code…' : 'Continue →'}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP OTP ── */}
+        {step === 'otp' && (
+          <div style={{ maxWidth: 420, margin: '0 auto' }}>
+            <div style={{ ...card, padding: 36, textAlign: 'center' }}>
+              <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                <svg width="22" height="22" fill="none" stroke="#f59e0b" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+              </div>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#ffffff', margin: '0 0 8px' }}>Verify your email</h2>
+              <p style={{ color: '#64748b', fontSize: '0.88rem', margin: '0 0 24px' }}>
+                We sent a 6-digit code to <span style={{ color: '#94a3b8' }}>{manualEmail}</span>
+              </p>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="000000"
+                value={otpCode}
+                onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                style={{ ...inputBase, padding: '14px', fontSize: '1.6rem', letterSpacing: '0.3em', textAlign: 'center', width: '100%', boxSizing: 'border-box', marginBottom: 12 }}
+              />
+              {otpError && <p style={{ color: '#ef4444', fontSize: '0.82rem', margin: '0 0 12px' }}>{otpError}</p>}
+              <button onClick={handleOtpVerify} disabled={otpVerifying} style={{ ...btnPrimary, padding: '13px', fontSize: '0.95rem', width: '100%', opacity: otpVerifying ? 0.6 : 1 }}>
+                {otpVerifying ? 'Verifying…' : 'Verify →'}
+              </button>
+              <button
+                onClick={() => { setOtpCode(''); setOtpError(''); handleManualContinue(); }}
+                disabled={otpSending}
+                style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.82rem', cursor: 'pointer', marginTop: 16, textDecoration: 'underline' }}
+              >
+                {otpSending ? 'Sending…' : 'Resend code'}
+              </button>
             </div>
           </div>
         )}

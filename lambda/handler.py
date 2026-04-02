@@ -3,9 +3,11 @@ XIRR Ledger — Lambda Handler
 Routes API Gateway requests and manages async processing lifecycle.
 
 Routes:
-  POST /session   — create session, return presigned S3 upload URLs
-  POST /validate  — validate an uploaded file (broker format check + transaction count)
-  POST /process   — write pending status, trigger async self-invocation
+  POST /session    — create session, return presigned S3 upload URLs
+  POST /validate   — validate an uploaded file (broker format check + transaction count)
+  POST /process    — write pending status, trigger async self-invocation
+  POST /send-otp   — generate + email a 6-digit OTP for email verification
+  POST /verify-otp — verify OTP submitted by user
 
 Async mode (InvocationType=Event):
   event contains {"async_mode": true, "session_id": ..., ...}
@@ -15,10 +17,12 @@ Async mode (InvocationType=Event):
 import json
 import uuid
 import os
+import random
+import hashlib
 import boto3
 import logging
 from botocore.config import Config
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -38,10 +42,14 @@ s3_presign = boto3.client(
 )
 
 lambda_client = boto3.client("lambda")
+ses = boto3.client("ses", region_name=AWS_REGION)
 
-UPLOADS_BUCKET = os.environ["S3_UPLOADS_BUCKET"]
-REPORTS_BUCKET = os.environ["S3_REPORTS_BUCKET"]
-JOBS_BUCKET    = os.environ["S3_JOBS_BUCKET"]
+UPLOADS_BUCKET  = os.environ["S3_UPLOADS_BUCKET"]
+REPORTS_BUCKET  = os.environ["S3_REPORTS_BUCKET"]
+JOBS_BUCKET     = os.environ["S3_JOBS_BUCKET"]
+SES_FROM_EMAIL  = os.environ.get("SES_FROM_EMAIL", "reports@xirrledger.com")
+OTP_TTL_MINUTES = 10
+OTP_MAX_ATTEMPTS = 3
 
 
 def lambda_handler(event, context):
@@ -65,6 +73,12 @@ def lambda_handler(event, context):
 
     if path == "/process" and method == "POST":
         return handle_process(event, context)
+
+    if path == "/send-otp" and method == "POST":
+        return handle_send_otp(event)
+
+    if path == "/verify-otp" and method == "POST":
+        return handle_verify_otp(event)
 
     return _response(404, {"error": f"Route not found: {method} {path}"})
 
@@ -98,7 +112,7 @@ def handle_create_session(event):
                     "Key": s3_key,
                     "ContentType": content_type,
                 },
-                ExpiresIn=900,  # 15 minutes
+                ExpiresIn=24 * 3600,  # 24 hours
             )
             upload_urls.append({"name": file_name, "url": presigned_url, "key": s3_key})
 
@@ -220,6 +234,118 @@ def handle_validate(event):
         if "password" in err_str or "encrypted" in err_str or "pdfread" in err_str:
             return _response(200, {"valid": False, "error": "Incorrect PAN — could not open this PDF. Please check your PAN and try again."})
         return _response(200, {"valid": False, "error": "This file has the wrong structure. Please download the correct one from your broker."})
+
+
+# ─────────────────────────────────────────────────────────────
+# POST /send-otp
+# Body: { "email": "user@example.com", "name": "Ankit" }
+# Returns: { "sent": true }
+# ─────────────────────────────────────────────────────────────
+def handle_send_otp(event):
+    try:
+        body  = json.loads(event.get("body") or "{}")
+        email = (body.get("email") or "").strip().lower()
+        name  = (body.get("name") or "there").strip()
+
+        if not email or "@" not in email:
+            return _response(400, {"error": "Valid email is required"})
+
+        otp = str(random.randint(100000, 999999))
+        expires_at = (datetime.now(timezone.utc) + timedelta(minutes=OTP_TTL_MINUTES)).isoformat()
+
+        otp_key = f"otps/{hashlib.sha256(email.encode()).hexdigest()}.json"
+        s3.put_object(
+            Bucket=JOBS_BUCKET,
+            Key=otp_key,
+            Body=json.dumps({"otp": otp, "email": email, "expires_at": expires_at, "attempts": 0}),
+            ContentType="application/json",
+        )
+
+        ses.send_email(
+            Source=SES_FROM_EMAIL,
+            Destination={"ToAddresses": [email]},
+            Message={
+                "Subject": {"Data": "Your XIRR Ledger verification code"},
+                "Body": {
+                    "Html": {
+                        "Data": f"""
+<div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0f172a;color:#e2e8f0;padding:32px;border-radius:12px">
+  <h2 style="color:#f59e0b;margin:0 0 8px">XIRR Ledger</h2>
+  <p style="color:#94a3b8;margin:0 0 24px">Email Verification</p>
+  <p>Hi {name},</p>
+  <p>Your verification code is:</p>
+  <div style="font-size:2rem;font-weight:800;letter-spacing:0.2em;color:#f59e0b;background:#1e293b;padding:16px 24px;border-radius:8px;text-align:center;margin:16px 0">{otp}</div>
+  <p style="color:#64748b;font-size:0.85rem">This code expires in {OTP_TTL_MINUTES} minutes. If you didn't request this, you can ignore this email.</p>
+</div>"""
+                    }
+                },
+            },
+        )
+
+        logger.info("OTP sent to %s", email)
+        return _response(200, {"sent": True})
+
+    except Exception as e:
+        logger.exception("Error in handle_send_otp")
+        return _response(500, {"error": str(e)})
+
+
+# ─────────────────────────────────────────────────────────────
+# POST /verify-otp
+# Body: { "email": "user@example.com", "otp": "123456" }
+# Returns: { "verified": true } or { "verified": false, "error": "..." }
+# ─────────────────────────────────────────────────────────────
+def handle_verify_otp(event):
+    try:
+        body  = json.loads(event.get("body") or "{}")
+        email = (body.get("email") or "").strip().lower()
+        otp   = (body.get("otp") or "").strip()
+
+        if not email or not otp:
+            return _response(400, {"error": "email and otp are required"})
+
+        otp_key = f"otps/{hashlib.sha256(email.encode()).hexdigest()}.json"
+
+        try:
+            obj = s3.get_object(Bucket=JOBS_BUCKET, Key=otp_key)
+            record = json.loads(obj["Body"].read())
+        except s3.exceptions.NoSuchKey:
+            return _response(200, {"verified": False, "error": "OTP not found. Please request a new one."})
+        except Exception:
+            return _response(200, {"verified": False, "error": "OTP not found. Please request a new one."})
+
+        # Check expiry
+        expires_at = datetime.fromisoformat(record["expires_at"])
+        if datetime.now(timezone.utc) > expires_at:
+            s3.delete_object(Bucket=JOBS_BUCKET, Key=otp_key)
+            return _response(200, {"verified": False, "error": "OTP expired. Please request a new one."})
+
+        # Check attempts
+        attempts = record.get("attempts", 0) + 1
+        if attempts > OTP_MAX_ATTEMPTS:
+            s3.delete_object(Bucket=JOBS_BUCKET, Key=otp_key)
+            return _response(200, {"verified": False, "error": "Too many attempts. Please request a new OTP."})
+
+        if record["otp"] != otp:
+            # Persist incremented attempts
+            record["attempts"] = attempts
+            s3.put_object(
+                Bucket=JOBS_BUCKET,
+                Key=otp_key,
+                Body=json.dumps(record),
+                ContentType="application/json",
+            )
+            remaining = OTP_MAX_ATTEMPTS - attempts
+            return _response(200, {"verified": False, "error": f"Incorrect code. {remaining} attempt(s) left."})
+
+        # Success — delete OTP record
+        s3.delete_object(Bucket=JOBS_BUCKET, Key=otp_key)
+        logger.info("OTP verified for %s", email)
+        return _response(200, {"verified": True})
+
+    except Exception as e:
+        logger.exception("Error in handle_verify_otp")
+        return _response(500, {"error": str(e)})
 
 
 # ─────────────────────────────────────────────────────────────
