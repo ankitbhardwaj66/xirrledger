@@ -1620,6 +1620,17 @@ export default function CalculatorPage() {
 
       </div>
 
+      {/* ── OTP Sending Overlay ── */}
+      {otpSending && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2,8,20,0.85)', zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>
+          <svg width="48" height="48" viewBox="0 0 48 48" style={{ animation: 'spin 0.9s linear infinite' }}>
+            <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(245,158,11,0.2)" strokeWidth="4" />
+            <path d="M 24 4 A 20 20 0 0 1 44 24" fill="none" stroke="#f59e0b" strokeWidth="4" strokeLinecap="round" />
+          </svg>
+          <p style={{ color: '#94a3b8', marginTop: 16, fontSize: '0.9rem' }}>Sending verification code…</p>
+        </div>
+      )}
+
       {/* ── Upload / Validation Overlay ── */}
       {isUploading && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(2,8,20,0.93)', zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 16, backdropFilter: 'blur(6px)' }}>
