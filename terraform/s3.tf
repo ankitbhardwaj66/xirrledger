@@ -14,25 +14,10 @@ resource "aws_s3_bucket_public_access_block" "artifacts" {
 }
 
 # ─────────────────────────────────────────────────────────────
-# S3 — Uploads bucket (ledger files, auto-delete after 24h)
+# S3 — Uploads bucket (ledger files, no auto-delete)
 # ─────────────────────────────────────────────────────────────
 resource "aws_s3_bucket" "uploads" {
   bucket = "xirrledger-uploads"
-}
-
-resource "aws_s3_bucket_lifecycle_configuration" "uploads" {
-  bucket = aws_s3_bucket.uploads.id
-
-  rule {
-    id     = "auto-delete-after-24h"
-    status = "Enabled"
-
-    filter {}
-
-    expiration {
-      days = var.uploads_expiry_days
-    }
-  }
 }
 
 # CORS for browser direct upload via presigned URLs
@@ -67,25 +52,10 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "uploads" {
 }
 
 # ─────────────────────────────────────────────────────────────
-# S3 — Reports bucket (PDF reports, signed URLs, 7-day expiry)
+# S3 — Reports bucket (PDF reports, no auto-delete)
 # ─────────────────────────────────────────────────────────────
 resource "aws_s3_bucket" "reports" {
   bucket = "xirrledger-reports"
-}
-
-resource "aws_s3_bucket_lifecycle_configuration" "reports" {
-  bucket = aws_s3_bucket.reports.id
-
-  rule {
-    id     = "auto-delete-after-7d"
-    status = "Enabled"
-
-    filter {}
-
-    expiration {
-      days = var.reports_expiry_days
-    }
-  }
 }
 
 resource "aws_s3_bucket_public_access_block" "reports" {
