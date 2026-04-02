@@ -272,7 +272,7 @@ def handle_send_otp(event):
 <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0a1020;border-radius:16px;overflow:hidden">
 
   <!-- Header -->
-  <div style="background:#0f172a;padding:24px 32px;border-bottom:1px solid rgba(245,158,11,0.15)">
+  <div style="background:#0a1020;padding:24px 32px;border-bottom:1px solid rgba(245,158,11,0.15)">
     <img src="https://xirrledger.com/logo-email.png" width="130" height="38" alt="XIRR Ledger" style="display:block" />
   </div>
 
