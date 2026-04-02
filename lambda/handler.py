@@ -270,12 +270,7 @@ def handle_send_otp(event):
                     "Html": {
                         "Data": f"""
 <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0f172a;color:#e2e8f0;padding:32px;border-radius:12px">
-  <table cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px">
-    <tr>
-      <td style="vertical-align:middle"><img src="https://xirrledger.com/logo-icon.png" width="32" height="32" alt="" style="display:block;border-radius:8px" /></td>
-      <td style="padding-left:10px;vertical-align:middle"><h2 style="color:#f59e0b;margin:0;font-size:1.2rem">XIRR Ledger</h2></td>
-    </tr>
-  </table>
+  <img src="https://xirrledger.com/logo-email.png" width="163" height="48" alt="XIRR Ledger" style="display:block;margin:0 0 8px" />
   <p style="color:#94a3b8;margin:0 0 24px">Email Verification</p>
   <p>Hi {name},</p>
   <p>Your verification code is:</p>
