@@ -65,13 +65,14 @@ resource "aws_iam_policy" "lambda_custom" {
         ]
         Resource = "${aws_s3_bucket.reports.arn}/*"
       },
-      # Read/write job status
+      # Read/write/delete job status and OTP records
       {
         Sid    = "S3JobsReadWrite"
         Effect = "Allow"
         Action = [
           "s3:GetObject",
-          "s3:PutObject"
+          "s3:PutObject",
+          "s3:DeleteObject"
         ]
         Resource = "${aws_s3_bucket.jobs.arn}/*"
       },
