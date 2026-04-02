@@ -350,6 +350,29 @@ export default function CalculatorPage() {
     setAccounts(prev => buildAccounts(files, effectivePans, prev));
   }, [files, effectivePans]);
 
+  // ── Session persistence ──────────────────────────────────────
+  const SESSION_KEY = 'xirrledger_session';
+
+  function saveSession(u: User) {
+    const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ user: u, expiresAt }));
+  }
+
+  function clearSession() {
+    localStorage.removeItem(SESSION_KEY);
+  }
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (!raw) return;
+      const { user: savedUser, expiresAt } = JSON.parse(raw);
+      if (Date.now() > expiresAt) { localStorage.removeItem(SESSION_KEY); return; }
+      setUser(savedUser);
+      setStep('upload');
+    } catch { /* ignore */ }
+  }, []);
+
   const allHoldingsEntered = accounts.length > 0 && accounts.every(a => a.holdings.trim() !== '');
   const allManualEntriesLinked = manualEntries.every(e => e.accountId !== '');
   const allManualEntriesFilled = manualEntries.every(e => e.amount.trim() !== '' && e.date.trim() !== '');
@@ -385,7 +408,9 @@ export default function CalculatorPage() {
     const base64Url = response.credential.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const payload = JSON.parse(window.atob(base64));
-    setUser({ name: payload.name, email: payload.email, picture: payload.picture, googleToken: response.credential });
+    const u = { name: payload.name, email: payload.email, picture: payload.picture, googleToken: response.credential };
+    setUser(u);
+    saveSession(u);
     setStep('upload');
   }
 
@@ -425,7 +450,9 @@ export default function CalculatorPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Verification failed');
       if (!data.verified) { setOtpError(data.error || 'Incorrect code.'); return; }
-      setUser({ name: manualName.trim(), email: manualEmail.trim() });
+      const u = { name: manualName.trim(), email: manualEmail.trim() };
+      setUser(u);
+      saveSession(u);
       setStep('upload');
     } catch (err: unknown) {
       setOtpError(err instanceof Error ? err.message : 'Verification failed. Please try again.');
@@ -835,6 +862,7 @@ export default function CalculatorPage() {
   }, [step]);
 
   function resetAll() {
+    clearSession();
     setStep('auth');
     setFiles([]);
     setFilePans({});
