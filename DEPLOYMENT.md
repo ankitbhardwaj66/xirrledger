@@ -13,13 +13,18 @@
 │  AWS (Terraform) — ap-south-1 (Mumbai)                      │
 │                                                             │
 │  API Gateway → Lambda (Python 3.12, arm64)                  │
+│    POST /send-otp   — generate + email OTP via SES          │
+│    POST /verify-otp — validate OTP (S3 store, 10-min TTL)   │
+│    POST /session    — create session + presigned upload URLs │
+│    POST /validate   — deep file parse check                 │
+│    POST /process    — trigger async XIRR computation        │
 │                    ↕                                        │
 │                   S3                                        │
-│             ├── xirrledger-uploads/   (ledger files, 24h)   │
-│             ├── xirrledger-jobs/      (status.json + Nifty) │
-│             └── xirrledger-reports/   (PDF reports, 24h URL) │
+│             ├── xirrledger-uploads/   (ledger files)        │
+│             ├── xirrledger-jobs/      (status.json, OTPs, Nifty) │
+│             └── xirrledger-reports/   (PDF reports)         │
 │                    ↕                                        │
-│                   SES  (email report on completion)         │
+│                   SES  (OTP email + report email on done)   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -29,16 +34,17 @@
 
 | Layer | Technology | Status |
 |---|---|---|
-| Frontend | Next.js 16 (static export) | ✅ Live |
+| Frontend | Next.js 15 (static export) | ✅ Live |
 | Hosting | Hostinger shared hosting | ✅ Live |
 | Domain | xirrledger.com | ✅ Live |
 | Analytics | Google Analytics 4 (G-2YGVB963RE) | ✅ Live |
-| Auth | Google Identity Services (OAuth 2.0) | ✅ Live |
+| Auth | Google Identity Services + email OTP (SES) | ✅ Live |
+| Session | localStorage (7-day expiry) | ✅ Live |
 | Calculator UI | Next.js /calculator page | ✅ Live |
 | Infrastructure | Terraform | ✅ Applied |
 | Backend | AWS Lambda (`xirr-processor`, `nifty-refresher`) | ✅ Deployed |
-| File storage | AWS S3 (4 buckets) | ✅ Live |
-| Email | AWS SES | ✅ Verified (domain + DKIM + MAIL FROM) |
+| File storage | AWS S3 (4 buckets, no auto-delete on prod) | ✅ Live |
+| Email | AWS SES (OTP + report, sender: "XIRR Ledger") | ✅ Verified |
 | Nifty 50 cache | S3 daily refresh via EventBridge | ✅ Live (4,500+ rows) |
 | User DB | MySQL on Hostinger via PHP bridge | ✅ Live |
 | NEXT_PUBLIC_API_URL | Baked into build via `.env.production` | ✅ Done |
@@ -96,8 +102,18 @@
 - PDF report opens in new tab (presigned S3 URL, **24-hour** expiry)
 - Step 1 subtitle: "We will email you the report too" (concise, no extra header bar)
 
+### Auth — Email OTP (2026-04-02)
+- Manual sign-in now sends a 6-digit OTP via SES before proceeding to upload
+- `POST /send-otp`: generates OTP, stores in S3 jobs bucket (`otps/{sha256(email)}.json`), 10-min TTL, sends email
+- `POST /verify-otp`: validates OTP, checks expiry + max 3 attempts, deletes record on success
+- Frontend: new `'otp'` step in calculator wizard; blur overlay during send/verify; resend with success feedback
+- Session persisted in `localStorage` (`xirrledger_session`, 7-day expiry); restored on page load
+- Google Sign-In still bypasses OTP (already trusted)
+- Email sender: `XIRR Ledger <reports@xirrledger.com>` (both OTP and report emails)
+- Logo image: `website/public/logo-email.png` hosted at `xirrledger.com/logo-email.png`
+
 ### Lambda
-- `handler.py` — routes: `POST /session` (presigned URLs), `POST /process` (async trigger), **`POST /validate`** (deep file parse check)
+- `handler.py` — routes: `POST /session` (presigned URLs), `POST /process` (async trigger), `POST /validate` (deep file parse), **`POST /send-otp`**, **`POST /verify-otp`**
   - `handle_validate()`: downloads file from S3, runs actual parser, returns `{valid, transactions_found}` or `{valid: false, error}`
   - `ValueError` → user-friendly message; generic `Exception` → "Something went wrong" (raw Python never reaches UI)
 - `processor.py` — full pipeline:
@@ -135,7 +151,8 @@
 - Lambda function: `xirr-processor` (512MB, 120s timeout)
 - Lambda function: `nifty-refresher` (256MB, 300s timeout)
 - Lambda layer: `xirrledger-deps` (pandas, numpy, scipy, reportlab, pdfplumber, openpyxl, requests)
-- 4 S3 buckets with lifecycle rules
+- 4 S3 buckets — **prod**: no auto-delete on uploads/reports; dev: 7-day lifecycle on all buckets
+- IAM policy includes `s3:DeleteObject` on jobs bucket (required for OTP cleanup)
 - IAM role with S3 + SES + self-invoke permissions
 - EventBridge rule for daily Nifty refresh
 - SES domain identity (verified), email template `xirrledger-report-ready` (Navy + Gold theme, full results data)
@@ -450,26 +467,18 @@ cd lambda && ./build_layer.sh   # needs Docker running
 cd ../terraform && AWS_PROFILE=ankit terraform apply -auto-approve
 ```
 
-### Build & push frontend
+### Build & deploy frontend
 ```bash
-cd website
-rm -rf out/
-npm run build          # main branch (prod env)
-# OR: npm run build:dev  # dev branch (dev env)
-git add out/     # IMPORTANT: always commit the full out/ folder, not just source files
-git commit -m "Rebuild out/"
-git push
-```
-> Note: `deploy.sh` runs on the **remote Hostinger server** — never run it locally.
-> The server does `git pull` and copies `out/*` to public_html.
+# Prod (main branch):
+cd website && rm -rf out/ && npm run build && cd ..
+rsync -avz --delete --exclude=dev -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
 
-### Deploy to Hostinger (SSH)
-```bash
-# Prod (main):
-ssh -p 65002 u889244618@46.28.45.163 "cd /home/u889244618/domains/xirrledger.com/public_html/xirrcalculator/website && git pull origin main && ./deploy.sh"
-# Dev:
-ssh -p 65002 u889244618@46.28.45.163 "cd /home/u889244618/domains/xirrledger.com/public_html/dev/xirrcalculator/website && git pull origin dev && ./deploy.sh"
+# Dev (dev branch):
+cd website && rm -rf out/ && npm run build:dev && cd ..
+rsync -avz --delete -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/dev/
 ```
+> `website/out/` is **gitignored** — never commit it. Always rsync directly to server.
+> `deploy.sh` is no longer used.
 
 ### Apply Terraform changes
 ```bash
@@ -512,6 +521,9 @@ AWS_PROFILE=ankit aws logs tail /aws/lambda/xirr-processor --follow --region ap-
 | PDF breakdown sub-rows + fix empty page 2 | (2026-02-25) | Lambda-only — redeploy previous processor.py |
 | Dividend XLSX inflows (Zerodha) | `8fa0468` | Revert frontend (dividendFiles state) + Lambda (processor.py) |
 | Upload overlay + sequential validation | (2026-02-27) | Revert `calculator/page.tsx` + `globals.css` overlay/animation code |
+| Email OTP verification | `6f06f10` | Remove `'otp'` step from `CalculatorClient.tsx`; remove `/send-otp` `/verify-otp` from `handler.py` + terraform |
+| Session persistence (localStorage) | `dca6a88` | Remove `saveSession`/`clearSession`/restore `useEffect` from `CalculatorClient.tsx` |
+| S3 no auto-delete (prod) | `afef0a2` | Re-add lifecycle config blocks to `terraform/s3.tf` + `terraform apply` |
 | devLog / timing logs | (2026-02-27) | Remove `devLog()` calls and `performance.now()` timing in `calculator/page.tsx` |
 | SEND_EMAIL flag (Lambda) | (2026-02-27) | Remove env var check in `processor.py`; set `SEND_EMAIL` back to `true` on dev |
 | SES template → file() | (2026-02-27) | Revert `terraform/ses.tf` to inline HTML; update to match `report-ready.html` |
