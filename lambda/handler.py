@@ -272,7 +272,7 @@ def handle_send_otp(event):
 <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0f172a;color:#e2e8f0;padding:32px;border-radius:12px">
   <table cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px">
     <tr>
-      <td style="width:32px;height:32px;background:rgba(245,158,11,0.15);border-radius:8px;text-align:center;vertical-align:middle;font-size:16px">📈</td>
+      <td style="vertical-align:middle"><img src="https://xirrledger.com/logo-icon.png" width="32" height="32" alt="" style="display:block;border-radius:8px" /></td>
       <td style="padding-left:10px;vertical-align:middle"><h2 style="color:#f59e0b;margin:0;font-size:1.2rem">XIRR Ledger</h2></td>
     </tr>
   </table>
