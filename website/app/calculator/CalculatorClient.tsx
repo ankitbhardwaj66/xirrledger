@@ -962,9 +962,15 @@ export default function CalculatorPage() {
                 <svg width="22" height="22" fill="none" stroke="#f59e0b" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
               </div>
               <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#ffffff', margin: '0 0 8px' }}>Verify your email</h2>
-              <p style={{ color: '#64748b', fontSize: '0.88rem', margin: '0 0 24px' }}>
+              <p style={{ color: '#64748b', fontSize: '0.88rem', margin: '0 0 4px' }}>
                 We sent a 6-digit code to <span style={{ color: '#94a3b8' }}>{manualEmail}</span>
               </p>
+              <button
+                onClick={() => setStep('auth')}
+                style={{ background: 'none', border: 'none', color: '#f59e0b', fontSize: '0.82rem', cursor: 'pointer', padding: 0, marginBottom: 20, textDecoration: 'underline' }}
+              >
+                Edit email
+              </button>
               <input
                 type="text"
                 inputMode="numeric"
