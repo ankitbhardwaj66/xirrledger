@@ -270,12 +270,12 @@ def handle_send_otp(event):
                     "Html": {
                         "Data": f"""
 <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0f172a;color:#e2e8f0;padding:32px;border-radius:12px">
-  <div style="display:flex;align-items:center;gap:10px;margin:0 0 8px">
-    <div style="width:32px;height:32px;background:rgba(245,158,11,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-      <svg width="18" height="18" fill="#f59e0b" viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
-    </div>
-    <h2 style="color:#f59e0b;margin:0;font-size:1.2rem">XIRR Ledger</h2>
-  </div>
+  <table cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px">
+    <tr>
+      <td style="width:32px;height:32px;background:rgba(245,158,11,0.15);border-radius:8px;text-align:center;vertical-align:middle;font-size:16px">📈</td>
+      <td style="padding-left:10px;vertical-align:middle"><h2 style="color:#f59e0b;margin:0;font-size:1.2rem">XIRR Ledger</h2></td>
+    </tr>
+  </table>
   <p style="color:#94a3b8;margin:0 0 24px">Email Verification</p>
   <p>Hi {name},</p>
   <p>Your verification code is:</p>
