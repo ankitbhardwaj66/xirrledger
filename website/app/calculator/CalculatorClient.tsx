@@ -1663,7 +1663,14 @@ export default function CalculatorPage() {
                   </svg>
                   Edit Holdings
                 </button>
-                <button onClick={resetAll} style={{ ...btnSecondary, flex: 1, padding: 14, fontSize: '0.9rem' }}>
+                <button onClick={() => {
+                  setFiles([]); setFilePans({}); setSamePanForAll(false); setSharedPan('');
+                  setAccounts([]); setManualEntries([]); setResults(null);
+                  setProcessingSteps(PROCESSING_STEPS.map(s => ({ ...s, status: 'pending' as const })));
+                  setUploadedSession(null); setFileValidationStatus({}); setFileValidationErrors({});
+                  setProcessingError(''); setDividendFiles([]); setDividendKeyMap({});
+                  setStep('upload');
+                }} style={{ ...btnSecondary, flex: 1, padding: 14, fontSize: '0.9rem' }}>
                   New Calculation
                 </button>
               </div>
