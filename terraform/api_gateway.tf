@@ -48,6 +48,20 @@ resource "aws_apigatewayv2_route" "validate" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+# POST /send-otp
+resource "aws_apigatewayv2_route" "send_otp" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /send-otp"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+# POST /verify-otp
+resource "aws_apigatewayv2_route" "verify_otp" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /verify-otp"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 # Default stage — auto-deploy on changes
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.main.id
