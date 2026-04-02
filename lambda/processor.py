@@ -1598,7 +1598,7 @@ def send_report_email(name, email, stats, report_url):
             insight_body_color  = "#64748b"
 
         ses.send_templated_email(
-            Source=SES_FROM_EMAIL,
+            Source=f"XIRR Ledger <{SES_FROM_EMAIL}>",
             Destination={"ToAddresses": [email]},
             Template="xirrledger-report-ready",
             TemplateData=json.dumps({
