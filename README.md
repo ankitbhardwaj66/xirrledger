@@ -16,15 +16,16 @@ XIRR (Extended Internal Rate of Return) is the most accurate way to measure inve
 
 | Broker | File Format | Notes |
 |---|---|---|
-| Zerodha | CSV ledger | Funds → View Statement → All Segments → date range → blue arrow → CSV |
+| Zerodha | CSV / XLSX ledger | Funds → View Statement → All Segments → date range → CSV or XLSX |
 | Groww | PDF ledger | Funds → All Transactions → select year → Download (1 PDF per year, PAN as password) |
+| Fyers | CSV ledger | Reports → Ledger → Download CSV |
 
 ---
 
 ## How It Works
 
-1. **Sign in** with Google or enter your name and email
-2. **Upload** your Zerodha CSV or Groww PDF ledger files
+1. **Sign in** with Google or enter your name and email (verified via OTP)
+2. **Upload** your Zerodha CSV/XLSX, Groww PDF, or Fyers CSV ledger files
 3. **Enter** current holdings value and available cash per account
 4. **Get** your XIRR, Nifty 50 benchmark comparison, and a PDF report emailed to you
 
@@ -35,24 +36,24 @@ XIRR (Extended Internal Rate of Return) is the most accurate way to measure inve
 ```
 Browser (Next.js static — Hostinger)
     │
-    ├── POST /session   ─────────────┐
-    ├── POST /process   ──────────── API Gateway → Lambda (Python, arm64)
-    └── Poll S3 for status                              │
-                                              ┌─────────┼──────────┐
-                                              S3        SES        S3 cache
-                                          (uploads)  (email)   (Nifty 50 daily)
+    ├── POST /send-otp  ──────────┐
+    ├── POST /verify-otp ─────── API Gateway → Lambda (Python, arm64)
+    ├── POST /session   ──────────┤              │
+    ├── POST /validate  ──────────┤   ┌──────────┼──────────┐
+    ├── POST /process   ──────────┘   S3         SES        S3 cache
+    └── Poll S3 for status        (uploads)   (email)   (Nifty 50 daily)
 ```
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 16 (static export) |
+| Frontend | Next.js 15 (static export) |
 | Hosting | Hostinger shared hosting |
 | Backend | AWS Lambda (Python 3.12, arm64) |
 | API | AWS API Gateway (HTTP API) |
-| Storage | AWS S3 (uploads, reports, job status) |
-| Email | AWS SES |
+| Storage | AWS S3 (uploads, reports, job status, OTP records) |
+| Email | AWS SES (OTP verification + PDF report) |
 | User DB | MySQL on Hostinger (PHP bridge) |
-| Auth | Google Identity Services (OAuth 2.0) |
+| Auth | Google Identity Services + email OTP |
 | Infrastructure | Terraform (ap-south-1 / Mumbai) |
 
 ---
@@ -67,11 +68,13 @@ xirrcalculator/
 │   ├── content/blog/ # MDX blog posts
 │   └── public/       # Static assets (sample_report.pdf, PHP bridge)
 ├── lambda/           # AWS Lambda functions
-│   ├── handler.py    # API router (/session, /process)
+│   ├── handler.py    # API router (/session, /validate, /process, /send-otp, /verify-otp)
 │   ├── processor.py  # XIRR pipeline (parse → compute → PDF → email)
 │   ├── refresher.py  # Daily Nifty 50 S3 cache refresher
+│   ├── email/        # SES report email template
 │   └── build_layer.sh # Builds Lambda layer via Docker
-├── terraform/        # All AWS infrastructure as code
+├── terraform/        # Prod AWS infrastructure as code
+├── terraform-dev/    # Dev AWS infrastructure as code
 └── DEPLOYMENT.md     # Architecture details, credentials, next steps
 ```
 
