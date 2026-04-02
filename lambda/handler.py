@@ -269,13 +269,33 @@ def handle_send_otp(event):
                 "Body": {
                     "Html": {
                         "Data": f"""
-<div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0f172a;color:#e2e8f0;padding:32px;border-radius:12px">
-  <img src="https://xirrledger.com/logo-email.png" width="163" height="48" alt="XIRR Ledger" style="display:block;margin:0 0 8px" />
-  <p style="color:#94a3b8;margin:0 0 24px">Email Verification</p>
-  <p>Hi {name},</p>
-  <p>Your verification code is:</p>
-  <div style="font-size:2rem;font-weight:800;letter-spacing:0.2em;color:#f59e0b;background:#1e293b;padding:16px 24px;border-radius:8px;text-align:center;margin:16px 0">{otp}</div>
-  <p style="color:#64748b;font-size:0.85rem">This code expires in {OTP_TTL_MINUTES} minutes. If you didn't request this, you can ignore this email.</p>
+<div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0a1020;border-radius:16px;overflow:hidden">
+
+  <!-- Header -->
+  <div style="background:#0f172a;padding:28px 32px 24px;text-align:center;border-bottom:1px solid rgba(245,158,11,0.15)">
+    <img src="https://xirrledger.com/logo-email.png" width="130" height="38" alt="XIRR Ledger" style="display:inline-block;margin:0 auto 20px" />
+    <h1 style="color:#ffffff;font-size:1.5rem;font-weight:800;margin:0 0 6px;letter-spacing:-0.01em">Email Verification</h1>
+    <p style="color:#64748b;font-size:0.88rem;margin:0">Verify your email to continue</p>
+  </div>
+
+  <!-- Body -->
+  <div style="padding:32px">
+    <p style="color:#94a3b8;margin:0 0 6px;font-size:0.95rem">Hi <strong style="color:#e2e8f0">{name}</strong>,</p>
+    <p style="color:#64748b;margin:0 0 24px;font-size:0.9rem">Use the code below to verify your email address. It expires in <strong style="color:#94a3b8">{OTP_TTL_MINUTES} minutes</strong>.</p>
+
+    <div style="background:#1e293b;border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:24px;text-align:center;margin:0 0 24px">
+      <p style="color:#64748b;font-size:0.78rem;margin:0 0 10px;letter-spacing:0.08em;text-transform:uppercase">Your verification code</p>
+      <div style="font-size:2.4rem;font-weight:800;letter-spacing:0.25em;color:#f59e0b">{otp}</div>
+    </div>
+
+    <p style="color:#475569;font-size:0.8rem;margin:0;text-align:center">If you didn't request this, you can safely ignore this email.</p>
+  </div>
+
+  <!-- Footer -->
+  <div style="background:#080e1a;padding:16px 32px;text-align:center;border-top:1px solid rgba(255,255,255,0.05)">
+    <p style="color:#334155;font-size:0.75rem;margin:0">© XIRR Ledger · <a href="https://xirrledger.com" style="color:#475569;text-decoration:none">xirrledger.com</a></p>
+  </div>
+
 </div>"""
                     }
                 },
