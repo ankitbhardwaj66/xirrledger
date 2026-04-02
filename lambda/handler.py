@@ -276,12 +276,6 @@ def handle_send_otp(event):
     <img src="https://xirrledger.com/logo-email.png" width="130" height="38" alt="XIRR Ledger" style="display:block" />
   </div>
 
-  <!-- Title -->
-  <div style="background:#0f172a;padding:24px 32px 28px;text-align:center;border-bottom:1px solid rgba(245,158,11,0.15)">
-    <h1 style="color:#ffffff;font-size:1.5rem;font-weight:800;margin:0 0 6px;letter-spacing:-0.01em">Email Verification</h1>
-    <p style="color:#64748b;font-size:0.88rem;margin:0">Verify your email to continue</p>
-  </div>
-
   <!-- Body -->
   <div style="padding:32px">
     <p style="color:#94a3b8;margin:0 0 6px;font-size:0.95rem">Hi <strong style="color:#e2e8f0">{name}</strong>,</p>
