@@ -1053,7 +1053,10 @@ export default function CalculatorPage() {
                 {user?.picture && <img src={user.picture} alt="" style={{ width: 36, height: 36, borderRadius: '50%', border: '2px solid rgba(245,158,11,0.3)' }} />}
                 <div>
                   <h2 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: '#ffffff' }}>Upload Ledger Files</h2>
-                  <p style={{ color: '#64748b', margin: 0, fontSize: '0.82rem' }}>Hi {user?.name} · Upload your broker ledger files below</p>
+                  <p style={{ color: '#64748b', margin: '2px 0 0', fontSize: '0.82rem' }}>
+                    Hi {user?.name} ·{' '}
+                    <button onClick={() => resetAll()} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.82rem', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>Sign out</button>
+                  </p>
                 </div>
               </div>
 
