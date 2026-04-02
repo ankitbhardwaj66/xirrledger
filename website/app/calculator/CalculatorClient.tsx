@@ -934,7 +934,7 @@ export default function CalculatorPage() {
                 <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <form onSubmit={e => { e.preventDefault(); handleManualContinue(); }} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <input
                   type="text" placeholder="Your name" value={manualName}
                   onChange={e => setManualName(e.target.value)}
@@ -946,10 +946,10 @@ export default function CalculatorPage() {
                   style={{ ...inputBase, padding: '12px 14px', fontSize: '0.9rem', width: '100%', boxSizing: 'border-box' }}
                 />
                 {authError && <p style={{ color: '#ef4444', fontSize: '0.82rem', margin: 0 }}>{authError}</p>}
-                <button onClick={handleManualContinue} disabled={otpSending} style={{ ...btnPrimary, padding: '13px', fontSize: '0.95rem', marginTop: 4, opacity: otpSending ? 0.6 : 1 }}>
+                <button type="submit" disabled={otpSending} style={{ ...btnPrimary, padding: '13px', fontSize: '0.95rem', marginTop: 4, opacity: otpSending ? 0.6 : 1 }}>
                   {otpSending ? 'Sending code…' : 'Continue →'}
                 </button>
-              </div>
+              </form>
             </div>
           </div>
         )}
@@ -978,6 +978,7 @@ export default function CalculatorPage() {
                 placeholder="000000"
                 value={otpCode}
                 onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onKeyDown={e => { if (e.key === 'Enter') handleOtpVerify(); }}
                 style={{ ...inputBase, padding: '14px', fontSize: '1.6rem', letterSpacing: '0.3em', textAlign: 'center', width: '100%', boxSizing: 'border-box', marginBottom: 12 }}
               />
               {otpError && <p style={{ color: '#ef4444', fontSize: '0.82rem', margin: '0 0 12px' }}>{otpError}</p>}
