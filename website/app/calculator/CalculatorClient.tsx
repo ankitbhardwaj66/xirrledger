@@ -1858,7 +1858,7 @@ export default function CalculatorPage() {
                 <div>
                   <p style={{ margin: '0 0 18px', fontSize: '0.8rem', color: '#64748b' }}>XLSX format · no password required</p>
                   {[
-                    <><a href="https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 700 }}>Open Zerodha Statement →</a> (logs in automatically if you're signed in)</>,
+                    <><a href="https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 700, cursor: 'pointer' }}>Open Zerodha Statement →</a> (logs in automatically if you're signed in)</>,
                     <>Select <strong style={{ color: '#e2e8f0' }}>All Segments</strong> as category</>,
                     <>Set date range — <strong style={{ color: '#e2e8f0' }}>from your first investment till today</strong></>,
                     <>Click the <strong style={{ color: '#e2e8f0' }}>blue arrow →</strong> then click <strong style={{ color: '#e2e8f0' }}>XLSX</strong></>,
@@ -1887,7 +1887,7 @@ export default function CalculatorPage() {
                       <span style={{ fontSize: '0.78rem', color: '#64748b' }}>— Groww Balance Statement</span>
                     </div>
                     {[
-                      <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700 }}>Open Groww Reports →</a> (logs in automatically if you&apos;re signed in)</>,
+                      <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700, cursor: 'pointer' }}>Open Groww Reports →</a> (logs in automatically if you&apos;re signed in)</>,
                       <>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions → Groww Balance Statement</strong></>,
                       <>Choose format: select <strong style={{ color: '#e2e8f0' }}>PDF</strong> (not Excel)</>,
                       <>Set date range → click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
@@ -1911,7 +1911,7 @@ export default function CalculatorPage() {
                       <span style={{ fontSize: '0.78rem', color: '#64748b' }}>— Annual Statements</span>
                     </div>
                     {[
-                      <><a href="https://groww.in/user/balance/inr" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700 }}>Open Groww Balance →</a> (logs in automatically if you&apos;re signed in)</>,
+                      <><a href="https://groww.in/user/balance/inr" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700, cursor: 'pointer' }}>Open Groww Balance →</a> (logs in automatically if you&apos;re signed in)</>,
                       <>Click <strong style={{ color: '#e2e8f0' }}>All Transactions</strong></>,
                       <>Click <strong style={{ color: '#e2e8f0' }}>Download statement</strong> (top right button)</>,
                       <>Select date range (max 1 year) → <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
@@ -1934,7 +1934,7 @@ export default function CalculatorPage() {
                 <div>
                   <p style={{ margin: '0 0 18px', fontSize: '0.8rem', color: '#64748b' }}>CSV format · no password required</p>
                   {[
-                    <><a href="https://fyers.in/web/reports/ledger" target="_blank" rel="noopener noreferrer" style={{ color: '#818cf8', fontWeight: 700 }}>Open Fyers Ledger →</a> (logs in automatically if you&apos;re signed in)</>,
+                    <><a href="https://fyers.in/web/reports/ledger" target="_blank" rel="noopener noreferrer" style={{ color: '#818cf8', fontWeight: 700, cursor: 'pointer' }}>Open Fyers Ledger →</a> (logs in automatically if you&apos;re signed in)</>,
                     <>Select the <strong style={{ color: '#e2e8f0' }}>Financial Year</strong></>,
                     <>Click <strong style={{ color: '#e2e8f0' }}>Generate</strong></>,
                     <>Click <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></>,
