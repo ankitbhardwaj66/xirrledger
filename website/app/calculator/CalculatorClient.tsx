@@ -1213,7 +1213,7 @@ export default function CalculatorPage() {
                           Uploading & Validating…
                         </>
                       ) : (
-                        `Continue (${files.length} file${files.length !== 1 ? 's' : ''}) →`
+                        `Continue (${files.length + dividendFiles.length} file${files.length + dividendFiles.length !== 1 ? 's' : ''}) →`
                       )}
                     </button>
                   </div>
