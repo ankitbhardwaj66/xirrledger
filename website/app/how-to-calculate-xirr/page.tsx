@@ -43,8 +43,8 @@ const steps = [
   {
     icon: <FaChartLine size={20} color={GOLD} />,
     title: 'Current portfolio value closes the loop',
-    description: 'Your holdings today are treated as if you withdrew everything right now. This is the terminal cash inflow that completes the calculation.',
-    example: 'Today → +₹1,10,000 (current value)',
+    description: 'Your holdings today are treated as if you withdrew everything right now. This includes the value of all stocks/funds you hold plus any uninvested cash sitting in your broker account. Together, this is the terminal cash inflow that completes the calculation.',
+    example: 'Today → +₹1,10,000 (stocks) + ₹8,500 (idle cash) = +₹1,18,500',
   },
   {
     icon: <FaUpload size={20} color={GOLD} />,
@@ -229,7 +229,7 @@ export default function HowToCalculateXIRR() {
             {[
               { n: '01', title: 'Reads your ledger', body: 'Parses your Zerodha CSV, Groww PDF, or Fyers CSV. Extracts every fund transfer in and out — with exact dates and amounts. All broker charges are already reflected in these cash flows.' },
               { n: '02', title: 'Strips out noise', body: 'Ledger files contain hundreds of rows — stock purchases, sell proceeds, dividends, charges, quarterly settlements. XIRRLedger identifies which rows are actual cash flows into/out of your account and ignores everything else.' },
-              { n: '03', title: 'Adds your current value', body: 'You enter today\'s holdings value. This becomes the terminal cash inflow — as if you liquidated everything today. This closes the XIRR calculation.' },
+              { n: '03', title: 'Adds your current value', body: 'You enter today\'s portfolio value — the combined value of all your holdings plus any cash currently sitting idle in your broker account. This becomes the terminal cash inflow, as if you liquidated everything today. This closes the XIRR calculation.' },
               { n: '04', title: 'Runs XIRR', body: 'The algorithm runs the iterative XIRR formula on your complete cash flow timeline. The result is your true annualized return — net of all charges, on exact dates.' },
               { n: '05', title: 'Benchmarks against Nifty 50', body: 'The same cash flows are used to calculate what your return would have been if you had invested identically into Nifty 50. This tells you whether your stock picks beat the index.' },
             ].map((item, i) => (
