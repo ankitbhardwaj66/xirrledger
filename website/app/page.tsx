@@ -432,8 +432,31 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══════════════════ FEATURES GRID ═══════════════════ */}
+      {/* ═══════════════════ VIDEO ═══════════════════ */}
       <section style={{ background: '#131f35', padding: '5rem 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="container-custom">
+          <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)', fontWeight: 800, color: '#ffffff', textAlign: 'center', marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
+            See It in Action
+          </h2>
+          <p style={{ textAlign: 'center', color: '#64748b', fontSize: '1.05rem', marginBottom: '2.5rem' }}>
+            Watch how to calculate your true XIRR in under 6 minutes
+          </p>
+          <div style={{ maxWidth: '800px', margin: '0 auto', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(245,158,11,0.15)', boxShadow: '0 30px 60px rgba(0,0,0,0.5)' }}>
+            <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0 }}>
+              <iframe
+                src="https://www.youtube.com/embed/ZXf0VT8RPmc"
+                title="Calculating XIRR with XIRR Ledger"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════ FEATURES GRID ═══════════════════ */}
+      <section style={{ background: '#0f172a', padding: '5rem 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="container-custom">
           <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)', fontWeight: 800, color: '#ffffff', textAlign: 'center', marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
             Powerful Features for Serious Investors
