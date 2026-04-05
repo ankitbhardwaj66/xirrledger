@@ -530,7 +530,7 @@ export default function Home() {
       </section>
 
       {/* ═══════════════════ SAMPLE REPORT ═══════════════════ */}
-      <section style={{ background: '#0f172a', padding: '4rem 0', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+      <section style={{ background: '#131f35', padding: '4rem 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="container-custom">
           <div style={{
             ...glass,
