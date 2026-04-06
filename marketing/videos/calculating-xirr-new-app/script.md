@@ -159,13 +159,29 @@ This IS the honest number. Not the flattering one. The real one.
 
 Let's click Download Report.
 
-The PDF has three sections and each one tells you something different.
+*[Open PDF — scroll to first page]*
 
-The first section is your overall summary. This is the big picture — total amount you've deposited into your broker account since day one, total you've withdrawn, your current portfolio value, dividend income received, and your net gain or loss in absolute rupees. It also shows your XIRR right at the top. This is what you've actually made — or lost — after everything is counted.
+The PDF starts with the same three numbers you saw on the results screen — your XIRR, Nifty's XIRR, and the performance gap. This is your headline. Mine says minus 6.90%, Nifty at minus 1.53%, and I underperformed by 5.37%.
 
-The second section is your performance versus Nifty 50. This is where it gets interesting. It shows your XIRR side by side with what Nifty 50 would have returned if you had put the exact same money in on the exact same dates. Same cash flows, same timing — the only difference is what that money was invested in. And it shows the performance gap — in my case, 5.37%. I underperformed the index by over 5 percentage points. This is the only fair way to benchmark yourself against the index. If your XIRR is higher, you're genuinely beating the market. If it's lower — and in my case it is — now you know.
+Right below that is the Portfolio Summary. This is the full picture — your first investment date, how long you've been invested, total number of transactions, and then the money numbers — total invested, total withdrawn, current portfolio value, and your net gain or loss. And your XIRR at the bottom. I'm blurring the rupee amounts but you get the idea — everything is right here in one place.
 
-The third section breaks down each account individually. If you uploaded files from multiple brokers, each one gets its own analysis. Total invested per account, XIRR per account, current value per account. This is useful if you want to know which broker account is performing better, or if one is dragging down your overall returns.
+Then comes the Nifty 50 Benchmark Comparison. This is the honest comparison. It shows what would have happened if every rupee you put into stocks had gone into Nifty 50 instead — on the exact same dates, in the exact same amounts. Your XIRR versus Nifty's XIRR, and the value difference. In my case — Nifty would have given me more money. Underperformed by 5.37%.
+
+*[Scroll to next section]*
+
+Now this is something I really like. Before the individual account breakdown, there's a motivational note — "Keep building your skills. You are 3.7 years into your investing journey. Nifty 50 is a tough benchmark — many investors only start beating it after 5 plus years of experience. Stay consistent." Honest, but not discouraging. I appreciate that.
+
+Then the Individual Account Analysis. Since I uploaded two Zerodha accounts, you can see a capital distribution pie chart — 52.6% in one account, 47.4% in the other. And a profit and loss bar chart per account so you can instantly see which one is dragging more.
+
+*[Scroll to individual account tables]*
+
+Each account then gets its own detailed breakdown. My first account — XIRR minus 7.20%. My second — minus 6.72%. Both in the red, but now I know exactly which one is performing worse.
+
+*[Scroll to final summary table]*
+
+And at the very end — an Account Comparison table. Both accounts side by side, and then a combined row at the bottom. Total invested across both, total withdrawn, current combined value, and total net gain or loss. This is your complete financial picture in one line.
+
+That's the full report. Everything your broker never told you — in one PDF.
 
 ---
 
