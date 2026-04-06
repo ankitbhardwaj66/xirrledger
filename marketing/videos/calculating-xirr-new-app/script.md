@@ -17,17 +17,9 @@ I called it XIRR Ledger. And today I'm going to show you exactly how it works.
 
 ## THE PROBLEM WITH CAGR
 
-Let's start with what your broker actually shows you.
+Most brokers show you CAGR — which only works if you invested everything on day one and never touched it again. But you don't invest that way. You add money regularly, withdraw sometimes, and keep cash sitting idle in your account before deploying it.
 
-Most brokers show you CAGR — Compound Annual Growth Rate. And CAGR is fine — if you put all your money in on day one and never touched it again.
-
-But that's not how anyone actually invests.
-
-You add money every few months. You sell some stocks and withdraw. You transfer money to your broker account and then wait — sometimes weeks — before you find the right stock. That cash sits idle. It's doing nothing. But you pulled it out of your savings account where it was earning interest.
-
-The moment any of that happens, CAGR gives you the wrong number. It just looks at your opening balance and closing balance and ignores everything in between.
-
-That's not a return. That's a rough guess.
+The moment any of that happens, CAGR gives you the wrong number. It ignores everything in between. That's not a return — that's a guess.
 
 ---
 
