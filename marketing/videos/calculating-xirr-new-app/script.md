@@ -105,9 +105,9 @@ Now you also see this section below — "Optional: Zerodha dividend statement." 
 
 Go to Console, then Reports, then Downloads. Select Dividend Statement. Now I'll download each financial year one by one.
 
-*[Download FY files one by one]*
+*[Download FY files — 2022-23, 2023-24, 2024-25, 2025-26 one by one]*
 
-One file per year — that's it. Now back to the app.
+Four years, four files. That's it. Now back to the app.
 
 *[Switch back to XIRR Ledger upload screen]*
 
