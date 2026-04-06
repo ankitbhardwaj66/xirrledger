@@ -304,3 +304,50 @@ LinkedIn:    https://xirrledger.com?utm_source=linkedin&utm_medium=social&utm_ca
 ---
 
 *Last updated: 2026-03-02 (evening) — keyword research, 2 blogs + 1 page + nav + remark-gfm fix*
+
+---
+
+## Session Log — 2026-04-06
+
+### AI Search Optimization (AEO)
+
+#### `llms.txt` — ✅ Live
+- Created `/llms.txt` at `xirrledger.com/llms.txt`
+- Standard adopted by Perplexity, ChatGPT Search, Claude, Gemini crawlers
+- Covers: site description, XIRR definition, why broker XIRR is wrong, all FAQ answers verbatim, all blog post summaries with URLs, all key page links
+- **Next**: Add "Quick Answer" block at top of each blog post so AI can quote it directly
+
+#### Blog images — ✅ Live
+- All 11 blog posts now have hero images
+- Sourced from Pexels (free), converted to WebP (15–54 KB each), self-hosted at `/blog/*.webp`
+- No external image dependencies at runtime
+
+#### New blog post — ✅ Live
+- `/blog/zerodha-xirr-not-showing/` — "Zerodha Shows a Dash Where Your XIRR Should Be"
+- Targets: `zerodha xirr not showing`, `zerodha xirr not working`, `zerodha xirr blank`, `zerodha holdings xirr dash`, `zerodha kite xirr not working`
+
+#### Brokerage charge accuracy fixes — ✅ Live
+- Corrected ₹20 flat brokerage claim across 4 files — delivery is ₹0 at Zerodha, ₹20 only for intraday/F&O
+- Files updated: `zerodha-xirr-not-showing.mdx`, `why-brokerage-charges-matter-in-xirr.mdx`, `how-to-calculate-xirr-excel-vs-ledger.mdx`, `how-to-calculate-xirr/page.tsx`
+
+#### Video section — ✅ Hidden
+- "See It in Action" YouTube section removed from homepage temporarily
+- Will be restored when new video is ready
+
+### Blog count: 9 → 11
+
+### AI Search Strategy — Next Actions
+| Priority | Action | Expected impact |
+|---|---|---|
+| High | Add "Quick Answer" block to top of each blog | AI quotes these verbatim |
+| High | Build dedicated `/what-is-xirr` authoritative definition page | Gets cited whenever someone asks "what is XIRR" |
+| Medium | Community answers on Reddit/TradingQ&A citing blogs | AI trains on these; builds backlinks |
+| Medium | Submit `llms.txt` URL to Perplexity feedback form | Ensures discovery |
+| Low | Podcast/YouTube transcript mentions | Longer-term authority signal |
+
+### Blog posts still needed (keyword-driven)
+- [ ] "Mutual Fund XIRR: What It Is and Why Your App Gets It Wrong" → `mutual fund xirr` (5k/month)
+- [ ] "Nifty 50 XIRR: Are You Actually Beating the Index?" → `nifty 50 xirr` (+900% trend)
+- [ ] "Groww XIRR Calculator — The Missing Piece" → `xirr calculator groww`
+
+*Last updated: 2026-04-06 — llms.txt, blog images, Zerodha XIRR blog, charge accuracy fixes, video hidden*
