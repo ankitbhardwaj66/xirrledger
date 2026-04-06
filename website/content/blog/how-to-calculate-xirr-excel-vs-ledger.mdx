@@ -57,15 +57,16 @@ Most tutorials tell you to do this:
 
 Every trade comes with charges deducted directly from your account. You never see them as a separate line item when buying stocks — they just silently reduce your ledger balance.
 
-| Charge | Rate | On ₹10,000 trade |
+| Charge | Rate | On ₹10,000 delivery trade |
 |---|---|---|
 | STT (delivery) | 0.1% buy + 0.1% sell | ₹20 per round trip |
-| Brokerage | ₹20/order (Zerodha flat) | ₹20 per order |
-| Exchange charges | ~0.003% | ₹0.30 |
-| GST (on brokerage + exchange) | 18% | ₹3.65 |
+| Brokerage (Zerodha) | ₹0 for delivery; ₹20/order for intraday & F&O | ₹0 |
+| Exchange charges | ~0.00322% | ₹0.32 |
+| GST (on exchange charges) | 18% | ₹0.06 |
 | Stamp duty | 0.015% on buy | ₹1.50 |
+| SEBI charges | ₹10/crore | ₹0.10 |
 
-For a typical investor making 80 trades over 3 years (₹12L turnover), these charges add up to **₹5,000–₹6,000** — money that left your account and never went into a stock. If you only track stock purchases, your XIRR is pretending this money didn't exist. The result: your calculated XIRR is 1–2% higher than your real return.
+Even with zero brokerage on delivery, you're still paying STT, exchange charges, SEBI fees, GST, and stamp duty. For a typical investor making 80 delivery trades over 3 years (₹12L turnover), these charges add up to **₹3,000–₹4,000** — money that left your account and never went into a stock. If you only track stock purchase prices, your XIRR is pretending this money didn't exist. The result: your calculated XIRR is 0.5–1.5% higher than your real return.
 
 **Problem 2: Complexity explodes with a real portfolio.**
 
