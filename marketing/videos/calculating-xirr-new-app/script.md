@@ -145,8 +145,6 @@ Now before you feel too bad for me — keep in mind this result covers a period 
 
 But look at the middle number — Nifty 50's XIRR over the exact same period, with the exact same cash flow timing. Point 28 percent. Basically flat. So even the index went nowhere.
 
-And then the third box — Performance versus Nifty 50. Minus 6.90%. That's my gap. I underperformed the index by almost 7 percentage points.
-
 Now that's a hard number to see. But this is exactly why you need to know it. Because if I didn't run this, I'd have no idea. I might have assumed I was doing fine. I was not.
 
 This IS the honest number. Not the flattering one. The real one.
@@ -161,7 +159,7 @@ The PDF has three sections and each one tells you something different.
 
 The first section is your overall summary. This is the big picture — total amount you've deposited into your broker account since day one, total you've withdrawn, your current portfolio value, dividend income received, and your net gain or loss in absolute rupees. It also shows your XIRR right at the top. This is what you've actually made — or lost — after everything is counted.
 
-The second section is your performance versus Nifty 50. This is where it gets interesting. It shows your XIRR side by side with what Nifty 50 would have returned if you had put the exact same money in on the exact same dates. Same cash flows, same timing — the only difference is what that money was invested in. This is the only fair way to benchmark yourself against the index. If your XIRR is higher, you're genuinely beating the market. If it's lower — and in my case it is — now you know.
+The second section is your performance versus Nifty 50. This is where it gets interesting. It shows your XIRR side by side with what Nifty 50 would have returned if you had put the exact same money in on the exact same dates. Same cash flows, same timing — the only difference is what that money was invested in. And it shows the performance gap — in my case, minus 6.90%. I underperformed the index by almost 7 percentage points. This is the only fair way to benchmark yourself against the index. If your XIRR is higher, you're genuinely beating the market. If it's lower — and in my case it is — now you know.
 
 The third section breaks down each account individually. If you uploaded files from multiple brokers, each one gets its own analysis. Total invested per account, XIRR per account, current value per account. This is useful if you want to know which broker account is performing better, or if one is dragging down your overall returns.
 
