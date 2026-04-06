@@ -143,7 +143,9 @@ Yes. Negative. Take a moment.
 
 Now before you feel too bad for me — keep in mind this result covers a period that included the Iran situation sending global markets into a bit of a spiral. When geopolitics decides to go to war with your portfolio, even the honest numbers look rough.
 
-But look at the middle number — Nifty 50's XIRR over the exact same period, with the exact same cash flow timing. Point 28 percent. Basically flat. So even the index went nowhere.
+*[Point to Nifty 50 XIRR on screen]*
+
+And look at this — Nifty 50's XIRR over the exact same period, with the exact same cash flow timing. Point 28 percent. Basically flat. So even the index went nowhere.
 
 Now that's a hard number to see. But this is exactly why you need to know it. Because if I didn't run this, I'd have no idea. I might have assumed I was doing fine. I was not.
 
