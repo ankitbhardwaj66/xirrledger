@@ -83,21 +83,25 @@ Go to xirrledger.com and click Launch Calculator.
 
 Sign in with Google or enter your email — you'll get a quick OTP to verify.
 
-Now for the ledger file. Not sure how to download it? See this link right here on the upload screen — "How to download your ledger."
+Now for the ledger file. See this link in the top right — "How to download?"
 
-*[Click the link — guide modal opens]*
+*[Click "How to download?" — modal opens]*
 
-This opens a step-by-step guide for every supported broker. For Zerodha it tells you exactly where to go — Console, then Funds, then View Statement. Select all segments, pick your full date range starting from the very first day you added money to Zerodha, and download the CSV or XLSX file. That's your ledger.
+This opens a guide for every supported broker. I'm on Zerodha, so let me walk through that tab.
 
-For Groww it's under Funds, All Transactions — download the PDF, one file per year. Your PAN number is the password.
+Step 1 — click "Open Zerodha Statement" — it's a direct link, opens the statement page automatically if you're already signed in.
 
-For Fyers it's under Reports, Ledger, download the CSV.
+Step 2 — select All Segments as the category.
 
-If you have dividend income from Zerodha, download those separately from Console — Reports, Dividend Statement — one file per financial year. The guide covers this too.
+Step 3 — set the date range from your very first investment till today.
 
-*[Close the modal, back to upload screen]*
+Step 4 — click the blue arrow, then click XLSX. One file. No password needed. That covers all your years in one download.
 
-Now drag and drop all your files here. You can mix files from multiple brokers in the same session — the app auto-detects what's what.
+*[Close the modal]*
+
+Now you also see this section below the upload area — "Optional: Zerodha dividend statement." If you've received any dividends, go to Zerodha Console, then Reports, then Downloads, select Dividend Statement, choose each financial year and download. Upload one file per year. This adds your dividend income as cash inflows into the XIRR calculation — which most tools completely ignore.
+
+Now drag and drop all your files here. You can mix files from multiple brokers in the same session — the app figures out what's what automatically.
 
 Files validated. Now enter your current holdings value — the live market value of everything you're holding right now. You can see this in your Kite dashboard under Holdings. Also add your available cash balance sitting in the account.
 
