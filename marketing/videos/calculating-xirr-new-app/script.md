@@ -101,7 +101,7 @@ Step 4 — click the blue arrow, then click XLSX. One file. No password needed. 
 
 And for dividends — you can see this section below — "Optional: Zerodha dividend statement." Just click the direct link, download one file per financial year, and upload those too.
 
-I've already downloaded all my files before recording this — my ledger and dividend files for 2022-23, 2023-24, 2024-25, and 2025-26. So let me just upload them now and hit Calculate.
+I've already downloaded all my files before recording this — I have two Zerodha accounts, so I've got the ledger and dividend files for both accounts, covering 2022-23, 2023-24, 2024-25, and 2025-26. So let me just upload them all now and hit Calculate.
 
 *[Drag and drop all files into the upload area]*
 
