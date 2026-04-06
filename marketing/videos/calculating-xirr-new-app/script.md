@@ -99,7 +99,7 @@ Step 4 — click the blue arrow, then click XLSX. One file. No password needed. 
 
 *[Close the modal]*
 
-Now you also see this section below — "Optional: Zerodha dividend statement." For your dividends, you can click this direct link right here, or manually go to Zerodha Console, then Reports, then Downloads.
+Now you also see this section below — "Optional: Zerodha dividend statement." For your dividends, just click this direct link right here.
 
 *[Click the Zerodha Console → Reports → Downloads link]*
 
