@@ -99,19 +99,11 @@ Step 4 — click the blue arrow, then click XLSX. One file. No password needed. 
 
 *[Close the modal]*
 
-Now you also see this section below — "Optional: Zerodha dividend statement." For your dividends, just click this direct link right here.
+And for dividends — you can see this section below — "Optional: Zerodha dividend statement." Just click the direct link, download one file per financial year, and upload those too.
 
-*[Click the Zerodha Console → Reports → Downloads link]*
+I've already downloaded all my files before recording this — my ledger and dividend files for 2022-23, 2023-24, 2024-25, and 2025-26. So let me just upload them now and hit Calculate.
 
-*[Download FY files — 2022-23, 2023-24, 2024-25, 2025-26 one by one]*
-
-Four years, four files. That's it. Now back to the app.
-
-*[Switch back to XIRR Ledger upload screen]*
-
-I'll drop these dividend files in along with my ledger file. This adds your dividend income as cash inflows into the XIRR calculation — which most tools completely ignore. If you've never received dividends, skip this — it's optional.
-
-Now drag and drop all your files here. You can mix files from multiple brokers in the same session — the app figures out what's what automatically.
+*[Drag and drop all files into the upload area]*
 
 Files validated. Now enter your current holdings value — the live market value of everything you're holding right now. Let me pull that up.
 
