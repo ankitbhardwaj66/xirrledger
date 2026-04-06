@@ -59,28 +59,43 @@ Fair question. Assume Zerodha eventually figures out the engineering and starts 
 
 Here's why: even if Zerodha correctly accounts for every bank transfer in and out of your account, there's a layer of costs that sits *below* the fund-flow level. These are the charges deducted on every trade:
 
-- **Brokerage** (₹20 per executed order at Zerodha)
-- **STT** — Securities Transaction Tax, 0.1% on delivery buy and sell
-- **Exchange transaction charges** — NSE/BSE fees per trade
-- **SEBI charges** — a small but real regulatory levy
-- **GST** — 18% on brokerage and exchange charges
-- **Stamp duty** — 0.015% on buy-side delivery trades
+- **Brokerage** — ₹0 for equity delivery (Zerodha charges nothing), but ₹20 flat per executed order for intraday and F&O
+- **STT** — 0.1% on both buy and sell for delivery; 0.025% on sell side for intraday; 0.02% on F&O futures sell; 0.1% on options sell (on premium)
+- **Exchange transaction charges** — NSE charges ~0.00322% on delivery trades
+- **SEBI charges** — ₹10 per crore traded
+- **GST** — 18% on brokerage + exchange charges
+- **Stamp duty** — 0.015% on the buy side for delivery
 
-When you buy ₹1,00,000 worth of stocks, Zerodha's ledger shows a debit of roughly ₹1,00,245. The ₹245 is taxes and charges — real money that left your account, directly reducing your net return.
+Even on a delivery trade where Zerodha charges ₹0 brokerage, you're still paying STT, exchange charges, SEBI fees, GST on those, and stamp duty. The brokerage waiver doesn't make the trade free — it just removes one line item.
 
-A holdings-based XIRR (calculated from trade prices) would record the ₹1,00,000 stock purchase but ignore the ₹245 in charges. A fund-flow XIRR would capture the full ₹1,00,245 debit — because that's what actually left your bank.
+When you buy ₹1,00,000 worth of stocks on delivery, Zerodha's ledger shows a debit of roughly ₹1,00,187. That ₹187 is real money that left your account — STT, exchange fees, SEBI charges, GST, stamp duty — and it directly reduces your net return.
+
+A holdings-based XIRR (calculated from trade prices) records ₹1,00,000 as your cost. A ledger-based XIRR captures the full ₹1,00,187 debit — because that's what actually left your account.
 
 The difference matters. Let's look at it over a real portfolio.
 
 ## The Charges Add Up More Than You Think
 
-| Annual trades | Average charges per trade | Annual drag |
-|---|---|---|
-| 20 trades | ₹250 | ₹5,000 |
-| 50 trades | ₹250 | ₹12,500 |
-| 100 trades | ₹250 | ₹25,000 |
+For a typical ₹50,000 delivery trade on Zerodha (₹0 brokerage):
 
-On a ₹20 lakh portfolio, ₹12,500 per year in charges works out to a **0.625% annual drag on your returns**. Over 5 years, with compounding, that's the difference between 12% XIRR and 11.3% XIRR.
+| Charge | Rate | Amount |
+|---|---|---|
+| STT (buy + sell) | 0.1% each way | ~₹100 |
+| Exchange charges | ~0.00322% | ~₹32 |
+| SEBI charges | ₹10/crore | ~₹1 |
+| GST on above | 18% | ~₹6 |
+| Stamp duty (buy) | 0.015% | ~₹8 |
+| **Total** | | **~₹147** |
+
+For an F&O options trade at ₹20 brokerage, add another ₹20 per leg — plus significantly higher STT on expiry.
+
+| Annual trades | Avg charges per trade | Annual drag |
+|---|---|---|
+| 20 delivery trades | ₹150 | ₹3,000 |
+| 50 delivery trades | ₹150 | ₹7,500 |
+| 50 intraday/F&O trades | ₹300 | ₹15,000 |
+
+On a ₹20 lakh portfolio, ₹7,500 per year in charges works out to a **0.375% annual drag on your returns**. Over 5 years with compounding, that's the difference between 12% XIRR and 11.6% XIRR — and it grows the more actively you trade.
 
 If you're using your XIRR to benchmark against Nifty 50 — which returned roughly 12–14% XIRR over the last decade — a 0.6% gap is meaningful. It can be the difference between "I'm beating the index" and "I'm just matching it."
 

@@ -23,33 +23,36 @@ When you calculate your investment returns, are you accounting for every rupee t
 
 Every time you buy or sell a stock, mutual fund, or any other security, your broker deducts several charges:
 
-- **Brokerage fees** - The commission your broker charges per trade
-- **STT (Securities Transaction Tax)** - Government tax on securities transactions
-- **Exchange charges** - Fees charged by NSE/BSE
-- **GST** - Tax on brokerage and transaction charges
-- **SEBI charges** - Regulatory charges
-- **Stamp duty** - State government charges on purchases
+- **Brokerage** — ₹0 for equity delivery at Zerodha; ₹20 flat per executed order for intraday and F&O
+- **STT (Securities Transaction Tax)** — 0.1% on both buy and sell for delivery; 0.025% on sell side for intraday
+- **Exchange charges** — NSE charges ~0.00322% on delivery trades
+- **GST** — 18% on brokerage + exchange charges
+- **SEBI charges** — ₹10 per crore traded
+- **Stamp duty** — 0.015% on the buy side for delivery
+
+Zerodha's ₹0 delivery brokerage is real — but it only removes one line item. STT, exchange charges, SEBI fees, GST, and stamp duty still apply on every delivery trade.
 
 ### A Real Example
 
-Let's say you bought ₹1,00,000 worth of stocks. Here's what actually happens:
+Let's say you bought ₹1,00,000 worth of stocks on delivery at Zerodha:
 
-**Traditional XIRR calculation (wrong):**
+**What most calculators assume:**
 - Investment: ₹1,00,000
 - Current Value: ₹1,20,000
 - "Returns": 20%
 
 **Reality (what your ledger shows):**
-- Money debited from account: ₹1,00,245
+- Money debited from account: ₹1,00,187
   - Stock purchase: ₹1,00,000
-  - Brokerage: ₹20
-  - STT: ₹100
-  - Exchange charges: ₹35
-  - GST: ₹18
-  - Stamp duty: ₹50
-  - Other charges: ₹22
+  - Brokerage: ₹0 (delivery is free)
+  - STT (buy side): ₹100
+  - Exchange charges: ₹32
+  - SEBI charges: ₹1
+  - GST on exchange charges: ₹6
+  - Stamp duty: ₹15
+  - Other charges: ₹33
 
-When you sell at ₹1,20,000, you'll pay another ₹500+ in various charges. Your actual profit isn't ₹20,000—it's ₹19,255. That's **3.7% lower returns** than what traditional calculators show!
+When you sell at ₹1,20,000, you'll pay STT again (₹120) plus exchange charges and GST on the sell side. Your actual profit isn't ₹20,000 — it's closer to ₹19,600. That's **2% lower returns** than what a holdings-based calculator shows.
 
 ## Why Manual XIRR Calculators Miss This
 
@@ -64,9 +67,9 @@ But they miss the crucial detail: **the actual cash flow from your bank account*
 
 These charges might seem small, but they add up:
 
-- 50 trades in a year with ₹200 average charges = ₹10,000 in fees
-- Over 5 years = ₹50,000 in hidden costs
-- For a ₹10 lakh portfolio, that's a **5% drag on your returns**
+- 50 delivery trades in a year with ₹150 average charges = ₹7,500 in fees
+- Over 5 years = ₹37,500 in hidden costs
+- For a ₹10 lakh portfolio, that's a **3.75% drag on your returns** — and that's without any intraday or F&O activity
 
 And here's the kicker: **the more frequently you trade, the bigger the impact**. Day traders and F&O traders can see their actual returns cut in half by transaction costs.
 

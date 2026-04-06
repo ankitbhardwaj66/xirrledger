@@ -57,8 +57,8 @@ const steps = [
 const whyLedger = [
   {
     charge: 'Brokerage',
-    detail: '₹20 per executed order (Zerodha flat fee)',
-    impact: 'Adds up fast for active investors',
+    detail: '₹0 for equity delivery; ₹20 flat per order for intraday & F&O (Zerodha)',
+    impact: 'Free delivery brokerage still doesn\'t mean free trade — other charges apply',
   },
   {
     charge: 'STT (Securities Transaction Tax)',
