@@ -83,11 +83,21 @@ Go to xirrledger.com and click Launch Calculator.
 
 Sign in with Google or enter your email — you'll get a quick OTP to verify.
 
-Now for the ledger file. In Zerodha, go to Console, then Funds, then View Statement. Select all segments and pick your full date range — from the very first day you added money to Zerodha. Download the CSV or XLSX file. That's your ledger.
+Now for the ledger file. Not sure how to download it? See this link right here on the upload screen — "How to download your ledger."
 
-If you have dividend income, download those separately from Console — Reports, Dividend Statement — one file per financial year.
+*[Click the link — guide modal opens]*
 
-Now drag and drop all your files here. The app auto-detects what's what.
+This opens a step-by-step guide for every supported broker. For Zerodha it tells you exactly where to go — Console, then Funds, then View Statement. Select all segments, pick your full date range starting from the very first day you added money to Zerodha, and download the CSV or XLSX file. That's your ledger.
+
+For Groww it's under Funds, All Transactions — download the PDF, one file per year. Your PAN number is the password.
+
+For Fyers it's under Reports, Ledger, download the CSV.
+
+If you have dividend income from Zerodha, download those separately from Console — Reports, Dividend Statement — one file per financial year. The guide covers this too.
+
+*[Close the modal, back to upload screen]*
+
+Now drag and drop all your files here. You can mix files from multiple brokers in the same session — the app auto-detects what's what.
 
 Files validated. Now enter your current holdings value — the live market value of everything you're holding right now. You can see this in your Kite dashboard under Holdings. Also add your available cash balance sitting in the account.
 
