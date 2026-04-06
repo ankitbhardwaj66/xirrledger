@@ -113,7 +113,21 @@ I'll drop these dividend files in along with my ledger file. This adds your divi
 
 Now drag and drop all your files here. You can mix files from multiple brokers in the same session — the app figures out what's what automatically.
 
-Files validated. Now enter your current holdings value — the live market value of everything you're holding right now. You can see this in your Kite dashboard under Holdings. Also add your available cash balance sitting in the account.
+Files validated. Now enter your current holdings value — the live market value of everything you're holding right now. Let me pull that up.
+
+*[Switch to Kite dashboard → Holdings]*
+
+This number here — current value — that's what you enter. Copy it.
+
+*[Switch back to XIRR Ledger, paste holdings value]*
+
+Now the cash balance — the money sitting idle in your account. Let me check that too.
+
+*[Switch to Kite → Funds]*
+
+This is your available cash. Copy that number as well.
+
+*[Switch back to XIRR Ledger, paste cash balance]*
 
 Hit Calculate XIRR. Give it about 30 seconds.
 
