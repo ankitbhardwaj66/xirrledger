@@ -1,0 +1,69 @@
+# XIRR Ledger
+
+> XIRR Ledger is a free tool for Indian retail investors to calculate their true, after-cost, annualised portfolio XIRR from broker ledger files. It supports Zerodha, Groww, and Fyers. Unlike broker apps that show inflated or missing XIRR, XIRR Ledger reads actual cash flows — every deposit, withdrawal, STT, brokerage charge, and fee — and computes the real return. A Nifty 50 benchmark comparison is included so investors can see whether they are beating the index.
+
+## What is XIRR?
+
+XIRR (Extended Internal Rate of Return) is the most accurate way to measure investment returns when money is invested at irregular intervals. Unlike CAGR, which assumes a single lump-sum investment held to maturity, XIRR accounts for the exact date and amount of every cash flow — deposits, withdrawals, dividends, charges, and idle cash. For any Indian investor who adds money regularly or trades across multiple dates, XIRR is the only metric that reflects true performance.
+
+## Why broker XIRR is wrong (or missing)
+
+- **Zerodha**: Shows a dash (–) in the Holdings page XIRR field. Zerodha cannot compute XIRR because it requires complete fund-flow history across all deposits and withdrawals, not just trade data.
+- **Groww and others**: May show a figure, but it typically excludes idle cash, STT, DP charges, brokerage, GST, SEBI fees, and stamp duty. This inflates the displayed return by 0.5–2 percentage points.
+- **XIRR Ledger**: Reads the actual broker ledger (CSV/PDF/XLSX) where every rupee in and out is recorded. All charges are automatically included. Nothing is estimated.
+
+## Key pages
+
+- [Calculator](https://xirrledger.com/calculator/): Upload Zerodha/Groww/Fyers ledger files, get XIRR + Nifty 50 benchmark + PDF report. Free, no subscription.
+- [How It Works](https://xirrledger.com/how-it-works/): Step-by-step explanation of the upload → process → report flow.
+- [How to Calculate XIRR](https://xirrledger.com/how-to-calculate-xirr/): Explanation of the XIRR formula, why ledger-based calculation is correct, and what charges are included.
+- [Features](https://xirrledger.com/features/): Multi-broker support, Nifty 50 comparison, charge inclusion, PDF report, OTP email auth.
+- [FAQ](https://xirrledger.com/faq/): 18 questions covering XIRR vs CAGR, negative XIRR, idle cash, STT handling, broker support, MF disclaimer.
+- [Blog](https://xirrledger.com/blog/): In-depth articles on XIRR, charges, broker limitations, and investing concepts.
+- [Sample Report](https://xirrledger.com/sample_report.pdf): Example PDF output showing XIRR, Nifty comparison, account breakdown, capital flow.
+
+## Frequently asked questions
+
+**What is XIRR and why does it matter for Indian investors?**
+XIRR is the most accurate return metric for irregular investments. It accounts for timing of every deposit and withdrawal, idle cash in the broker account, and all transaction charges including STT and brokerage. It gives one honest annualised return — the number most brokers do not show.
+
+**Why does XIRR Ledger show a lower return than my broker app?**
+Brokers inflate returns by ignoring idle cash (money sitting uninvested), excluding STT, DP charges, brokerage, GST, and stamp duty, and only counting their own platform. XIRR Ledger reads actual ledger cash flows where every rupee and every fee is captured.
+
+**Why is Zerodha XIRR not showing / showing a dash?**
+Zerodha's Holdings page has an XIRR field that shows "–". This is not a bug — Zerodha cannot compute XIRR because it requires complete fund-flow history (all deposits and withdrawals), not just trade data. Even if Zerodha adds this feature in the future, it would still miss per-trade charges like STT, exchange fees, SEBI charges, and stamp duty unless it reads the actual ledger.
+
+**What is the difference between XIRR and CAGR?**
+CAGR assumes a single investment on one day, never touched. XIRR handles real-world investing — multiple investments on different dates, withdrawals, idle cash. For any investor who has added money more than once, XIRR is the correct metric.
+
+**Which brokers are supported?**
+Zerodha (XLSX), Groww (PDF, password is PAN in uppercase), Fyers (CSV, one file per financial year). Multiple accounts from different brokers can be combined in one session.
+
+**Is it free?**
+Yes. Completely free — no subscription, no credit card. Sign in with Google or email OTP, upload ledger, get XIRR. A detailed PDF report is emailed after every calculation.
+
+**What does negative XIRR mean?**
+The portfolio has lost value in annualised terms. Compare with the Nifty 50 XIRR shown alongside — if Nifty is also negative, the market itself is down, not just stock picks.
+
+**How are STT and brokerage handled?**
+At Zerodha, equity delivery brokerage is ₹0. For intraday and F&O it is ₹20 flat per executed order. STT is 0.1% on both buy and sell for delivery, 0.025% on sell for intraday. Exchange charges, SEBI fees, GST, and stamp duty also apply. All of these are deducted from the ledger balance automatically — XIRR Ledger captures them without any manual input.
+
+**Can I combine multiple broker accounts?**
+Yes. Upload files from Zerodha, Groww, and Fyers in the same session. The calculator identifies each account, shows individual XIRR per account, and gives a single combined XIRR with capital breakdown in the PDF report.
+
+**Does it support mutual funds?**
+No. XIRR Ledger is built for equity investing through broker accounts. Mutual funds use a different cash flow structure and are not supported.
+
+## Blog articles
+
+- [Zerodha XIRR Not Showing — Here's Why](https://xirrledger.com/blog/zerodha-xirr-not-showing/): Why Zerodha shows a dash in the XIRR field, why even a future fix would miss all per-trade charges, and why ledger-based calculation is the only correct approach.
+- [Are You Actually Beating Nifty 50?](https://xirrledger.com/blog/are-you-beating-nifty50/): How to compare your portfolio XIRR against Nifty 50 on the same dates and amounts — the only fair benchmark.
+- [XIRR vs CAGR — Which Shows Real Returns?](https://xirrledger.com/blog/xirr-vs-cagr-which-one-shows-real-returns/): Why CAGR misleads investors who invest regularly, and how XIRR handles timing correctly.
+- [Why Ledger-Based XIRR Shows True Returns](https://xirrledger.com/blog/why-ledger-based-xirr-shows-true-returns/): How idle cash drags returns and why reading the ledger captures the full picture.
+- [Why Every Trader Needs XIRR](https://xirrledger.com/blog/why-every-trader-needs-xirr/): How XIRR exposes the real cost of active trading vs passive investing.
+- [Why Brokerage Charges Matter in XIRR](https://xirrledger.com/blog/why-brokerage-charges-matter-in-xirr/): STT, exchange charges, SEBI fees, GST, and stamp duty — how they reduce real returns even when brokerage is zero.
+- [Your Broker's XIRR Is Lying — SGBs, Bonds & Unlisted Stocks Are Missing](https://xirrledger.com/blog/broker-xirr-misses-sgb-govt-bonds-unlisted-stocks/): How investments outside the broker account distort XIRR upward.
+- [How Dividends and SGB Interest Are Handled in XIRR](https://xirrledger.com/blog/how-dividends-and-sgb-interest-are-handled-in-xirr/): Why dividends and interest must be treated as inflows for XIRR to be accurate.
+- [How to Calculate XIRR — Excel vs Ledger](https://xirrledger.com/blog/how-to-calculate-xirr-excel-vs-ledger/): Why Excel XIRR misses charges and how ledger-based calculation fixes this.
+- [XIRR in SIP — The Smarter Way to Invest](https://xirrledger.com/blog/xirr-in-sip-the-smarter-way-to-invest/): How XIRR handles irregular SIP investments and why it is better than simple return calculations.
+- [Stop Holding Losing Stocks — Book the Loss](https://xirrledger.com/blog/stop-holding-losing-stocks-book-the-loss/): How XIRR reveals the true opportunity cost of holding underperforming stocks.
