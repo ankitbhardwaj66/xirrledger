@@ -135,19 +135,21 @@ Hit Calculate XIRR. Give it about 30 seconds.
 
 ## THE RESULT — WITTY COMMENT
 
-And here is my number.
+And here are my numbers.
 
-Minus six percent.
+My XIRR — minus 6.62%.
 
-Yes. Negative six. Take a moment.
+Yes. Negative. Take a moment.
 
-Now before you feel too bad for me — or too good — keep in mind that this result is from a period that included the Iran situation sending global markets into a bit of a spiral. When geopolitics decides to go to war with your portfolio, even the honest numbers look rough.
+Now before you feel too bad for me — keep in mind this result covers a period that included the Iran situation sending global markets into a bit of a spiral. When geopolitics decides to go to war with your portfolio, even the honest numbers look rough.
 
-But that's exactly the point. This IS the honest number. Not the flattering one. The real one.
+But look at the middle number — Nifty 50's XIRR over the exact same period, with the exact same cash flow timing. Point 28 percent. Basically flat. So even the index went nowhere.
 
-And right next to it — Nifty 50's XIRR over the exact same period, with the exact same cash flow timing. So you can see directly — are you beating the index or not?
+And then the third box — Performance versus Nifty 50. Minus 6.90%. That's my gap. I underperformed the index by almost 7 percentage points.
 
-In my case, I am not. The market is beating me. And now I know that clearly, instead of guessing.
+Now that's a hard number to see. But this is exactly why you need to know it. Because if I didn't run this, I'd have no idea. I might have assumed I was doing fine. I was not.
+
+This IS the honest number. Not the flattering one. The real one.
 
 ---
 
