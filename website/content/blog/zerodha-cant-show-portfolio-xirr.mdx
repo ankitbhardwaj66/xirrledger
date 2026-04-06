@@ -1,0 +1,115 @@
+---
+title: "Zerodha Shows a Dash Where Your XIRR Should Be — Here's Why"
+date: "2026-04-06"
+author: "XIRR Ledger Team"
+excerpt: "Zerodha's Holdings page has an XIRR field. It shows '–'. This isn't a bug — it's a fundamental limitation. And even if they fix it someday, the number will still be wrong."
+category: "Investment Insights"
+keywords:
+  - Zerodha XIRR not showing
+  - Zerodha portfolio XIRR missing
+  - Zerodha XIRR dash
+  - Zerodha XIRR wrong
+  - Zerodha XIRR calculation
+  - portfolio XIRR India
+  - true XIRR calculator India
+  - XIRR after charges India
+  - brokerage charges XIRR
+  - STT impact XIRR
+  - Zerodha Kite XIRR
+  - correct portfolio return India
+---
+
+Open Zerodha's Holdings page and look at the top right of your summary card. You'll see four numbers: Invested, Present Value, Unrealized P&L, and XIRR.
+
+That last one shows a dash: **–**
+
+Not zero. Not even an error message. Just a dash — as if the field doesn't apply to you.
+
+It applies to you. Zerodha just can't calculate it.
+
+## Why the Dash Appears
+
+XIRR is not a simple percentage return. It's a time-weighted, cash-flow-based annualised return. To calculate it, you need to know:
+
+1. **Every rupee you put in**, and **on exactly which date**
+2. **Every rupee you took out**, and **on exactly which date**
+3. **Your portfolio's current value**, as the final inflow
+
+The third piece — current value — is trivially available to Zerodha. They know your holdings.
+
+The first two pieces are the problem.
+
+Your cash flow history lives in your **ledger**: every bank transfer you made into Zerodha, every withdrawal you made out, every dividend credit, every charge deduction. That's a long, messy record, and it differs for every user depending on when they opened their account, how many times they've added or withdrawn funds, and whether they've ever reinvested proceeds.
+
+Computing XIRR accurately across all of that — for millions of accounts, in real time — is a genuinely hard problem. So Zerodha shows a dash instead.
+
+To be fair, they've acknowledged this. On their support pages and community forums, Zerodha has stated that XIRR calculation requires complete fund flow data which they're working on. The field exists as a placeholder. The number does not.
+
+## "But What If They Fix It Someday?"
+
+Fair question. Assume Zerodha eventually figures out the engineering and starts showing a number where the dash is today.
+
+**It will still be wrong.**
+
+Here's why: even if Zerodha correctly accounts for every bank transfer in and out of your account, there's a layer of costs that sits *below* the fund-flow level. These are the charges deducted on every trade:
+
+- **Brokerage** (₹20 per executed order at Zerodha)
+- **STT** — Securities Transaction Tax, 0.1% on delivery buy and sell
+- **Exchange transaction charges** — NSE/BSE fees per trade
+- **SEBI charges** — a small but real regulatory levy
+- **GST** — 18% on brokerage and exchange charges
+- **Stamp duty** — 0.015% on buy-side delivery trades
+
+When you buy ₹1,00,000 worth of stocks, Zerodha's ledger shows a debit of roughly ₹1,00,245. The ₹245 is taxes and charges — real money that left your account, directly reducing your net return.
+
+A holdings-based XIRR (calculated from trade prices) would record the ₹1,00,000 stock purchase but ignore the ₹245 in charges. A fund-flow XIRR would capture the full ₹1,00,245 debit — because that's what actually left your bank.
+
+The difference matters. Let's look at it over a real portfolio.
+
+## The Charges Add Up More Than You Think
+
+| Annual trades | Average charges per trade | Annual drag |
+|---|---|---|
+| 20 trades | ₹250 | ₹5,000 |
+| 50 trades | ₹250 | ₹12,500 |
+| 100 trades | ₹250 | ₹25,000 |
+
+On a ₹20 lakh portfolio, ₹12,500 per year in charges works out to a **0.625% annual drag on your returns**. Over 5 years, with compounding, that's the difference between 12% XIRR and 11.3% XIRR.
+
+If you're using your XIRR to benchmark against Nifty 50 — which returned roughly 12–14% XIRR over the last decade — a 0.6% gap is meaningful. It can be the difference between "I'm beating the index" and "I'm just matching it."
+
+### For F&O Traders, It's Much Worse
+
+Futures and options carry heavier charges, particularly STT on options expiring in-the-money. Many F&O traders track their profit per trade and believe they're net positive. When they see the full ledger XIRR — including every charge on every contract — the reality is often uncomfortable. Some are net negative on an annualised basis after costs, even in years where individual trades felt profitable.
+
+Holdings-based XIRR would miss this entirely.
+
+## What Correct XIRR Calculation Actually Requires
+
+To get a number you can trust, your XIRR calculation needs to be built on **actual cash flows** — the exact amounts that moved in and out of your account, not the face value of trades.
+
+This means:
+
+- **Use your ledger**, not your holdings list
+- Every bank transfer in is an outflow (you deployed capital)
+- Every bank withdrawal is an inflow (you recovered capital)
+- Every charge, tax, and fee is captured automatically — because the ledger reflects the net debit, not the gross trade value
+- Dividends, SGB interest, and corporate action credits are inflows
+
+The ledger is the complete financial record. Holdings are a snapshot of one dimension of your portfolio — current positions. Holdings alone cannot give you XIRR.
+
+## The Ledger-Based Approach
+
+This is exactly why XIRR Ledger is built the way it is. Instead of asking you to enter your holdings or current value manually, it asks you to upload your broker's **account ledger** — the CSV file that Zerodha, Groww, and Fyers provide on their platforms.
+
+Every transaction in that file is a data point. The XIRR is computed from the actual cash flows, not from estimated position values. Every charge that Zerodha deducted is already baked into the numbers, because the ledger recorded the net debit.
+
+The result is the number that matters: your real, after-cost, time-weighted annualised return.
+
+Not an approximation. Not a placeholder. Not a dash.
+
+---
+
+**Want to see your actual XIRR — including all charges?** [Calculate now →](https://xirrledger.com/calculator)
+
+**See what a full report looks like** [Download Sample Report →](/sample_report.pdf)
