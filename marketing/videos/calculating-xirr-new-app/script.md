@@ -99,7 +99,19 @@ Step 4 — click the blue arrow, then click XLSX. One file. No password needed. 
 
 *[Close the modal]*
 
-Now you also see this section below the upload area — "Optional: Zerodha dividend statement." If you've received any dividends, go to Zerodha Console, then Reports, then Downloads, select Dividend Statement, choose each financial year and download. Upload one file per year. This adds your dividend income as cash inflows into the XIRR calculation — which most tools completely ignore.
+Now you also see this section below — "Optional: Zerodha dividend statement." Let me grab those files right now.
+
+*[Switch to Zerodha Console]*
+
+Go to Console, then Reports, then Downloads. Select Dividend Statement. Now I'll download each financial year one by one.
+
+*[Download FY files one by one]*
+
+One file per year — that's it. Now back to the app.
+
+*[Switch back to XIRR Ledger upload screen]*
+
+I'll drop these dividend files in along with my ledger file. This adds your dividend income as cash inflows into the XIRR calculation — which most tools completely ignore. If you've never received dividends, skip this — it's optional.
 
 Now drag and drop all your files here. You can mix files from multiple brokers in the same session — the app figures out what's what automatically.
 
