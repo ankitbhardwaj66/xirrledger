@@ -103,7 +103,7 @@ Now you also see this section below — "Optional: Zerodha dividend statement." 
 
 *[Switch to Zerodha Console]*
 
-Go to Console, then Reports, then Downloads. Select Dividend Statement. Now I'll download each financial year one by one.
+*[Click the Zerodha Console → Reports → Downloads link]*
 
 *[Download FY files — 2022-23, 2023-24, 2024-25, 2025-26 one by one]*
 
