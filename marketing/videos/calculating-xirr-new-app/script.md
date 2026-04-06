@@ -41,15 +41,37 @@ It gives you one honest number — your true annualised return.
 
 ---
 
-## HOW BROKERS GET IT WRONG
+## HOW BROKERS GET IT WRONG — SCREEN SHARE (Zerodha Console)
 
-Now, some brokers do show XIRR. Zerodha has it in the Portfolio section. But here's the problem — it's been broken on my account for literally years. Clicking "View Portfolio XIRR" gives me nothing. Just a loading spinner that goes nowhere.
+Let me show you something first. I'm going to open Zerodha Console right now.
 
-But even when it works, broker XIRR is incomplete. Because it starts from when you bought the stock — not from when you transferred money to your account. That idle cash period? Ignored. All those brokerage charges, STT, DP charges, GST, stamp duty that are quietly deducted from your ledger? Also ignored.
+*[Switch to screen share — open console.zerodha.com]*
 
-Brokers calculate XIRR in a way that makes their platform look good. And honestly, that makes sense for them — their business model runs on your transactions. The more you trade, the more they earn. Showing you the full cost of those transactions isn't in their interest.
+So this is Zerodha Console. I'll go to Portfolio, then Holdings.
 
-XIRR Ledger calculates from your actual cash ledger. Every rupee in. Every rupee out. Every fee. No exceptions.
+*[Click Portfolio > Holdings]*
+
+Now scroll down a little. You'll see a small link here that says — "View Portfolio XIRR."
+
+*[Point to the link]*
+
+Sounds exactly like what we want, right? Let me click it.
+
+*[Click the link — nothing loads]*
+
+Nothing. Just a spinner. I've been trying this for literally years. It just never loads.
+
+Now even if it did load — and for some of you it might actually show a number — that number is still wrong. Here's why.
+
+Zerodha's XIRR starts from when you bought your first stock. Not from when you first transferred money into your account. So that 2 weeks your money sat idle before you found the right stock? Not counted.
+
+And see all these charges in your ledger — brokerage, STT, DP charges, GST, stamp duty. Every single trade you make, these get quietly deducted. Zerodha's XIRR doesn't account for any of this.
+
+*[Switch back to camera]*
+
+Brokers calculate XIRR in a way that makes their platform look good. And honestly, that makes sense for them — their business model runs on your transactions. The more you trade, the more they earn. Showing you the full cost of those transactions isn't really in their interest.
+
+XIRR Ledger calculates from your actual cash ledger. Every rupee in. Every rupee out. Every charge. No exceptions.
 
 ---
 
