@@ -315,7 +315,6 @@ LinkedIn:    https://xirrledger.com?utm_source=linkedin&utm_medium=social&utm_ca
 - Created `/llms.txt` at `xirrledger.com/llms.txt`
 - Standard adopted by Perplexity, ChatGPT Search, Claude, Gemini crawlers
 - Covers: site description, XIRR definition, why broker XIRR is wrong, all FAQ answers verbatim, all blog post summaries with URLs, all key page links
-- **Next**: Add "Quick Answer" block at top of each blog post so AI can quote it directly
 
 #### Blog images — ✅ Live
 - All 11 blog posts now have hero images
@@ -336,14 +335,14 @@ LinkedIn:    https://xirrledger.com?utm_source=linkedin&utm_medium=social&utm_ca
 
 ### Blog count: 9 → 11
 
-### AI Search Strategy — Next Actions
-| Priority | Action | Expected impact |
+### AI Search Strategy — Status
+| Priority | Action | Status |
 |---|---|---|
-| High | Add "Quick Answer" block to top of each blog | AI quotes these verbatim |
-| High | Build dedicated `/what-is-xirr` authoritative definition page | Gets cited whenever someone asks "what is XIRR" |
-| Medium | Community answers on Reddit/TradingQ&A citing blogs | AI trains on these; builds backlinks |
-| Medium | Submit `llms.txt` URL to Perplexity feedback form | Ensures discovery |
-| Low | Podcast/YouTube transcript mentions | Longer-term authority signal |
+| ~~High~~ | ~~Add "Quick Answer" block to top of each blog~~ | ✅ Done 2026-04-07 — all 11 blogs + how-to-calculate-xirr page |
+| ~~High~~ | ~~Build dedicated `/what-is-xirr` page~~ | ✅ Not needed — `/how-to-calculate-xirr` covers it; Quick Answer added |
+| Medium | Community answers on Reddit/TradingQ&A citing blogs | Pending |
+| Medium | Submit `llms.txt` URL to Perplexity feedback form | Pending |
+| Low | Podcast/YouTube transcript mentions | Long-term |
 
 ### Blog posts still needed (keyword-driven)
 - [ ] "Mutual Fund XIRR: What It Is and Why Your App Gets It Wrong" → `mutual fund xirr` (5k/month)
@@ -351,3 +350,37 @@ LinkedIn:    https://xirrledger.com?utm_source=linkedin&utm_medium=social&utm_ca
 - [ ] "Groww XIRR Calculator — The Missing Piece" → `xirr calculator groww`
 
 *Last updated: 2026-04-06 — llms.txt, blog images, Zerodha XIRR blog, charge accuracy fixes, video hidden*
+
+---
+
+## Session Log — 2026-04-07
+
+### AI Search Optimization (AEO) — continued
+
+#### Quick Answer blocks — ✅ Live
+- Added amber callout box to top of all 11 blog posts and `/how-to-calculate-xirr` page
+- Each block has a 2–4 sentence direct answer to the post's implied question
+- Positioned after hero image, before first `##` heading — consistent across all posts
+- AI tools (Perplexity, ChatGPT, Claude) quote these verbatim in responses
+
+#### `/what-is-xirr` dedicated page — not needed
+- `/how-to-calculate-xirr` already covers the "what is XIRR" intent fully
+- Quick Answer block added to that page targets the definition query directly
+- Creating a separate page would split content and dilute both URLs
+
+### AEO implementation complete — summary
+| Item | Status |
+|---|---|
+| `llms.txt` | ✅ Live at `xirrledger.com/llms.txt` |
+| Quick Answer blocks (all blogs) | ✅ Live — 11 blog posts |
+| Quick Answer block (how-to page) | ✅ Live |
+| FAQ schema (18 questions) | ✅ Live |
+| Article schema (blog posts) | ✅ Live |
+
+### Remaining AI-friendliness work (distribution)
+- [ ] Reddit replies on XIRR threads citing blog posts
+- [ ] TradingQ&A replies citing blog posts
+- [ ] Submit `llms.txt` to Perplexity feedback form
+- [ ] YouTube video (new) — transcript indexed by AI
+
+*Last updated: 2026-04-07 — Quick Answer blocks on all posts, AEO implementation complete*
