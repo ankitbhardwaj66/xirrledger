@@ -111,6 +111,15 @@ export default function HowToCalculateXIRR() {
           </p>
         </div>
 
+        {/* ── Quick Answer ── */}
+        <div style={{ maxWidth: '760px', margin: '0 auto 3rem' }}>
+          <div style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)', borderLeft: '3px solid #f59e0b', borderRadius: '8px', padding: '16px 20px' }}>
+            <p style={{ color: '#e2e8f0', margin: 0, lineHeight: 1.75, fontSize: '0.97rem' }}>
+              <strong style={{ color: '#f59e0b' }}>Quick Answer:</strong> XIRR (Extended Internal Rate of Return) is the annualised return rate that accounts for the exact date and amount of every cash flow — deposits, withdrawals, dividends, and all charges. Unlike CAGR, which assumes a single lump-sum investment, XIRR is designed for real-world investing where money goes in and out at irregular intervals. For Indian investors, the most accurate way to calculate XIRR is from the broker ledger, which captures every rupee including STT, exchange charges, SEBI fees, and stamp duty that trade-price-based calculators miss.
+            </p>
+          </div>
+        </div>
+
         {/* ── The Formula ── */}
         <div style={{ maxWidth: '760px', margin: '0 auto 4rem' }}>
           <div style={{ ...glass, padding: '32px', borderColor: 'rgba(245,158,11,0.18)', marginBottom: '2rem' }}>
