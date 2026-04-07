@@ -29,6 +29,12 @@ Here's why each one works — or doesn't.
 
 ![Multiple financial graphs on laptop screen — Excel vs ledger method for XIRR calculation](/blog/excel-vs-ledger-xirr.webp)
 
+<div style={{background:'rgba(245,158,11,0.07)',border:'1px solid rgba(245,158,11,0.2)',borderLeft:'3px solid #f59e0b',borderRadius:'8px',padding:'16px 20px',margin:'1.5rem 0 2rem'}}>
+
+**Quick Answer:** Tracking individual stock trades in Excel and running `=XIRR()` gives a number that is 0.5–1.5% too high because it ignores STT, exchange charges, SEBI fees, GST, and stamp duty — costs that are silently deducted on every transaction. The correct approach is to use your broker's fund statement (ledger) instead of trade prices: filter for actual bank deposits and withdrawals, add today's portfolio value as a positive entry, and run `=XIRR()`. This works and takes 45–90 minutes manually, but stops short on multi-account portfolios, dividend tracking, and Nifty 50 benchmarking — which require a dedicated tool like XIRR Ledger.
+
+</div>
+
 ---
 
 ## Method 1: Excel + Stock Trades (The Wrong Way)

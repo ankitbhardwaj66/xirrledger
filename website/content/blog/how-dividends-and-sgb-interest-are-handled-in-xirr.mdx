@@ -23,6 +23,12 @@ Most XIRR calculators silently ignore dividends — not by design flaw, but beca
 
 ![Person adding to savings — dividends and passive income from investments counted in XIRR](/blog/dividends-sgb-xirr.webp)
 
+<div style={{background:'rgba(245,158,11,0.07)',border:'1px solid rgba(245,158,11,0.2)',borderLeft:'3px solid #f59e0b',borderRadius:'8px',padding:'16px 20px',margin:'1.5rem 0 2rem'}}>
+
+**Quick Answer:** Dividends and SGB interest must be treated as positive cash inflows on the exact date they were credited in order for XIRR to reflect total return. Most XIRR tools miss them because dividends are paid directly into your bank account — bypassing the broker ledger entirely — so the broker's fund statement never records them. For a diversified large-cap portfolio, this omission understates real XIRR by 1–2% annually. XIRR Ledger handles this by letting you upload your Zerodha dividend report separately; each payment is added as an inflow on its exact date and merged with your ledger cash flows before the calculation runs.
+
+</div>
+
 ## Why Dividends Are Missing From Most XIRR Calculations
 
 When a company declares a dividend, the money lands directly in your **bank account** — not your broker account. Your broker's fund statement (the ledger that most XIRR tools read) only tracks money moving in and out of your broker account.

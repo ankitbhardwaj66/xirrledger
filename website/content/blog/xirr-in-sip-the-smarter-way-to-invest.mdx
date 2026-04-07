@@ -26,6 +26,12 @@ There's a smarter way to SIP — one that uses the market's own volatility to yo
 
 ![Piggy bank with coins representing SIP savings and regular investing for long-term growth](/blog/xirr-sip-investing.webp)
 
+<div style={{background:'rgba(245,158,11,0.07)',border:'1px solid rgba(245,158,11,0.2)',borderLeft:'3px solid #f59e0b',borderRadius:'8px',padding:'16px 20px',margin:'1.5rem 0 2rem'}}>
+
+**Quick Answer:** XIRR is the correct metric for SIPs because it treats each installment independently — assigning the right weight to each rupee based on exactly when it was invested and how long it had to grow. A fixed SIP invests the same amount on the same date regardless of market conditions, giving each installment the market's average price. A dip-based irregular SIP buys more units at lower prices, and XIRR captures whether this timing advantage actually improved your annualized return. Neither Zerodha nor Groww calculates this for irregular stock SIPs; you need to run XIRR on your actual ledger cash flows to know.
+
+</div>
+
 ## The Old Way: Regular SIP in a Mutual Fund
 
 A regular mutual fund SIP looks like this:

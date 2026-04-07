@@ -29,6 +29,12 @@ That last one shows a dash: **–**
 
 ![Zerodha Holdings page showing XIRR as a dash](/blog/zerodha-xirr-dash.webp)
 
+<div style={{background:'rgba(245,158,11,0.07)',border:'1px solid rgba(245,158,11,0.2)',borderLeft:'3px solid #f59e0b',borderRadius:'8px',padding:'16px 20px',margin:'1.5rem 0 2rem'}}>
+
+**Quick Answer:** Zerodha shows "–" for XIRR because computing it requires complete fund-flow history (every bank transfer in and out), which Zerodha hasn't fully implemented yet. Even if they fix this, the resulting number will still be wrong — it would be based on trade prices, not actual ledger debits, so it would silently exclude STT, exchange charges, SEBI fees, GST, and stamp duty that are deducted on every transaction. The only way to get a correct XIRR is to calculate it from your broker's account ledger, which captures the net debit of every trade including all charges.
+
+</div>
+
 Not zero. Not even an error message. Just a dash — as if the field doesn't apply to you.
 
 It applies to you. Zerodha just can't calculate it.

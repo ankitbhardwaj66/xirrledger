@@ -27,6 +27,12 @@ So when you — or your broker's app — calculates your XIRR, those outflows ar
 
 ![Investment portfolio with financial documents on laptop — SGBs and bonds missing from broker XIRR](/blog/broker-xirr-missing-investments.webp)
 
+<div style={{background:'rgba(245,158,11,0.07)',border:'1px solid rgba(245,158,11,0.2)',borderLeft:'3px solid #f59e0b',borderRadius:'8px',padding:'16px 20px',margin:'1.5rem 0 2rem'}}>
+
+**Quick Answer:** Your broker's XIRR is inflated if you own Sovereign Gold Bonds, RBI bonds, unlisted stocks, or any investment purchased outside your broker account. The calculation counts those assets' current value (since they show up in your demat holdings) but misses the original purchase outflow — because that money went directly from your bank, never through the broker ledger. The result is that your outflows are understated and your XIRR is too high by 0.5–5 percentage points depending on how much of your portfolio is "off-ledger." To get an honest number, each outside investment must be added as a cash outflow on its original purchase date.
+
+</div>
+
 ## What XIRR Actually Measures
 
 XIRR is a cash flow calculation. It looks at every rupee that left your pocket (outflows) and every rupee that came back or is expected to come back (the current value as a final inflow), and finds the annualised return rate that connects them.
