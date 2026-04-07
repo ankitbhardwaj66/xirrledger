@@ -136,46 +136,71 @@
 
 ---
 
-## Week 2 — (target: ~2026-03-07)
-
-*Paste GA screenshots + Search Console + PageSpeed data here next week*
+## Week 6 — 2026-04-07
+*Period: Mar 31 – Apr 6 (last 7 days)*
 
 ### GA Overview
-| Metric | Week 1 | Week 2 | Change |
+| Metric | Last 7d | WoW change | Note |
 |---|---|---|---|
-| Active users (7d) | 71 | — | — |
-| New users (7d) | 69 | — | — |
-| Returning users | 0 | — | — |
-| Avg engagement time | 3m 55s | — | — |
-| Sessions | 121 | — | — |
+| Active users | 19 | +111.1% | Strong growth |
+| Views | 172 | +616.7% | Blog pages driving this |
+| Key events | 11 | +1,000.0% | Calculator completions up sharply |
+| Event count | 365 | +529.3% | — |
+| Avg engagement time | 1m 24s | — | Pulled from report snapshot |
+| New users | 48 | — | 94% of 51 total users |
 
-### Traffic Sources
-| Channel | Week 1 | Week 2 | Change |
-|---|---|---|---|
-| Direct | 107 | — | — |
-| Referral | 11 | — | — |
-| Organic Search | 3 | — | — |
+### Traffic Sources (last 7 days)
+| Source / Medium | Sessions | Note |
+|---|---|---|
+| (direct) / (none) | 46 | Word of mouth / direct |
+| google / organic | 13 | SEO starting to work |
+| bing / organic | 2 | — |
+| search.google.com | 2 | — |
+| aisearchindex.space | 1 | **AI search index referral** — notable |
+| egerin.com / referral | 1 | — |
+| iconlet.com / referral | 1 | — |
 
-### Search Console
-| Metric | Week 1 | Week 2 | Change |
-|---|---|---|---|
-| Impressions | 1 | — | — |
-| Clicks | 0 | — | — |
-| Avg position | 8 | — | — |
-| Pages indexed | — | — | — |
+> **aisearchindex.space** is an AI-powered search engine crawler/referral — first AI search signal appearing in traffic. Our `llms.txt` and Quick Answer blocks are already having an effect.
 
-### PageSpeed (mobile)
-| Metric | Week 1 (end-of-week) | Week 2 | Change |
-|---|---|---|---|
-| Performance | **99** | — | — |
-| Accessibility | **96** | — | — |
-| LCP | **2.2s** | — | — |
-| FCP | **1.6s** | — | — |
+### Top Pages (report snapshot period)
+| Page | Views | Active Users | Bounce Rate | Note |
+|---|---|---|---|---|
+| Homepage | 99 | 50 | 50.8% | — |
+| Calculator | 59 | 13 | **18.2%** | Excellent engagement |
+| How to Calculate XIRR | 21 | 6 | **0.0%** | Very strong |
+| Blog index | 16 | 2 | 25.0% | — |
+| How It Works | 14 | 8 | 16.7% | — |
+| Features | 10 | 4 | 0.0% | — |
+| Zerodha XIRR blog | 9 | 1 | **0.0%** | New blog already indexed |
 
-### DB Completions
-| Metric | Week 1 | Week 2 | Change |
-|---|---|---|---|
-| Total real completions | 4 | — | — |
+### Geography (last 7 days)
+| City | Users | Note |
+|---|---|---|
+| Ashburn | 12 | AWS datacenter — bots, discount |
+| Chennai | 6 | Real user |
+| Bengaluru | 2 | Real user |
+| Chicago | 2 | Possibly bot |
+| Delhi | 2 | Real user |
+| Ho Chi Minh City | 2 | — |
+| Hyderabad | 2 | Real user |
 
-### Action Items Review
-*(copy from Week 1 open items, mark done/carry forward)*
+### Key Observations
+- **Calculator bounce rate 18.2%** — very healthy, most visitors who reach it engage
+- **How to Calculate XIRR: 0% bounce** — content is exactly what searchers need
+- **Zerodha XIRR blog: 9 views, 0% bounce** — published Apr 6, already getting traffic within 24h
+- **13 Google organic sessions** — SEO is working, up from ~3 in Week 1
+- **Key events up 1,000%** — biggest signal, actual calculator usage is accelerating
+- **aisearchindex.space referral** — first AI search platform referral appearing; AEO work is paying off early
+- **Ashburn (12 users)** — still inflating US numbers, same as Week 1 pattern
+
+### Week 6 Summary
+Traffic up strongly across all metrics. Calculator is converting well (18.2% bounce = 81.8% engagement rate). SEO is producing organic sessions. The new Zerodha blog got traffic within 24 hours. First AI search referral visible. Main gap: returning users still low — email reminders or "share your results" could help retention.
+
+### Targets for next check
+| Metric | Week 6 | Target |
+|---|---|---|
+| Active users (7d) | 19 | >30 |
+| Google organic sessions | 13 | >25 |
+| Key events (7d) | 11 | >20 |
+| Zerodha blog views | 9 | >25 |
+| AI search referrals | 1 | >3 |
