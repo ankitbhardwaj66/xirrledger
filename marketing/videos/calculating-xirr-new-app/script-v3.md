@@ -41,7 +41,7 @@ This shows you exactly how to get your ledger file from each broker. For Zerodha
 
 *[Close modal]*
 
-For dividends — there's a separate section here — download one file per financial year.
+For dividends — there's a separate section here — download one file per financial year. And this is actually a nice thing about Zerodha — right now they're the only broker that provides dividend files, so your dividend income gets counted in the XIRR too.
 
 I've already got my files ready — two Zerodha accounts, all years. I'll drag them all in now.
 
