@@ -87,6 +87,8 @@ Link in the description — xirrledger.com. Takes two minutes.
 
 Drop questions or feature requests in the comments — I read everything.
 
+Have a nice day. Happy investing. Bye!
+
 ---
 
 *Script v3 — XIRR Ledger*
