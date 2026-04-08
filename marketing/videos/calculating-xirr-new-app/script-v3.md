@@ -11,7 +11,7 @@ Zerodha has a "View Portfolio XIRR" link. Let me show you what happens when you 
 
 *[Screen share — console.zerodha.com → Portfolio → Holdings → click "View Portfolio XIRR"]*
 
-Spinner. Forever. It has never worked for me.
+A dash. Just a dash. It has never shown me a number.
 
 And even if it did load — their calculation starts from your first stock purchase. Not from when you transferred money in. Charges like STT, brokerage, DP fees? Not included.
 
