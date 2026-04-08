@@ -1,11 +1,11 @@
-# XIRR Ledger — Video Script v3
-# Demo-focused. Assumes viewer knows XIRR. Target duration: 2–2.5 minutes.
+# Your Broker Hides Your Real Returns — Calculate True XIRR Free with XIRR Ledger (Zerodha/Groww)
+# Video Script v3 — Demo-focused. Assumes viewer knows XIRR. Target duration: 2–2.5 minutes.
 
 ---
 
 ## HOOK (15 sec)
 
-You know what XIRR is. You probably want to know yours. The problem is — your broker either doesn't show it, or the number they give you is wrong.
+Your broker is hiding your real returns. Not a theory — let me show you exactly how.
 
 Zerodha has a "View Portfolio XIRR" link. Let me show you what happens when you click it.
 
