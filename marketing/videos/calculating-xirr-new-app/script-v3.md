@@ -3,12 +3,6 @@
 
 ---
 
-## INTRO (5 sec)
-
-Hey, I'm Ankit — this is my first video, so pardon me for any mistakes. Let's get into it.
-
----
-
 ## HOOK (15 sec)
 
 Your broker is hiding your real returns. Not a theory — let me show you exactly how.
@@ -22,6 +16,12 @@ A dash. Just a dash. It has never shown me a number.
 And even if it did load — their calculation starts from your first stock purchase. Not from when you transferred money in. Charges like STT, brokerage, DP fees? Not included.
 
 That's why I built XIRR Ledger.
+
+---
+
+## INTRO (5 sec)
+
+Hey, I'm Ankit — this is my first video, so pardon me for any mistakes. Let's get into it.
 
 ---
 
