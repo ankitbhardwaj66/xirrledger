@@ -1,76 +1,47 @@
-Do you actually know your real portfolio return? Not the number Zerodha or Groww shows you — your actual annualised return after every charge, tax, and rupee of idle cash is counted.
+Do you actually know your real portfolio return? Not the number Zerodha shows you — your actual annualised return after every charge, every fee, and every rupee of idle cash is counted.
 
-Most investors don't. And it's not your fault — your broker is designed to show you a number that looks better than reality.
-
-In this video, I break down exactly why broker-reported returns are misleading, what XIRR actually is, and how you can calculate your true portfolio return for free using XIRR Ledger.
+In this video I show you exactly why your broker's number is wrong, and how to calculate your true XIRR for free using XIRR Ledger — a tool I built for this exact problem.
 
 Try XIRR Ledger free: https://xirrledger.com
 
 
-WHY CAGR IS MISLEADING
+WHY YOUR BROKER'S NUMBER IS WRONG
 
-Most brokers show you CAGR — Compound Annual Growth Rate. CAGR is fine if you invested all your money in one shot and never touched it again. But that's not how anyone actually invests in stocks.
+Zerodha has a "View Portfolio XIRR" link in Console. Click it and you get a dash. It has never loaded for me.
 
-You add fresh capital every few months. You book some profits. You transfer money to your broker account and wait for the right entry — and that cash sits idle for weeks before you deploy it.
+But even if it did — their calculation starts from your first stock purchase, not from when you transferred money into your account. Cash sitting idle for weeks before you found the right entry? Not counted. STT, brokerage, DP charges, GST? Not counted either.
 
-The moment you do any of that, CAGR gives you the wrong number. It just looks at your starting and ending balance and ignores everything in between. That's not a return. That's a guess.
-
-
-WHAT IS XIRR?
-
-XIRR stands for Extended Internal Rate of Return. It accounts for the exact timing of every single cash flow — every rupee you transferred to your broker, every rupee you withdrew, and today's portfolio value.
-
-It runs a precise calculation and gives you one clean number: your true annualised return. This is the honest number.
+Your broker shows you a number that looks better than reality. That's just how it works.
 
 
-HOW BROKERS HIDE YOUR REAL RETURNS
+WHAT XIRR LEDGER DOES
 
-Zerodha and Groww do show some version of XIRR — but only for what's inside their app. If you trade on two brokers, they don't talk to each other. You have no single combined number.
+XIRR Ledger reads your actual cash ledger — every deposit, withdrawal, dividend, and charge — and computes your true XIRR. It then benchmarks you against Nifty 50 over the exact same period with the exact same cash flows, so you instantly know: are you beating the index or not?
 
-And there's a bigger problem. Your broker's XIRR starts from when you bought a stock — not from when you transferred money to your broker account. That cash sitting idle before you invested? They ignore it. But you moved it from your bank — where it was earning interest — to your broker account, where it earns nothing. That's a real cost, and your broker isn't counting it.
-
-So the number your broker shows you is already better than your reality.
+Free. No app to install. Works with Zerodha, Groww, and Fyers.
 
 
-THE HIDDEN COST OF STT AND CHARGES
+HOW IT WORKS
 
-Every time you buy or sell a stock, you pay STT — Securities Transaction Tax. Plus DP charges, SEBI fees, stamp duty, and GST on brokerage. These aren't small numbers for active investors. Over a year, they can quietly eat thousands of rupees out of your returns.
+1. Sign in with Google or email (quick OTP verification)
+2. Download your broker ledger — the app shows you exactly how
+3. Upload your files — supports multiple accounts
+4. Enter your current holdings value and idle cash per account
+5. Hit Calculate — results in about 30 seconds
 
-Your broker knows all of this — every charge is right there in your ledger. But when they show you your returns, those charges are conveniently not counted.
+You get a detailed PDF report emailed to you automatically with your XIRR, Nifty's XIRR, performance gap, and a full account-by-account breakdown.
 
-Why? Because their business model runs on your transactions. Showing you the real number — after all fees and taxes — would make you think twice about trading as frequently.
-
-XIRR Ledger calculates from your full broker ledger, which means every charge, every tax, and every fee is already baked in. The number you see is what you actually made, after everything.
-
-
-HOW XIRR LEDGER WORKS
-
-1. Sign in with your name and email — quick OTP verification
-2. Upload your broker ledger files (Zerodha CSV, Groww PDF, or Fyers CSV)
-3. Enter your current holdings value from your broker app
-4. Hit Calculate — results in about 30 seconds
-
-You get your true XIRR benchmarked against Nifty 50 over the exact same period with the exact same cash flows. You instantly know — are you beating the index or not?
-
-A detailed PDF report is automatically emailed to you so you have it saved.
-
-Supports Zerodha, Groww, and Fyers. Works for equity investing only — stocks, not mutual funds.
-
-
-WHO IS THIS FOR?
-
-If you're an equity investor on Zerodha, Groww, or Fyers, have been investing for more than a year, and add capital regularly or trade across multiple brokers — this is built for you. Not for mutual fund investors, since MF cash flows work differently.
+Supports equity investing only — stocks, not mutual funds.
 
 
 TIMESTAMPS
-0:00 Intro: Do you know your real return?
-0:23 Why CAGR vs XIRR
-0:52 What XIRR actually measures
-1:29 How Zerodha fails to show XIRR
-2:04 The hidden cost of STT and charges
-2:26 Introducing XIRR Ledger
-2:50 App walkthrough (sign in, upload, calculate)
-5:30 Closing
+0:00 Zerodha's broken XIRR link
+0:20 Intro
+0:25 What XIRR Ledger does
+0:35 App walkthrough
+1:50 Results + Nifty benchmark
+2:15 PDF report
+2:35 Closing
 
 XIRR Ledger: https://xirrledger.com
 Free. No app to install. Takes 2 minutes.
