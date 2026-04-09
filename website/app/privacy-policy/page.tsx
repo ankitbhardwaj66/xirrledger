@@ -84,7 +84,7 @@ export default function PrivacyPolicy() {
           <div style={section}>
             <h2 style={h2Style}>1. Information We Collect</h2>
             <p style={pStyle}><strong style={{ color: '#cbd5e1' }}>Broker ledger files.</strong> When you upload a ledger file (CSV, PDF, or XLSX from Zerodha, Groww, or Fyers), we temporarily store it on AWS S3 to process your XIRR calculation. The file contains your transaction history, account identifiers, and financial amounts.</p>
-            <p style={pStyle}><strong style={{ color: '#cbd5e1' }}>Email address.</strong> If you sign in or opt to receive your report by email, we collect your email address to deliver the PDF report and, if using manual sign-in, to send a one-time password (OTP) for verification.</p>
+            <p style={pStyle}><strong style={{ color: '#cbd5e1' }}>Email address.</strong> Sign-in is required to use XIRR Ledger. We collect and securely store your email address to deliver your PDF report after every calculation. If you sign in with email (rather than Google), we also use it to send a one-time password (OTP) for verification. We will never use your email address for marketing, promotions, or spam — only for transactional messages directly related to your use of the tool.</p>
             <p style={pStyle}><strong style={{ color: '#cbd5e1' }}>Google sign-in.</strong> If you choose to sign in with Google, we receive your name and email address from Google Identity Services. We do not receive or store your Google password.</p>
             <p style={pStyle}><strong style={{ color: '#cbd5e1' }}>Usage data.</strong> We use Google Analytics to collect anonymised usage data (pages visited, session duration, device type). This data does not identify you personally.</p>
           </div>

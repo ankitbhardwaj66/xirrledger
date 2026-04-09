@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     return { title: 'Post Not Found' };
   }
 
-  const url = `https://xirrledger.com/blog/${slug}`;
+  const url = `https://xirrledger.com/blog/${slug}/`;
 
   return {
     title: `${post.title} | XIRR Ledger Blog`,
