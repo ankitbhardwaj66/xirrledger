@@ -29,7 +29,7 @@ Hey, I'm Ankit — a software engineer and stock market enthusiast. This is my f
 
 *[Switch back to camera or cut to product screen]*
 
-It reads your actual cash ledger — every deposit, withdrawal, and charge — and computes your true XIRR. Free. No install. Works with Zerodha, Groww, and Fyers.
+So I built XIRR Ledger. You give it your broker's cash ledger — every deposit, withdrawal, and charge — and it computes your true XIRR. Free. No install. Works with Zerodha, Groww, and Fyers.
 
 ---
 
