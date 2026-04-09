@@ -21,7 +21,7 @@ That's why I built XIRR Ledger.
 
 ## INTRO (5 sec)
 
-Hey, I'm Ankit — this is my first video, so pardon me for any mistakes. Let's get into it.
+Hey, I'm Ankit — a software engineer and stock market geek. This is my first video, so pardon me for any mistakes. Let's get into it.
 
 ---
 
