@@ -71,6 +71,10 @@ Hit Calculate XIRR.
 
 My XIRR — minus 1.36%.
 
+Yes. Negative. I put over one crore into the market and I'm currently down. I'm a software developer who built a tool to calculate returns — and my returns are negative. Let that sink in.
+
+To be fair — I built this tool precisely so I'd stop lying to myself. Mission accomplished.
+
 Now look at this — Nifty 50's XIRR over the exact same cash flow period. Minus 0.48%. The whole market is in the red right now, so that context matters. But the index still beat me by 0.88%.
 
 That gap — that's the honest number. Not what my broker shows. Not a guess. This.
