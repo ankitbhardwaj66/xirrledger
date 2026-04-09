@@ -53,13 +53,11 @@ I've already got my files ready — two Zerodha accounts, all years. I'll drag t
 
 *[Drop files into upload area — validation runs]*
 
-Files validated. Now enter your current holdings value. Since I have two accounts, I need to open Kite for both — pull the current value from each account's Holdings tab and add them together before entering here.
+Files validated. Since I uploaded two accounts, the app shows separate fields for each — holdings value and cash balance for each account individually. So I'll open Kite for each account and fill them in one by one.
 
-*[Switch to Kite account 1 → Holdings, note value. Switch to Kite account 2 → Holdings, note value. Add both, paste combined total in]*
+*[Switch to Kite account 1 → Holdings, copy value, paste into GZW478 holdings field. Switch to Kite account 1 → Funds, copy cash, paste into GZW478 cash field]*
 
-And your idle cash balance — same thing, both accounts. Open Funds on each account, add the two numbers together.
-
-*[Switch to Kite account 1 → Funds, note value. Switch to Kite account 2 → Funds, add both, paste combined total in]*
+*[Switch to Kite account 2 → Holdings, copy value, paste into NBN208 holdings field. Switch to Kite account 2 → Funds, copy cash, paste into NBN208 cash field]*
 
 Hit Calculate XIRR.
 
