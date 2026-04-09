@@ -67,18 +67,30 @@ Browser (Next.js static — Hostinger)
 ```
 xirrcalculator/
 ├── website/                    # Next.js frontend
-│   ├── app/                    # Pages (home, blog, calculator, faq, etc.)
+│   ├── app/                    # Pages
+│   │   ├── page.tsx            # Homepage
+│   │   ├── about/              # About page
+│   │   ├── blog/               # Blog index + [slug] posts
+│   │   ├── calculator/         # App entry (noindex)
+│   │   ├── contact/            # Contact page
+│   │   ├── faq/                # FAQ page (20 questions, JSON-LD)
+│   │   ├── features/           # Features page
+│   │   ├── how-it-works/       # How it works page
+│   │   ├── how-to-calculate-xirr/  # SEO landing page + HowTo schema
+│   │   ├── privacy-policy/     # Privacy Policy
+│   │   └── terms-of-service/   # Terms of Service
 │   ├── components/             # Navigation, Footer, YouTubeFacade
-│   ├── content/blog/           # MDX blog posts
-│   └── public/                 # Static assets, .htaccess, PHP bridge
+│   ├── content/blog/           # MDX blog posts (11 posts, author: Ankit Bhardwaj)
+│   └── public/                 # Static assets, .htaccess, robots.txt, llms.txt
 ├── lambda/                     # AWS Lambda functions
 │   ├── handler.py              # API router (/session, /validate, /process, /send-otp, /verify-otp)
 │   ├── processor.py            # XIRR pipeline (parse → compute → PDF → email)
 │   ├── refresher.py            # Daily Nifty 50 S3 cache refresher
 │   ├── email/                  # SES email templates
 │   └── build_layer.sh          # Builds Lambda layer via Docker
-├── marketing/                  # Content for YouTube and social
-│   └── videos/                 # Per-video folder: title.txt, description.txt, script.md
+├── marketing/
+│   ├── videos/                 # Per-video folder: title.txt, description.txt, script.md
+│   └── seo/                    # SEO audit reports (audit-YYYY-MM-DD.md)
 ├── terraform/                  # Prod AWS infrastructure as code
 ├── terraform-dev/              # Dev AWS infrastructure as code
 └── DEPLOYMENT.md               # Architecture details, credentials, deploy steps
@@ -97,12 +109,43 @@ The PDF emailed after each calculation includes:
 
 ---
 
-## GSC / SEO Status
+## SEO & Compliance
 
-- `xirrledger.com/calculator/` — `noindex` (app page, not content)
-- `dev.xirrledger.com` — blocked via `robots.txt` (`Disallow: /`)
-- Trailing slash 301 redirect — in `.htaccess`
-- Sitemap — all URLs with trailing slash
+**Full audit:** `marketing/seo/audit-2026-04-09.md` — score 62/100, all Critical + High items resolved.
+
+### Schema markup
+| Page | Schema types |
+|---|---|
+| Site-wide (`layout.tsx`) | `Organization` (with logo, founder, sameAs) |
+| Homepage | `WebSite`, `SoftwareApplication` (FinanceApplication, free) |
+| `/how-to-calculate-xirr/` | `HowTo` (5 steps) |
+| `/faq/` | `FAQPage` (20 questions) |
+| `/blog/[slug]/` | `Article` (author, publisher, image, logo) |
+
+### Technical
+- `/calculator/` — `noindex` (app UI, not content); excluded from sitemap
+- `dev.xirrledger.com` — blocked via server-side `robots.txt` (`Disallow: /`)
+- Trailing slash — enforced via `next.config.ts` + `.htaccess` 301
+- Sitemap — all URLs with trailing slash, real `lastmod` dates (not build timestamp)
+- Security headers — HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy in `.htaccess`
+- Blog canonical URLs — trailing slash consistent with sitemap
+- `llms.txt` — present at `/llms.txt` for AI crawler discovery
+
+### Legal / YMYL
+- Privacy Policy — `/privacy-policy/`
+- Terms of Service — `/terms-of-service/`
+- Financial disclaimer — footer (site-wide) + all blog post pages
+
+## Design System
+
+| Element | Font / Treatment |
+|---|---|
+| Display headings (H1, H2) | Bricolage Grotesque |
+| Body text | Inter |
+| Numbers, percentages, code | IBM Plex Mono (`var(--font-mono)`) |
+| Primary accent | `#f59e0b` (amber) |
+| Background | `#0f172a` (navy) / `#131f35` (sections) |
+| Hero background | Graph paper grid texture (H+V lines, radial fade) |
 
 ---
 
