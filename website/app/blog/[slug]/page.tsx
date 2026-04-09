@@ -125,6 +125,22 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
           <MDXRemote source={post.content} options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }} />
         </div>
 
+        {/* ── Disclaimer ── */}
+        <div style={{ maxWidth: '760px', margin: '3rem auto 0' }}>
+          <div style={{
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: '10px',
+            padding: '14px 20px',
+            display: 'flex', gap: '10px', alignItems: 'flex-start',
+          }}>
+            <span style={{ color: '#475569', fontSize: '0.75rem', lineHeight: 1.3, marginTop: '1px', flexShrink: 0 }}>ℹ</span>
+            <p style={{ color: '#475569', fontSize: '0.8rem', lineHeight: 1.6, margin: 0 }}>
+              <strong style={{ color: '#64748b', fontWeight: 600 }}>Disclaimer:</strong> This article is for informational purposes only and does not constitute financial, investment, tax, or legal advice. Past returns do not indicate future performance. Please consult a qualified financial advisor before making investment decisions.
+            </p>
+          </div>
+        </div>
+
         {/* ── CTA ── */}
         <div style={{ maxWidth: '760px', margin: '4rem auto 0' }}>
           <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', marginBottom: '3rem' }} />

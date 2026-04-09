@@ -140,6 +140,9 @@ export default function Footer() {
           flexDirection: 'column',
           gap: '8px',
         }}>
+          <p style={{ color: '#3d4f66', fontSize: '0.78rem', lineHeight: 1.6, maxWidth: '600px', margin: '0 auto' }}>
+            Results provided by XIRR Ledger are for informational purposes only and do not constitute financial, investment, or legal advice. Past returns do not indicate future performance.
+          </p>
           <p style={{ color: '#64748b', fontSize: '0.85rem' }}>
             © {currentYear} XIRR Ledger by{' '}
             <a href="https://ankitbhardwaj.in" target="_blank" rel="noopener noreferrer"
@@ -151,6 +154,20 @@ export default function Footer() {
             </a>
             . All rights reserved.
           </p>
+          <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/privacy-policy" style={{ color: '#475569', fontSize: '0.82rem', textDecoration: 'none', transition: 'color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#94a3b8')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
+            >
+              Privacy Policy
+            </Link>
+            <Link href="/terms-of-service" style={{ color: '#475569', fontSize: '0.82rem', textDecoration: 'none', transition: 'color 0.2s' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#94a3b8')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
+            >
+              Terms of Service
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
