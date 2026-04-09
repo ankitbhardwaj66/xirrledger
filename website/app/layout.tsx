@@ -1,11 +1,24 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, IBM_Plex_Mono, Bricolage_Grotesque } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
+const mono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  display: 'swap',
+  variable: '--font-mono',
+});
+
+const displayFont = Bricolage_Grotesque({
+  subsets: ['latin'],
+  weight: ['400', '600', '700', '800'],
+  display: 'swap',
+  variable: '--font-display',
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://xirrledger.com'),
@@ -55,7 +68,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en" className={`scroll-smooth ${mono.variable} ${displayFont.variable}`}>
       <head>
         {process.env.NEXT_PUBLIC_GA_ID && (
           <link rel="preconnect" href="https://www.googletagmanager.com" />

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import type React from 'react';
 import Link from 'next/link';
 import YouTubeFacade from '@/components/YouTubeFacade';
 
@@ -44,7 +45,6 @@ const softwareSchema = {
 ───────────────────────────────────────────── */
 const glass = {
   background: 'rgba(255,255,255,0.04)',
-  backdropFilter: 'blur(12px)',
   border: '1px solid rgba(255,255,255,0.09)',
   borderRadius: '16px',
 } as const;
@@ -84,11 +84,16 @@ export default function Home() {
           pointerEvents: 'none',
         }} />
 
-        {/* Dot grid */}
+        {/* Graph paper grid — Bloomberg terminal aesthetic */}
         <div style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
-          backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)',
-          backgroundSize: '28px 28px',
+          backgroundImage: [
+            'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)',
+            'linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
+          ].join(', '),
+          backgroundSize: '24px 24px',
+          maskImage: 'radial-gradient(ellipse 100% 100% at 50% 50%, black 20%, transparent 75%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 100% 100% at 50% 50%, black 20%, transparent 75%)',
         }} />
 
         <div className="container-custom relative" style={{ zIndex: 1 }}>
@@ -153,28 +158,72 @@ export default function Home() {
                 </a>
               </div>
 
-              {/* Trust */}
-              <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '13px', color: '#64748b', marginBottom: '10px' }}>
-                <span>✓ Free to use</span>
-                <span>✓ No registration</span>
-                <span>✓ Privacy-first</span>
+              {/* Trust signals */}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                {[
+                  {
+                    label: '100% Free',
+                    icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z',
+                  },
+                  {
+                    label: 'No sign-up',
+                    icon: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',
+                  },
+                  {
+                    label: 'Files auto-deleted',
+                    icon: 'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z',
+                  },
+                ].map(({ label, icon }) => (
+                  <div key={label} style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '100px',
+                    padding: '5px 12px',
+                  }}>
+                    <svg style={{ width: '13px', height: '13px', color: '#f59e0b', flexShrink: 0 }} fill="currentColor" viewBox="0 0 24 24">
+                      <path d={icon} />
+                    </svg>
+                    <span style={{ fontSize: '12px', color: '#cbd5e1', fontWeight: 500 }}>{label}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
             {/* ── Right: Animated Chart Card ── */}
             <div className="hidden md:block">
-              <div style={{ ...glass, padding: '24px', boxShadow: '0 30px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(245,158,11,0.08)' }}>
+              <div style={{ ...glass, padding: '24px', backdropFilter: 'blur(12px)', boxShadow: '0 30px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(245,158,11,0.08)' }}>
 
                 {/* Card header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                   <div>
                     <div style={{ fontSize: '11px', color: '#475569', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' }}>Your Portfolio</div>
-                    <div style={{ fontSize: '28px', fontWeight: 800, color: '#f59e0b', lineHeight: 1 }}>18.45%</div>
+                    <div style={{ fontSize: '28px', fontWeight: 800, color: '#f59e0b', lineHeight: 1, fontFamily: 'var(--font-mono)' }}>18.45%</div>
                     <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>XIRR (annualized)</div>
+                    {/* Account breakdown */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '10px' }}>
+                      {[
+                        { broker: 'Zerodha', label: 'Long-term',  xirr: '20.3%', color: '#C4621A' },
+                        { broker: 'Groww',   label: 'Short-term', xirr: '12.1%', color: '#2D9E6B' },
+                        { broker: 'Fyers',   label: 'F&O',        xirr: '16.4%', color: '#7B71D4' },
+                      ].map(({ broker, label, xirr, color }) => (
+                        <div key={broker} style={{
+                          display: 'flex', alignItems: 'center', gap: '6px',
+                        }}>
+                          <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: color, flexShrink: 0 }} />
+                          <span style={{ fontSize: '10px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                            {broker} <span style={{ color: '#94a3b8' }}>({label})</span>
+                          </span>
+                          <span style={{ fontSize: '11px', fontWeight: 600, color, fontFamily: 'var(--font-mono)', marginLeft: 'auto' }}>
+                            {xirr}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: '11px', color: '#475569', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' }}>Nifty 50</div>
-                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#64748b', lineHeight: 1 }}>14.23%</div>
+                    <div style={{ fontSize: '20px', fontWeight: 700, color: '#64748b', lineHeight: 1, fontFamily: 'var(--font-mono)' }}>14.23%</div>
                     <div style={{ fontSize: '12px', color: '#334155', marginTop: '2px' }}>benchmark</div>
                   </div>
                 </div>
@@ -206,11 +255,11 @@ export default function Home() {
                         stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
                     ))}
 
-                    {/* Y-axis labels */}
-                    <text x="36" y="58"  fill="#334155" fontSize="10" textAnchor="end">+84%</text>
-                    <text x="36" y="108" fill="#334155" fontSize="10" textAnchor="end">+60%</text>
-                    <text x="36" y="158" fill="#334155" fontSize="10" textAnchor="end">+30%</text>
-                    <text x="36" y="208" fill="#334155" fontSize="10" textAnchor="end">0%</text>
+                    {/* Y-axis labels — cumulative return */}
+                    <text x="36" y="58"  fill="#334155" fontSize="10" textAnchor="end" fontFamily="'IBM Plex Mono', monospace">+60%</text>
+                    <text x="36" y="108" fill="#334155" fontSize="10" textAnchor="end" fontFamily="'IBM Plex Mono', monospace">+40%</text>
+                    <text x="36" y="158" fill="#334155" fontSize="10" textAnchor="end" fontFamily="'IBM Plex Mono', monospace">+20%</text>
+                    <text x="36" y="208" fill="#334155" fontSize="10" textAnchor="end" fontFamily="'IBM Plex Mono', monospace">0%</text>
 
                     {/* Nifty fill */}
                     <path d={niftyFill} fill="url(#slateGrad)" />
@@ -244,6 +293,12 @@ export default function Home() {
                       }}
                     />
 
+                    {/* End-of-line labels — cumulative return consistent with XIRR */}
+                    <text x="500" y="38" fill="#f59e0b" fontSize="11" fontWeight="700" fontFamily="'IBM Plex Mono', monospace"
+                      style={{ animation: 'dotFade 0.4s ease-out 2.3s both' }}>+66%</text>
+                    <text x="500" y="120" fill="#64748b" fontSize="10" fontFamily="'IBM Plex Mono', monospace"
+                      style={{ animation: 'dotFade 0.4s ease-out 2.8s both' }}>+49%</text>
+
                     {/* End dot — portfolio (gold, pulsing ring) */}
                     <circle cx="490" cy="42" r="12" fill="#f59e0b" fillOpacity="0.15"
                       style={{ animation: 'glowPulse 2.5s ease-in-out 2.4s infinite' }} />
@@ -255,10 +310,6 @@ export default function Home() {
                       style={{ animation: 'dotFade 0.4s ease-out 2.8s both' }} />
 
                     {/* End labels */}
-                    <text x="500" y="46" fill="#f59e0b" fontSize="11" fontWeight="700"
-                      style={{ animation: 'dotFade 0.4s ease-out 2.3s both' }}>+84%</text>
-                    <text x="500" y="120" fill="#64748b" fontSize="10"
-                      style={{ animation: 'dotFade 0.4s ease-out 2.8s both' }}>+60%</text>
 
                     {/* X-axis labels */}
                     {[
@@ -294,7 +345,7 @@ export default function Home() {
                   fontSize: '13px', color: '#10b981', textAlign: 'center',
                   fontWeight: 600,
                 }}>
-                  ✦ You beat Nifty 50 by +24.2% over 3 years
+                  ✦ Your XIRR beats Nifty 50 by <span style={{ fontFamily: 'var(--font-mono)' }}>+4.22%</span> annually
                 </div>
               </div>
             </div>
@@ -306,6 +357,11 @@ export default function Home() {
       {/* ═══════════════ WHY OTHER CALCULATORS FAIL ═══════════════ */}
       <section style={{ background: '#131f35', padding: '5rem 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="container-custom">
+          <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '100px', padding: '5px 14px', fontSize: '12px', fontWeight: 600, color: '#f59e0b', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              ✦ The Problem
+            </span>
+          </div>
           <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)', fontWeight: 800, color: '#ffffff', textAlign: 'center', marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
             Why Other Calculators Show Inflated Returns
           </h2>
@@ -326,14 +382,14 @@ export default function Home() {
                 <h3 style={{ fontWeight: 700, fontSize: '1.1rem', color: '#e2e8f0' }}>Traditional Calculators</h3>
               </div>
               <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {[
+                {([
                   'Brokerage, STT & taxes not included',
                   'Idle cash in broker account ignored',
-                  'Returns can be 2–3% higher than reality',
+                  <>Returns can be <span style={{ fontFamily: 'var(--font-mono)', color: '#94a3b8' }}>2–3%</span> higher than reality</>,
                   'Breaks with multiple deposits & withdrawals',
                   'No multi-account or multi-broker support',
                   'No benchmark to judge performance',
-                ].map((item, i) => (
+                ] as React.ReactNode[]).map((item, i) => (
                   <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                     <svg style={{ width: '16px', height: '16px', color: '#ef4444', flexShrink: 0, marginTop: '2px' }} fill="currentColor" viewBox="0 0 24 24">
                       <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -384,6 +440,11 @@ export default function Home() {
       {/* ═══════════════════ HOW IT WORKS ═══════════════════ */}
       <section style={{ background: '#0f172a', padding: '5rem 0', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
         <div className="container-custom">
+          <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '100px', padding: '5px 14px', fontSize: '12px', fontWeight: 600, color: '#f59e0b', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              ✦ How It Works
+            </span>
+          </div>
           <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)', fontWeight: 800, color: '#ffffff', textAlign: 'center', marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
             Three Steps to Your True Returns
           </h2>
@@ -415,8 +476,8 @@ export default function Home() {
               <div key={i} style={{ ...glass, padding: '28px', position: 'relative' }}>
                 <div style={{
                   position: 'absolute', top: '24px', right: '24px',
-                  fontSize: '3rem', fontWeight: 900, color: 'rgba(245,158,11,0.25)',
-                  lineHeight: 1, fontVariantNumeric: 'tabular-nums',
+                  fontSize: '3rem', fontWeight: 700, color: 'rgba(245,158,11,0.22)',
+                  lineHeight: 1, fontFamily: 'var(--font-mono)',
                 }}>
                   {step}
                 </div>
@@ -456,6 +517,11 @@ export default function Home() {
       {/* ═══════════════════ FEATURES GRID ═══════════════════ */}
       <section style={{ background: '#0f172a', padding: '5rem 0', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <div className="container-custom">
+          <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '100px', padding: '5px 14px', fontSize: '12px', fontWeight: 600, color: '#f59e0b', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              ✦ Features
+            </span>
+          </div>
           <h2 style={{ fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)', fontWeight: 800, color: '#ffffff', textAlign: 'center', marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
             Powerful Features for Serious Investors
           </h2>
@@ -463,53 +529,102 @@ export default function Home() {
             Everything you need to accurately track portfolio performance
           </p>
 
-          <div className="grid md:grid-cols-3 gap-5">
+          {/* ── Hero Feature Card — Nifty 50 Benchmark ── */}
+          <div className="feature-card" style={{
+            ...glass,
+            border: '1px solid rgba(245,158,11,0.18)',
+            padding: '40px',
+            marginBottom: '16px',
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            {/* Background glow */}
+            <div style={{ position: 'absolute', top: '-30%', right: '-5%', width: '45%', height: '160%', background: 'radial-gradient(ellipse, rgba(245,158,11,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+            <div className="grid md:grid-cols-2 gap-10 items-center">
+              {/* Left: Content */}
+              <div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: 700, color: '#f59e0b', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '18px' }}>
+                  ★ Signature Feature
+                </div>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', marginBottom: '12px', letterSpacing: '-0.01em', lineHeight: 1.2 }}>
+                  Nifty 50 Benchmark Comparison
+                </h3>
+                <p style={{ color: '#94a3b8', fontSize: '0.95rem', lineHeight: 1.8, marginBottom: '20px' }}>
+                  Same money. Same dates. Different investment. We simulate investing your exact cash flows — on the exact same dates — into Nifty 50, and calculate what your return would have been. That's the fairest benchmark possible.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {[
+                    'Mirrors your actual investment dates and amounts',
+                    'Fetches live historical Nifty 50 price data',
+                    'Shows the exact gap — not an estimate',
+                  ].map((point, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                      <svg style={{ width: '15px', height: '15px', color: '#10b981', flexShrink: 0, marginTop: '2px' }} fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                      </svg>
+                      <span style={{ color: '#64748b', fontSize: '0.88rem' }}>{point}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right: Visual comparison */}
+              <div style={{ background: 'rgba(0,0,0,0.25)', borderRadius: '14px', padding: '28px' }}>
+                {[
+                  { label: 'Your Portfolio', xirr: '18.45%', width: '76%', color: '#f59e0b' },
+                  { label: 'Nifty 50',       xirr: '14.23%', width: '58%', color: '#475569' },
+                ].map(({ label, xirr, width, color }) => (
+                  <div key={label} style={{ marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>{label}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '16px', color }}>{xirr}</span>
+                    </div>
+                    <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width, background: color, borderRadius: '4px', transition: 'width 1s ease' }} />
+                    </div>
+                  </div>
+                ))}
+                <div style={{ marginTop: '4px', padding: '12px 16px', background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12px', color: '#6ee7b7', fontWeight: 500 }}>Annual outperformance</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '15px', fontWeight: 700, color: '#10b981' }}>+4.22%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── 4 Supporting Cards ── */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              {
-                icon: <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>,
-                title: 'Upload Ledger Files',
-                desc: 'Simply upload your broker ledger files (CSV or PDF). No manual transaction entry required.',
-              },
               {
                 icon: <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>,
                 title: 'Multi-Broker Support',
-                desc: 'Works with Zerodha and Groww. Combine accounts from different brokers for consolidated analysis.',
+                desc: 'Zerodha, Groww & Fyers — upload files from all three in one session for a consolidated XIRR.',
               },
               {
                 icon: <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>,
                 title: 'Multi-Account Analysis',
-                desc: 'Analyze multiple accounts simultaneously with individual and combined portfolio XIRR.',
-              },
-              {
-                icon: <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>,
-                title: 'Nifty 50 Benchmark',
-                desc: "Compare your portfolio against Nifty 50 to see if you're beating the market — with exact numbers.",
+                desc: 'Individual XIRR per account + one combined number. Capital breakdown included in the report.',
               },
               {
                 icon: <path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z"/>,
-                title: 'PDF Reports',
-                desc: 'Generate professional PDF reports with all metrics — perfect for tax filing or your financial advisor.',
+                title: 'PDF Report Emailed',
+                desc: 'A detailed report with XIRR, benchmark, account breakdown, and timeline — sent to your inbox.',
               },
               {
                 icon: <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>,
-                title: '100% Private & Secure',
-                desc: 'Files processed on secure servers. No registration or account needed.',
+                title: 'Files Auto-Deleted',
+                desc: 'Your ledger is deleted from our servers the moment processing is done. Nothing is stored.',
               },
             ].map(({ icon, title, desc }, i) => (
               <div key={i} className="feature-card" style={{ ...glass, padding: '24px' }}>
-                <div style={{
-                  width: '42px', height: '42px',
-                  background: 'rgba(245,158,11,0.1)',
-                  borderRadius: '10px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  marginBottom: '14px',
-                }}>
-                  <svg style={{ width: '20px', height: '20px', color: '#f59e0b' }} fill="currentColor" viewBox="0 0 24 24">
+                <div style={{ width: '40px', height: '40px', background: 'rgba(245,158,11,0.1)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                  <svg style={{ width: '19px', height: '19px', color: '#f59e0b' }} fill="currentColor" viewBox="0 0 24 24">
                     {icon}
                   </svg>
                 </div>
-                <h3 style={{ fontWeight: 700, fontSize: '1rem', color: '#e2e8f0', marginBottom: '6px' }}>{title}</h3>
-                <p style={{ color: '#64748b', fontSize: '0.875rem', lineHeight: 1.65 }}>{desc}</p>
+                <h3 style={{ fontWeight: 700, fontSize: '0.97rem', color: '#e2e8f0', marginBottom: '6px' }}>{title}</h3>
+                <p style={{ color: '#64748b', fontSize: '0.84rem', lineHeight: 1.65 }}>{desc}</p>
               </div>
             ))}
           </div>

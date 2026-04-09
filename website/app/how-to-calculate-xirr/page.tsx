@@ -164,7 +164,7 @@ export default function HowToCalculateXIRR() {
             <div style={{
               background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: '10px', padding: '20px 24px', marginBottom: '16px',
-              fontFamily: 'monospace', fontSize: '0.95rem', color: '#f59e0b',
+              fontFamily: 'var(--font-mono)', fontSize: '0.95rem', color: '#f59e0b',
             }}>
               {'∑ [ Cᵢ / (1 + XIRR)^(dᵢ/365) ] = 0'}
             </div>
@@ -206,7 +206,7 @@ export default function HowToCalculateXIRR() {
                   <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#ffffff', marginBottom: '8px' }}>{step.title}</h3>
                   <p style={{ color: '#94a3b8', fontSize: '0.9rem', lineHeight: 1.7, marginBottom: '12px' }}>{step.description}</p>
                   <div style={{ background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.15)', borderRadius: '8px', padding: '8px 14px' }}>
-                    <code style={{ fontSize: '0.85rem', color: GOLD }}>{step.example}</code>
+                    <code style={{ fontSize: '0.85rem', color: GOLD, fontFamily: 'var(--font-mono)' }}>{step.example}</code>
                   </div>
                 </div>
               </div>
@@ -242,7 +242,7 @@ export default function HowToCalculateXIRR() {
                   background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.015)',
                 }}>
                   <span style={{ fontSize: '0.88rem', color: '#e2e8f0', fontWeight: 600 }}>{row.charge}</span>
-                  <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>{row.detail}</span>
+                  <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>{row.detail}</span>
                   <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{row.impact}</span>
                 </div>
               ))}
