@@ -48,6 +48,7 @@ export default function Navigation() {
               { href: '/how-to-calculate-xirr', label: 'XIRR Formula' },
               { href: '/blog', label: 'Blog' },
               { href: '/faq', label: 'FAQ' },
+              { href: '/about', label: 'About' },
               { href: '/contact', label: 'Contact' },
             ].map(({ href, label }) => {
               const active = isActive(href);
@@ -123,6 +124,7 @@ export default function Navigation() {
               { href: '/how-to-calculate-xirr', label: 'XIRR Formula' },
               { href: '/blog', label: 'Blog' },
               { href: '/faq', label: 'FAQ' },
+              { href: '/about', label: 'About' },
               { href: '/contact', label: 'Contact' },
             ].map(({ href, label }) => {
               const active = isActive(href);

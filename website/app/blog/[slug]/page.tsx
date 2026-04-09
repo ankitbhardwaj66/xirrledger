@@ -67,10 +67,17 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
       name: 'Ankit Bhardwaj',
       url: 'https://xirrledger.com',
     },
+    image: 'https://xirrledger.com/opengraph-image',
     publisher: {
       '@type': 'Organization',
       name: 'XIRR Ledger',
       url: 'https://xirrledger.com',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://xirrledger.com/logo-email.png',
+        width: 512,
+        height: 512,
+      },
     },
     mainEntityOfPage: {
       '@type': 'WebPage',

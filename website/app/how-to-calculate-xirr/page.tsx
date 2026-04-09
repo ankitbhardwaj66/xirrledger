@@ -87,9 +87,44 @@ const whyLedger = [
   },
 ];
 
+const howToSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: 'How to Calculate XIRR from Your Broker Ledger',
+  description: 'Calculate your true annualised XIRR from a broker ledger file in 5 steps. Works with Zerodha, Groww, and Fyers.',
+  step: [
+    {
+      '@type': 'HowToStep',
+      name: 'Download your broker ledger',
+      text: 'Export the account ledger from Zerodha (XLSX), Groww (PDF, password is your PAN in uppercase), or Fyers (CSV, one file per financial year) covering your full investment history.',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Upload the file to XIRR Ledger',
+      text: 'Upload the ledger file at xirrledger.com/calculator. Multiple files from different brokers can be combined in a single session for a combined XIRR.',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Enter your current portfolio value',
+      text: 'Enter today\'s live market value of all your holdings plus any uninvested cash sitting in your broker account. This becomes the terminal cash inflow that closes the XIRR calculation.',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Run the XIRR calculation',
+      text: 'Click Calculate. The tool runs the iterative XIRR formula on your complete cash flow timeline — every deposit, withdrawal, dividend, and charge — net of all costs on their exact dates.',
+    },
+    {
+      '@type': 'HowToStep',
+      name: 'Compare your result against Nifty 50',
+      text: 'Your XIRR is shown alongside a Nifty 50 benchmark calculated using the exact same cash flow dates and amounts. If your XIRR is higher, you are genuinely beating the index.',
+    },
+  ],
+};
+
 export default function HowToCalculateXIRR() {
   return (
     <div style={{ background: NAVY, minHeight: '100vh', paddingTop: '5rem', paddingBottom: '6rem' }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }} />
       <div className="container-custom">
 
         {/* ── Hero ── */}

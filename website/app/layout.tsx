@@ -21,6 +21,34 @@ export const metadata: Metadata = {
   },
 };
 
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  '@id': 'https://xirrledger.com/#organization',
+  name: 'XIRR Ledger',
+  url: 'https://xirrledger.com',
+  logo: {
+    '@type': 'ImageObject',
+    url: 'https://xirrledger.com/logo-email.png',
+    width: 512,
+    height: 512,
+  },
+  description: 'The only ledger-based XIRR calculator for Indian investors. Upload your Zerodha, Groww, or Fyers ledger and get accurate portfolio returns with Nifty 50 benchmark comparison.',
+  founder: {
+    '@type': 'Person',
+    name: 'Ankit Bhardwaj',
+    url: 'https://ankitbhardwaj.in',
+  },
+  contactPoint: {
+    '@type': 'ContactPoint',
+    email: 'contact@xirrledger.com',
+    contactType: 'customer support',
+  },
+  sameAs: [
+    'https://www.youtube.com/watch?v=ZXf0VT8RPmc',
+  ],
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -34,6 +62,7 @@ export default function RootLayout({
         )}
       </head>
       <body className={inter.className}>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
         <Navigation />
         <main>{children}</main>
         <Footer />

@@ -11,14 +11,32 @@ export const metadata: Metadata = {
 const websiteSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
+  '@id': 'https://xirrledger.com/#website',
   name: 'XIRR Ledger',
   url: 'https://xirrledger.com',
   description: 'The only ledger-based XIRR calculator for Indian investors. Upload your Zerodha, Groww, or Fyers ledger and get accurate portfolio returns with Nifty 50 benchmark comparison.',
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: 'https://xirrledger.com/blog/?q={search_term_string}',
-    'query-input': 'required name=search_term_string',
-  },
+  publisher: { '@id': 'https://xirrledger.com/#organization' },
+};
+
+const softwareSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'XIRR Ledger',
+  url: 'https://xirrledger.com/calculator/',
+  applicationCategory: 'FinanceApplication',
+  operatingSystem: 'Web',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
+  description: 'Free XIRR calculator for Indian investors. Upload Zerodha, Groww, or Fyers ledger files to get true after-cost annualised returns with Nifty 50 benchmark comparison.',
+  featureList: [
+    'Multi-broker support: Zerodha, Groww, Fyers',
+    'Nifty 50 benchmark comparison',
+    'Handles STT, brokerage, DP charges automatically',
+    'Combines multiple broker accounts',
+    'PDF report emailed after every calculation',
+    'Free — no credit card required',
+  ],
+  provider: { '@id': 'https://xirrledger.com/#organization' },
+  inLanguage: 'en-IN',
 };
 
 /* ─────────────────────────────────────────────
@@ -48,6 +66,7 @@ export default function Home() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }} />
       {/* ═══════════════════════════ HERO ═══════════════════════════ */}
       <section style={{ background: '#0f172a', position: 'relative', overflow: 'hidden', paddingTop: '6rem', paddingBottom: '6rem' }}>
 
@@ -95,9 +114,8 @@ export default function Home() {
                 color: '#ffffff', marginBottom: '1.25rem',
                 letterSpacing: '-0.02em',
               }}>
-                Know Your{' '}
-                <span style={{ color: '#f59e0b' }}>True</span>{' '}
-                Portfolio Returns
+                Know Your True{' '}
+                <span style={{ color: '#f59e0b' }}>XIRR</span>
               </h1>
 
               <p style={{
