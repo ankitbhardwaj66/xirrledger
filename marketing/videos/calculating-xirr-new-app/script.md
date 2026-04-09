@@ -5,6 +5,12 @@
 
 ## INTRO
 
+Hey, I'm Ankit — this is actually my first video, so bear with me if things aren't perfect.
+
+We're going to talk about a number your broker never shows you — and by the end of this video, you're going to have that number in front of you. Let's get into it.
+
+---
+
 Your broker is hiding your real returns.
 
 That's not a conspiracy theory. That's just how their system works — and by the end of this video, you'll have the actual number in front of you.
@@ -121,7 +127,7 @@ Hit Calculate XIRR. Give it about 30 seconds.
 
 And here are my numbers. Two accounts analysed, combined.
 
-My XIRR — minus 6.90%.
+My XIRR — minus 1.36%.
 
 Yes. Negative. Take a moment.
 
@@ -129,9 +135,9 @@ Now before you feel too bad for me — keep in mind this result covers a period 
 
 *[Point to Nifty 50 XIRR on screen]*
 
-And look at this — Nifty 50's XIRR over the exact same period, with the exact same cash flow timing. Minus 1.53%. So even the index is in the red. The whole market has been hurting.
+And look at this — Nifty 50's XIRR over the exact same period, with the exact same cash flow timing. Minus 0.48%. So even the index is in the red. The whole market has been hurting.
 
-And then this banner right here — "Nifty 50 beat you by 5.37% — consider index funds." That's my gap. Even in a down market, the index did better than me.
+And then this banner right here — "Nifty 50 beat you by 0.88% — consider index funds." That's my gap. Even in a down market, the index did better than me.
 
 Now that's a hard thing to read. But this is exactly why you need to know it. Because if I didn't run this, I'd have no idea. I might have assumed I was doing fine. I was not.
 
@@ -145,11 +151,11 @@ Let's click Download Report.
 
 *[Open PDF — scroll to first page]*
 
-The PDF starts with the same three numbers you saw on the results screen — your XIRR, Nifty's XIRR, and the performance gap. This is your headline. Mine says minus 6.90%, Nifty at minus 1.53%, and I underperformed by 5.37%.
+The PDF starts with the same three numbers you saw on the results screen — your XIRR, Nifty's XIRR, and the performance gap. This is your headline. Mine says minus 1.36%, Nifty at minus 0.48%, and I underperformed by 0.88%.
 
 Right below that is the Portfolio Summary. This is the full picture — your first investment date, how long you've been invested, total number of transactions, and then the money numbers — total invested, total withdrawn, current portfolio value, and your net gain or loss. And your XIRR at the bottom. I'm blurring the rupee amounts but you get the idea — everything is right here in one place.
 
-Then comes the Nifty 50 Benchmark Comparison. This is the honest comparison. It shows what would have happened if every rupee you put into stocks had gone into Nifty 50 instead — on the exact same dates, in the exact same amounts. Your XIRR versus Nifty's XIRR, and the value difference. In my case — Nifty would have given me more money. Underperformed by 5.37%.
+Then comes the Nifty 50 Benchmark Comparison. This is the honest comparison. It shows what would have happened if every rupee you put into stocks had gone into Nifty 50 instead — on the exact same dates, in the exact same amounts. Your XIRR versus Nifty's XIRR, and the value difference. In my case — Nifty would have given me more money. Underperformed by 0.88%.
 
 *[Scroll to next section]*
 
@@ -159,7 +165,7 @@ Then the Individual Account Analysis. Since I uploaded two Zerodha accounts, you
 
 *[Scroll to individual account tables]*
 
-Each account then gets its own detailed breakdown. My first account — XIRR minus 7.20%. My second — minus 6.72%. Both in the red, but now I know exactly which one is performing worse.
+Each account then gets its own detailed breakdown. My first account, GZW478 — XIRR minus 0.71%. My second, NBN208 — minus 1.76%. Both in the red, but now I know exactly which one is dragging more.
 
 *[Scroll to final summary table]*
 
