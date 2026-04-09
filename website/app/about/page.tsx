@@ -46,16 +46,16 @@ export default function About() {
         <div style={{ ...glass, padding: '40px', marginBottom: '2rem' }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#e2e8f0', marginBottom: '16px' }}>Why I Built This</h2>
           <p style={{ color: '#94a3b8', fontSize: '0.97rem', lineHeight: 1.85, marginBottom: '16px' }}>
-            I&apos;ve been investing in Indian equities through Zerodha for a few years. Like most retail investors, I occasionally checked the XIRR shown in my broker dashboard and felt reasonably satisfied.
+            I&apos;ve been investing in Indian equities through Zerodha for a few years. Every time I opened the dashboard and looked for my XIRR, I saw the same thing — a dash. Not a number. Not an error. Just a dash, as if the field didn&apos;t apply to me.
           </p>
           <p style={{ color: '#94a3b8', fontSize: '0.97rem', lineHeight: 1.85, marginBottom: '16px' }}>
-            Then one day I decided to calculate it myself — properly, from the actual ledger — including every fund transfer, every STT deduction, every DP charge, and every day my money sat idle before I deployed it. The number was noticeably lower than what Zerodha showed.
+            It turns out Zerodha&apos;s XIRR has been broken for years. They know. Their community forum has threads about it going back years. The feature simply doesn&apos;t work for most accounts.
           </p>
           <p style={{ color: '#94a3b8', fontSize: '0.97rem', lineHeight: 1.85, marginBottom: '16px' }}>
-            That gap is not fraud — it&apos;s methodology. Brokers calculate XIRR from trade dates, not fund transfer dates. They exclude charges that are already deducted from your account. Each broker only sees its own slice. The result is a number that flatters you.
+            So I calculated it myself — from the actual ledger — including every fund transfer, every STT deduction, every DP charge, and every day my money sat idle before I deployed it. That number told a very different story than the one I&apos;d been assuming.
           </p>
           <p style={{ color: '#94a3b8', fontSize: '0.97rem', lineHeight: 1.85 }}>
-            I wanted one honest number. So I built the tool to calculate it — from the ledger, the way it should be.
+            I wanted one honest number — one I could trust. So I built the tool to calculate it from the ledger, the way it should be done.
           </p>
         </div>
 
