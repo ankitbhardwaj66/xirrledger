@@ -3,6 +3,12 @@
 
 ---
 
+## INTRO (5 sec)
+
+Hey, I'm Ankit — this is my first video, so pardon me for any mistakes. Let's get into it.
+
+---
+
 ## HOOK (15 sec)
 
 Your broker is hiding your real returns. Not a theory — let me show you exactly how.
@@ -63,9 +69,9 @@ Hit Calculate XIRR.
 
 *[Results screen loads]*
 
-My XIRR — minus 6.90%.
+My XIRR — minus 1.36%.
 
-Now look at this — Nifty 50's XIRR over the exact same cash flow period. Minus 1.53%. The whole market is in the red right now, so that context matters. But the index still beat me by 5.37%.
+Now look at this — Nifty 50's XIRR over the exact same cash flow period. Minus 0.48%. The whole market is in the red right now, so that context matters. But the index still beat me by 0.88%.
 
 That gap — that's the honest number. Not what my broker shows. Not a guess. This.
 
