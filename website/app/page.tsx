@@ -519,7 +519,7 @@ export default function Home() {
             <p style={{ color: '#f59e0b', fontWeight: 600, fontSize: '0.85rem', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Watch</p>
             <h2 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', fontWeight: 800, color: '#ffffff', lineHeight: 1.2 }}>See It In Action</h2>
           </div>
-          <div style={{ maxWidth: '780px', margin: '0 auto', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.5)', position: 'relative', paddingBottom: '56.25%', height: 0 }}>
+          <div style={{ maxWidth: '960px', margin: '0 auto', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 25px 60px rgba(0,0,0,0.5)', position: 'relative', paddingBottom: '56.25%', height: 0 }}>
             <YouTubeFacade videoId="jnIUkdnjqjo" title="Your Broker Hides Your Real Returns — Calculate True XIRR Free with XIRR Ledger" />
           </div>
         </div>
