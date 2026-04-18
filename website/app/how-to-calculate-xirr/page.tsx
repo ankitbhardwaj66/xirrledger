@@ -320,7 +320,7 @@ export default function HowToCalculateXIRR() {
           <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '32px', maxWidth: '420px', margin: '0 auto 32px' }}>
             Upload your broker ledger and get your true XIRR — including all charges — in under 2 minutes.
           </p>
-          <Link href="/calculator" style={{
+          <Link href="/calculator/" style={{
             background: GOLD, color: '#0a1020',
             padding: '14px 32px', borderRadius: '10px',
             fontWeight: 700, fontSize: '1rem', textDecoration: 'none',

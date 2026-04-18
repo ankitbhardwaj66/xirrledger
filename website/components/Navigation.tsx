@@ -71,7 +71,7 @@ export default function Navigation() {
               );
             })}
             <a
-              href="/calculator"
+              href="/calculator/"
               style={{
                 background: '#f59e0b',
                 color: '#0a1020',
@@ -143,7 +143,7 @@ export default function Navigation() {
               );
             })}
             <a
-              href="/calculator"
+              href="/calculator/"
               onClick={() => setIsOpen(false)}
               style={{
                 marginTop: '8px',

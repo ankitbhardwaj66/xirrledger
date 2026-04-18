@@ -10,7 +10,7 @@ const faqSchema = {
       name: 'What is XIRR and why is it important for Indian investors?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'XIRR (Extended Internal Rate of Return) is the most accurate way to measure investment returns when you invest at irregular intervals. Unlike CAGR, XIRR accounts for the exact timing of every deposit and withdrawal, idle cash in your broker account, all transaction charges like STT and brokerage, and dividend income. It gives you one honest annualised return — the number your broker does not show you.',
+        text: 'XIRR (Extended Internal Rate of Return) is the most accurate way to measure investment returns when you invest money at irregular intervals — which is how most Indian retail investors actually invest in stocks. Unlike CAGR, which assumes a single lump-sum investment held to maturity, XIRR accounts for the exact date and amount of every cash flow. If you added ₹50,000 in January and ₹80,000 in July, XIRR treats each rupee differently based on how long it was actually invested. CAGR ignores this entirely. XIRR also accounts for idle cash in your broker account before you deploy it, STT, brokerage, DP charges, and all transaction costs, dividend income as cash inflows, and multiple accounts across different brokers. The result is one honest annualised return percentage — the number your broker does not show you.',
       },
     },
     {
@@ -18,7 +18,7 @@ const faqSchema = {
       name: 'What is the difference between XIRR and CAGR?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'CAGR assumes you invested all your money on a single day and never touched it again. It only looks at your starting and ending value. XIRR is designed for real-world investing — where you add money regularly, withdraw sometimes, and keep cash idle in your account. XIRR gives each rupee its own start date, so the return reflects how long each rupee was actually invested. For anyone investing regularly in Indian stocks, XIRR is the only metric that makes sense.',
+        text: 'CAGR assumes you invested all your money on a single day and never touched it again. It only looks at your starting value and ending value, ignoring everything in between. For lump-sum fixed deposits, CAGR is fine. XIRR is designed for real-world investing — where you buy stocks across multiple dates, add money periodically, withdraw some profits, and keep some cash idle in your account. XIRR gives each rupee its own start date, so the return is proportional to how long each rupee was actually at work. Example: you invest ₹1 lakh on January 1st and another ₹1 lakh on December 1st. By December 31st your portfolio is ₹2.1 lakh. CAGR would show a healthy return based on the total. But XIRR would show a much more modest return — because the second ₹1 lakh was only invested for one month, not a year. For anyone investing regularly in Indian stocks, XIRR is the only metric that makes sense.',
       },
     },
     {
@@ -26,7 +26,7 @@ const faqSchema = {
       name: 'Why does XIRR Ledger show a lower return than my broker?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Brokers show inflated XIRR for three reasons: they ignore idle cash before you buy a stock, they exclude STT, DP charges, brokerage, GST and stamp duty from the calculation, and they only show returns for their platform. XIRR Ledger reads your actual cash ledger where every rupee in, every rupee out, and every fee is captured. The number you see is what you actually earned.',
+        text: 'Brokers show inflated returns for three reasons. First, idle cash is ignored: your broker starts counting from when you bought a stock — not from when you transferred money to the account. That gap (sometimes weeks) of idle cash is a real cost your broker does not count. Second, charges are excluded: STT, DP charges, brokerage, GST, SEBI fees, stamp duty — all deducted from your ledger but not counted in your broker\'s return calculation. Third, single-broker view: if you use multiple brokers, each shows only its own account with no combined number. XIRR Ledger reads your actual cash ledger — so every rupee in, every rupee out, and every fee is already captured. The number you see is what you actually earned.',
       },
     },
     {
@@ -130,7 +130,7 @@ const faqSchema = {
       name: 'How is idle cash in my broker account handled?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'When you transfer money to your broker account, that is a real cash outflow — you moved it from a savings account where it earned interest to a broker account where it earns nothing until you invest. XIRR Ledger treats every bank transfer as a cash outflow on that exact date. If money sat idle for 3 weeks before you bought a stock, those 3 weeks count against your return. This is why our XIRR is often lower than your broker shows — brokers start the clock when you buy, not when you transfer. You also enter your current available cash balance separately, which is added to the final portfolio value.',
+        text: 'When you transfer money to your broker account, that is a real cash outflow — you moved it from a savings account where it earned interest to a broker account where it earns nothing until you invest. XIRR Ledger treats every bank transfer as a cash outflow on that exact date. If money sat idle for 3 weeks before you bought a stock, those 3 weeks count against your return. This is why our XIRR is often lower than what your broker shows — brokers start the clock when you buy, not when you transfer. Example: you transfer ₹1 lakh on March 1st but only invest it on March 22nd. Your broker ignores those 3 idle weeks. XIRR Ledger counts them, because your capital was committed from March 1st. You also enter your current available cash balance separately at the time of calculation, which is added to the final portfolio value.',
       },
     },
     {
@@ -165,6 +165,39 @@ const faqSchema = {
         text: 'Most XIRR calculators ask you to manually enter each transaction date and amount. This fails because manual errors directly corrupt the result, people forget transactions like partial withdrawals and quarterly charges, and entering hundreds of transactions for a multi-year portfolio is impractical. Your broker ledger has every transaction recorded with exact dates and amounts. Uploading it takes 30 seconds and gives a mathematically complete calculation with no guesswork or missing entries.',
       },
     },
+    {
+      '@type': 'Question',
+      name: 'Can I use XIRR to calculate returns on SIP investments?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Yes — XIRR is actually the most accurate metric for SIP (Systematic Investment Plan) returns because SIPs invest fixed amounts at regular intervals, which is exactly the irregular-cash-flow scenario XIRR is designed for. CAGR cannot handle SIPs correctly because it assumes a single lump-sum investment. If you invest ₹5,000 every month into a stock or ETF through your broker, XIRR calculates the true annualised return by accounting for the exact date and amount of each instalment. XIRR Ledger reads all these investments directly from your broker ledger so you do not need to enter each SIP transaction manually.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'Does XIRR work for F&O (futures and options) trading?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Yes — XIRR Ledger supports F&O trading accounts. All F&O premium paid, profits received, and charges (STT on options exercise, exchange charges, SEBI fees, GST) are captured in your broker ledger. When you upload your ledger, XIRR Ledger includes all these as cash flows in the XIRR computation. This gives F&O traders an honest picture of their annualised return, which is especially important because F&O involves high turnover and significant per-trade charges that inflate the apparent return when ignored.',
+      },
+    },
+    {
+      '@type': 'Question',
+      name: 'What is the difference between XIRR and absolute return?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Absolute return is the total gain or loss expressed as a percentage of the amount invested, with no adjustment for time. If you invested ₹1 lakh and it grew to ₹1.3 lakh, your absolute return is 30% — regardless of whether it took 6 months or 6 years. XIRR (Extended Internal Rate of Return) annualises that return to account for time. The same 30% gain in 6 months is an XIRR of roughly 69% per year, while the same 30% gain in 6 years is an XIRR of about 4.5% per year. XIRR is the correct metric for comparing investments over different time periods or evaluating whether your returns are competitive with benchmarks like Nifty 50 or fixed deposit rates.',
+      },
+    },
+  ],
+};
+
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://xirrledger.com/' },
+    { '@type': 'ListItem', position: 2, name: 'FAQ', item: 'https://xirrledger.com/faq/' },
   ],
 };
 
@@ -188,6 +221,7 @@ export default function FAQPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <FAQClient />
     </>
   );

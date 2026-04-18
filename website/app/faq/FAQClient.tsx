@@ -460,6 +460,52 @@ const faqCategories = [
           </div>
         ),
       },
+      {
+        question: 'Can I use XIRR to calculate returns on SIP investments?',
+        answer: (
+          <div>
+            <p style={{ marginBottom: '10px' }}>
+              Yes — XIRR is actually the most accurate metric for SIP returns. SIPs invest fixed amounts at regular intervals, which is exactly the irregular-cash-flow scenario XIRR is designed for. CAGR cannot handle SIPs correctly because it assumes a single lump-sum investment.
+            </p>
+            <p style={{ marginBottom: '10px' }}>
+              If you invest ₹5,000 every month into a stock or ETF through your broker, XIRR calculates the true annualised return by accounting for the exact date and amount of each instalment.
+            </p>
+            <p>XIRR Ledger reads all these investments directly from your broker ledger — no manual entry of each SIP transaction needed.</p>
+          </div>
+        ),
+      },
+      {
+        question: 'Does XIRR work for F&O (futures and options) trading?',
+        answer: (
+          <div>
+            <p style={{ marginBottom: '10px' }}>
+              Yes — XIRR Ledger supports F&O trading accounts. All F&O premium paid, profits received, and charges (STT on options exercise, exchange charges, SEBI fees, GST) are captured in your broker ledger.
+            </p>
+            <p style={{ marginBottom: '10px' }}>
+              When you upload your ledger, all these cash flows are included in the XIRR computation. This is especially important for F&O traders because high turnover and per-trade charges significantly affect real returns — yet most traders only look at gross P&L.
+            </p>
+            <p>XIRR gives you the single honest annualised return on your deployed capital, after all charges.</p>
+          </div>
+        ),
+      },
+      {
+        question: 'What is the difference between XIRR and absolute return?',
+        answer: (
+          <div>
+            <p style={{ marginBottom: '10px' }}>
+              Absolute return is the total gain or loss as a percentage of the amount invested, with no adjustment for time. If you invested ₹1 lakh and it grew to ₹1.3 lakh, your absolute return is 30% — whether it took 6 months or 6 years.
+            </p>
+            <p style={{ marginBottom: '10px' }}>
+              XIRR annualises that return to account for time:
+            </p>
+            <ul style={{ paddingLeft: '20px', lineHeight: 2, marginBottom: '10px' }}>
+              <li>30% gain in <strong style={{ color: '#e2e8f0' }}>6 months</strong> → XIRR ≈ <span style={{ fontFamily: 'var(--font-mono)', color: GOLD }}>69% per year</span></li>
+              <li>30% gain in <strong style={{ color: '#e2e8f0' }}>6 years</strong> → XIRR ≈ <span style={{ fontFamily: 'var(--font-mono)', color: GOLD }}>4.5% per year</span></li>
+            </ul>
+            <p>XIRR is the correct metric for comparing investments over different time periods or benchmarking against Nifty 50 or fixed deposit rates.</p>
+          </div>
+        ),
+      },
     ],
   },
 ];

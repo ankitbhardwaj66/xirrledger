@@ -31,11 +31,9 @@ Options -Indexes
 <IfModule mod_headers.c>
     Header set Cache-Control "public, max-age=31536000, immutable" env=STATIC_ASSET
 
-    # HTML pages must never be cached (content changes on each deploy)
+    # HTML pages: short cache (10 min) so browsers reuse on revisit without hammering origin
     <FilesMatch "\.html$">
-        Header set Cache-Control "no-cache, no-store, must-revalidate"
-        Header set Pragma "no-cache"
-        Header set Expires "0"
+        Header set Cache-Control "public, max-age=600"
     </FilesMatch>
 
     # ─── Security headers ────────────────────────────────────────────────────

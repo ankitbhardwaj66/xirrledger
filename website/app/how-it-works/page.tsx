@@ -324,7 +324,7 @@ export default function HowItWorks() {
           <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '32px' }}>
             Follow the steps above and calculate your true portfolio XIRR now.
           </p>
-          <Link href="/calculator" style={{
+          <Link href="/calculator/" style={{
             background: GOLD, color: '#0a1020',
             padding: '14px 32px', borderRadius: '10px',
             fontWeight: 700, fontSize: '1rem', textDecoration: 'none',

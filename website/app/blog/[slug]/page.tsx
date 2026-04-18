@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: `${post.title} | XIRR Ledger Blog`,
     description: post.excerpt,
-    authors: [{ name: 'XIRR Ledger Team' }],
+    authors: [{ name: 'Ankit Bhardwaj', url: 'https://ankitbhardwaj.in' }],
     keywords: post.keywords.length > 0
       ? post.keywords
       : ['XIRR calculator', 'portfolio returns', 'trading ledger', 'investment returns', 'ledger-based XIRR'],
@@ -38,7 +38,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       siteName: 'XIRR Ledger',
       type: 'article',
       publishedTime: post.date,
-      authors: ['XIRR Ledger Team'],
+      modifiedTime: post.lastModified,
+      authors: ['Ankit Bhardwaj'],
     },
     twitter: {
       card: 'summary_large_image',
@@ -57,37 +58,40 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
 
   const articleSchema = {
     '@context': 'https://schema.org',
-    '@type': 'Article',
+    '@type': 'BlogPosting',
     headline: post.title,
     description: post.excerpt,
     datePublished: post.date,
-    dateModified: post.date,
+    dateModified: post.lastModified,
     author: {
       '@type': 'Person',
+      '@id': 'https://xirrledger.com/#author',
       name: 'Ankit Bhardwaj',
-      url: 'https://xirrledger.com',
+      url: 'https://ankitbhardwaj.in',
     },
     image: 'https://xirrledger.com/opengraph-image',
-    publisher: {
-      '@type': 'Organization',
-      name: 'XIRR Ledger',
-      url: 'https://xirrledger.com',
-      logo: {
-        '@type': 'ImageObject',
-        url: 'https://xirrledger.com/logo-email.png',
-        width: 512,
-        height: 512,
-      },
-    },
+    publisher: { '@id': 'https://xirrledger.com/#organization' },
     mainEntityOfPage: {
       '@type': 'WebPage',
       '@id': `https://xirrledger.com/blog/${slug}/`,
     },
+    inLanguage: 'en-IN',
+  };
+
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://xirrledger.com/' },
+      { '@type': 'ListItem', position: 2, name: 'Blog', item: 'https://xirrledger.com/blog/' },
+      { '@type': 'ListItem', position: 3, name: post.title, item: `https://xirrledger.com/blog/${slug}/` },
+    ],
   };
 
   return (
     <article style={{ background: '#0f172a', minHeight: '100vh', paddingTop: '4rem', paddingBottom: '6rem' }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <div className="container-custom">
 
         {/* ── Back button ── */}
@@ -163,7 +167,7 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
               Upload your ledger and get accurate returns in minutes
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <Link href="/calculator" style={{
+              <Link href="/calculator/" style={{
                 background: GOLD, color: '#0a1020',
                 padding: '12px 26px', borderRadius: '10px',
                 fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none',

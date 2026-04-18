@@ -147,7 +147,7 @@ export default function About() {
             The tool is free. No subscription, no credit card.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/calculator" style={{
+            <Link href="/calculator/" style={{
               background: GOLD, color: '#0a1020',
               padding: '12px 26px', borderRadius: '10px',
               fontWeight: 700, fontSize: '0.95rem', textDecoration: 'none',

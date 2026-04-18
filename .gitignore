@@ -19,6 +19,8 @@ eggs/
 .eggs/
 lib/
 lib64/
+# un-ignore Next.js lib source — root lib/ pattern above would otherwise exclude it
+!website/lib/
 parts/
 sdist/
 var/

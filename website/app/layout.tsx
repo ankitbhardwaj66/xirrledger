@@ -28,8 +28,10 @@ export const metadata: Metadata = {
   authors: [{ name: 'Ankit Bhardwaj' }],
   openGraph: {
     title: 'XIRR Ledger - Ledger-Based XIRR Calculator',
-    description: 'Calculate accurate portfolio returns from your actual trading ledger',
+    description: 'Calculate accurate portfolio returns from your actual trading ledger. Multi-broker support (Zerodha, Groww, Fyers) with Nifty 50 benchmark comparison. Free, no signup required.',
     type: 'website',
+    url: 'https://xirrledger.com/',
+    siteName: 'XIRR Ledger',
     images: [{ url: '/opengraph-image', width: 1200, height: 630 }],
   },
 };
@@ -58,7 +60,7 @@ const organizationSchema = {
     contactType: 'customer support',
   },
   sameAs: [
-    'https://www.youtube.com/watch?v=ZXf0VT8RPmc',
+    'https://www.youtube.com/@xirrledger',
   ],
 };
 
@@ -68,7 +70,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`scroll-smooth ${mono.variable} ${displayFont.variable}`}>
+    <html lang="en-IN" className={`scroll-smooth ${mono.variable} ${displayFont.variable}`}>
       <head>
         {process.env.NEXT_PUBLIC_GA_ID && (
           <link rel="preconnect" href="https://www.googletagmanager.com" />

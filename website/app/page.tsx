@@ -3,7 +3,24 @@ import type React from 'react';
 import Link from 'next/link';
 import YouTubeFacade from '@/components/YouTubeFacade';
 
+const videoSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'VideoObject',
+  name: 'Your Broker Hides Your Real Returns — Calculate True XIRR Free with XIRR Ledger',
+  description: 'Learn how XIRR Ledger calculates your true portfolio returns using your Zerodha, Groww, or Fyers ledger — including all charges, idle cash, and Nifty 50 benchmark comparison.',
+  thumbnailUrl: 'https://i.ytimg.com/vi/jnIUkdnjqjo/maxresdefault.jpg',
+  uploadDate: '2026-04-05',
+  contentUrl: 'https://www.youtube.com/watch?v=jnIUkdnjqjo',
+  embedUrl: 'https://www.youtube.com/embed/jnIUkdnjqjo',
+  publisher: { '@id': 'https://xirrledger.com/#organization' },
+  inLanguage: 'en-IN',
+  isAccessibleForFree: true,
+};
+
 export const metadata: Metadata = {
+  openGraph: {
+    url: 'https://xirrledger.com/',
+  },
   alternates: {
     canonical: 'https://xirrledger.com/',
   },
@@ -67,6 +84,7 @@ export default function Home() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(videoSchema) }} />
       {/* ═══════════════════════════ HERO ═══════════════════════════ */}
       <section style={{ background: '#0f172a', position: 'relative', overflow: 'hidden', paddingTop: '6rem', paddingBottom: '6rem' }}>
 
@@ -133,7 +151,7 @@ export default function Home() {
 
               {/* CTAs */}
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '2rem' }}>
-                <Link href="/calculator" style={{
+                <Link href="/calculator/" style={{
                   background: '#f59e0b', color: '#0a1020',
                   padding: '13px 28px', borderRadius: '10px',
                   fontWeight: 700, fontSize: '1rem', textDecoration: 'none',
@@ -738,7 +756,7 @@ export default function Home() {
             Upload your ledger and get precise XIRR in minutes.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link href="/calculator" style={{
+            <Link href="/calculator/" style={{
               background: '#f59e0b', color: '#0a1020',
               padding: '14px 32px', borderRadius: '10px',
               fontWeight: 700, fontSize: '1rem', textDecoration: 'none',

@@ -9,23 +9,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const posts = await getAllPosts();
 
   const staticPages: MetadataRoute.Sitemap = [
-    { url: `${BASE_URL}/`,                        lastModified: new Date('2026-04-09'), changeFrequency: 'weekly',  priority: 1.0 },
-    { url: `${BASE_URL}/how-it-works/`,           lastModified: new Date('2026-03-15'), changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${BASE_URL}/features/`,               lastModified: new Date('2026-03-15'), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE_URL}/blog/`,                   lastModified: new Date('2026-04-09'), changeFrequency: 'weekly',  priority: 0.8 },
-    { url: `${BASE_URL}/how-to-calculate-xirr/`,  lastModified: new Date('2026-03-02'), changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${BASE_URL}/faq/`,                    lastModified: new Date('2026-04-05'), changeFrequency: 'monthly', priority: 0.7 },
-    { url: `${BASE_URL}/contact/`,                lastModified: new Date('2026-02-17'), changeFrequency: 'yearly',  priority: 0.5 },
-    { url: `${BASE_URL}/about/`,                  lastModified: new Date('2026-04-09'), changeFrequency: 'yearly',  priority: 0.5 },
-    { url: `${BASE_URL}/privacy-policy/`,         lastModified: new Date('2026-04-09'), changeFrequency: 'yearly',  priority: 0.3 },
-    { url: `${BASE_URL}/terms-of-service/`,       lastModified: new Date('2026-04-09'), changeFrequency: 'yearly',  priority: 0.3 },
+    { url: `${BASE_URL}/`,                        lastModified: '2026-04-18' },
+    { url: `${BASE_URL}/how-it-works/`,           lastModified: '2026-03-15' },
+    { url: `${BASE_URL}/features/`,               lastModified: '2026-03-15' },
+    { url: `${BASE_URL}/blog/`,                   lastModified: '2026-04-18' },
+    { url: `${BASE_URL}/how-to-calculate-xirr/`,  lastModified: '2026-03-02' },
+    { url: `${BASE_URL}/faq/`,                    lastModified: '2026-04-18' },
+    { url: `${BASE_URL}/contact/`,                lastModified: '2026-02-17' },
+    { url: `${BASE_URL}/about/`,                  lastModified: '2026-04-09' },
+    { url: `${BASE_URL}/privacy-policy/`,         lastModified: '2026-04-09' },
+    { url: `${BASE_URL}/terms-of-service/`,       lastModified: '2026-04-09' },
   ];
 
   const blogPages: MetadataRoute.Sitemap = posts.map((post) => ({
     url: `${BASE_URL}/blog/${post.slug}/`,
-    lastModified: new Date(post.date),
-    changeFrequency: 'monthly',
-    priority: 0.8,
+    lastModified: post.lastModified,
   }));
 
   return [...staticPages, ...blogPages];
