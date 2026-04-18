@@ -102,6 +102,18 @@ cd website && rm -rf out/ && npm run build && cd ..
 rsync -avz --delete --exclude=dev -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
 ```
 
+## Blog Post Images
+
+When writing a new blog post, **do not reuse an existing image** just because it's loosely related. Instead, fetch a relevant image from a free stock photo provider:
+
+- **Preferred sources:** [Unsplash](https://unsplash.com), [Pexels](https://www.pexels.com), [Pixabay](https://pixabay.com)
+- Search for a term that matches the post topic (e.g. "stock market calculator", "investment returns", "financial planning")
+- Download the image and convert/save it as a `.webp` file
+- Place it in `website/public/blog/<slug>.webp`
+- Reference it in the MDX as `![alt text](/blog/<slug>.webp)`
+
+**Never use an existing blog image for a new post** — each post should have its own purpose-built image.
+
 ## General Rules
 
 - **Never commit `website/out/`** — it is gitignored and deployed via rsync only.
