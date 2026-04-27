@@ -42,11 +42,12 @@ if (!$body || empty($body['session_id'])) {
     exit;
 }
 
-$session_id = substr($body['session_id'],    0, 64);
-$status     = substr($body['status'] ?? 'done', 0, 20);
-$report_url = $body['report_url'] ?? null;
-$xirr       = isset($body['xirr'])       ? (float) $body['xirr']       : null;
-$nifty_xirr = isset($body['nifty_xirr']) ? (float) $body['nifty_xirr'] : null;
+$session_id    = substr($body['session_id'],    0, 64);
+$status        = substr($body['status'] ?? 'done', 0, 20);
+$report_url    = $body['report_url'] ?? null;
+$xirr          = isset($body['xirr'])          ? (float) $body['xirr']          : null;
+$nifty_xirr    = isset($body['nifty_xirr'])    ? (float) $body['nifty_xirr']    : null;
+$error_message = isset($body['error_message']) ? substr($body['error_message'], 0, 500) : null;
 
 try {
     $pdo = new PDO(
@@ -57,21 +58,23 @@ try {
 
     $stmt = $pdo->prepare('
         UPDATE xirr_sessions
-        SET status       = :status,
-            last_step    = CASE WHEN :status2 = \'done\' THEN \'results\' ELSE last_step END,
-            report_url   = :report_url,
-            xirr         = :xirr,
-            nifty_xirr   = :nifty_xirr,
-            completed_at = NOW()
+        SET status        = :status,
+            last_step     = CASE WHEN :status2 = \'done\' THEN \'results\' ELSE last_step END,
+            report_url    = :report_url,
+            xirr          = :xirr,
+            nifty_xirr    = :nifty_xirr,
+            error_message = :error_message,
+            completed_at  = NOW()
         WHERE session_id = :session_id
     ');
     $stmt->execute([
-        ':session_id' => $session_id,
-        ':status'     => $status,
-        ':status2'    => $status,
-        ':report_url' => $report_url,
-        ':xirr'       => $xirr,
-        ':nifty_xirr' => $nifty_xirr,
+        ':session_id'    => $session_id,
+        ':status'        => $status,
+        ':status2'       => $status,
+        ':report_url'    => $report_url,
+        ':xirr'          => $xirr,
+        ':nifty_xirr'    => $nifty_xirr,
+        ':error_message' => $error_message,
     ]);
 
     echo json_encode(['ok' => true]);

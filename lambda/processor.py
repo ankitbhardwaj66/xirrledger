@@ -113,6 +113,20 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             ContentType="application/json",
         )
 
+    def notify_php(payload):
+        is_test = email.lower() in TEST_EMAILS
+        if not (HOSTINGER_API_URL and email and not is_test):
+            return
+        try:
+            requests.post(
+                f"{HOSTINGER_API_URL}/update-session.php",
+                json=payload,
+                headers={"X-API-Secret": HOSTINGER_API_SECRET},
+                timeout=10,
+            )
+        except Exception as e:
+            logger.warning("PHP bridge notification failed: %s", e)
+
     try:
         update_status({"status": "parsing", "message": "Downloading and parsing ledger files..."})
 
@@ -359,23 +373,13 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
         update_status(final_status)
 
         # ── Notify PHP bridge ─────────────────────────────────
-        is_test = email.lower() in TEST_EMAILS
-        if HOSTINGER_API_URL and email and not is_test:
-            try:
-                requests.post(
-                    f"{HOSTINGER_API_URL}/update-session.php",
-                    json={
-                        "session_id": session_id,
-                        "status": "done",
-                        "report_url": report_url,
-                        "xirr": final_status["xirr"],
-                        "nifty_xirr": final_status["nifty_xirr"],
-                    },
-                    headers={"X-API-Secret": HOSTINGER_API_SECRET},
-                    timeout=10,
-                )
-            except Exception as e:
-                logger.warning("PHP bridge notification failed: %s", e)
+        notify_php({
+            "session_id": session_id,
+            "status": "done",
+            "report_url": report_url,
+            "xirr": final_status["xirr"],
+            "nifty_xirr": final_status["nifty_xirr"],
+        })
 
         # ── Send email ────────────────────────────────────────
         if email and SEND_EMAIL:
@@ -388,11 +392,15 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
     except ValueError as e:
         # ValueError messages are already written to be user-friendly
         logger.error("Processing failed (ValueError) for session %s: %s", session_id, e)
-        update_status({"status": "error", "message": str(e)})
+        msg = str(e)
+        update_status({"status": "error", "message": msg})
+        notify_php({"session_id": session_id, "status": "error", "error_message": msg})
     except Exception as e:
         # Catch-all for unexpected errors — never show raw Python to the user
         logger.exception("Processing failed for session %s", session_id)
-        update_status({"status": "error", "message": "Something went wrong while processing your files. Please go back and try again."})
+        msg = "Something went wrong while processing your files. Please go back and try again."
+        update_status({"status": "error", "message": msg})
+        notify_php({"session_id": session_id, "status": "error", "error_message": msg})
 
 
 # ─────────────────────────────────────────────────────────────
