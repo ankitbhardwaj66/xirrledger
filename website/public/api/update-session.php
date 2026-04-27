@@ -58,6 +58,7 @@ try {
     $stmt = $pdo->prepare('
         UPDATE xirr_sessions
         SET status       = :status,
+            last_step    = CASE WHEN :status2 = \'done\' THEN \'results\' ELSE last_step END,
             report_url   = :report_url,
             xirr         = :xirr,
             nifty_xirr   = :nifty_xirr,
@@ -67,6 +68,7 @@ try {
     $stmt->execute([
         ':session_id' => $session_id,
         ':status'     => $status,
+        ':status2'    => $status,
         ':report_url' => $report_url,
         ':xirr'       => $xirr,
         ':nifty_xirr' => $nifty_xirr,

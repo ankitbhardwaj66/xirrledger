@@ -362,6 +362,21 @@ export default function CalculatorPage() {
     localStorage.removeItem(SESSION_KEY);
   }
 
+  function trackStep(s: Step, u?: User | null) {
+    if (process.env.NEXT_PUBLIC_DEBUG === 'true') return;
+    const currentUser = u ?? user;
+    fetch('/api/track-step.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: sessionId,
+        step: s,
+        name: currentUser?.name ?? '',
+        email: currentUser?.email ?? '',
+      }),
+    }).catch(() => {});
+  }
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(SESSION_KEY);
@@ -412,6 +427,7 @@ export default function CalculatorPage() {
     setUser(u);
     saveSession(u);
     setStep('upload');
+    trackStep('upload', u);
   }
 
   async function handleManualContinue() {
@@ -454,6 +470,7 @@ export default function CalculatorPage() {
       setUser(u);
       saveSession(u);
       setStep('upload');
+      trackStep('upload', u);
     } catch (err: unknown) {
       setOtpError(err instanceof Error ? err.message : 'Verification failed. Please try again.');
     } finally {
@@ -697,6 +714,7 @@ export default function CalculatorPage() {
       const anyInvalid = Object.values(newStatuses).some(s => s === 'invalid');
       if (!anyInvalid) {
         setStep('details');
+        trackStep('details');
       }
     } catch (err) {
       setProcessingError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
@@ -709,6 +727,7 @@ export default function CalculatorPage() {
     if (!allHoldingsEntered || !allManualEntriesLinked || !allManualEntriesFilled) return;
     setProcessingError('');
     setStep('processing');
+    trackStep('processing');
     setProcessingSteps(prev => prev.map((s, i) => ({ ...s, status: i === 0 ? 'active' : 'pending' })));
     const tProcess = performance.now();
 
@@ -843,6 +862,7 @@ export default function CalculatorPage() {
           devLog(`[XIRR] Done — total processing time: ${elapsed}s | XIRR: ${data.xirr}% | Nifty: ${data.nifty_xirr}%`);
           setResults(data);
           setStep('results');
+          trackStep('results');
         } else if (data.status === 'error') {
           clearInterval(pollingRef.current!);
           devLog(`[XIRR] Error after ${elapsed}s — ${data.message}`);
