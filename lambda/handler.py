@@ -225,8 +225,8 @@ def handle_validate(event):
             outflows, _ = parse_groww_pdf(file_bytes, password=pan)
             return _response(200, {"valid": True, "transactions_found": len(outflows)})
 
-    except ValueError:
-        return _response(200, {"valid": False, "error": "This CSV has the wrong structure. Please download the correct one from your broker."})
+    except ValueError as e:
+        return _response(200, {"valid": False, "error": str(e)})
 
     except Exception as e:
         logger.exception("Error in handle_validate")

@@ -18,7 +18,7 @@ When the user says "push" (or "deploy frontend", "push frontend"):
      ```
    - **dev branch:**
      ```bash
-     rsync -avz --delete --exclude=robots.txt -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/dev/
+     rsync -avz --delete --exclude=robots.txt --exclude=api/config.php -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/dev/
      ```
 
 > `website/out/` is gitignored — never commit it. Always rsync it directly to the server.
@@ -58,7 +58,7 @@ rsync -avz --delete --exclude=dev -e "ssh -p 65002" website/out/ u889244618@46.2
 
 **Dev (dev branch):**
 ```bash
-rsync -avz --delete --exclude=robots.txt -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/dev/
+rsync -avz --delete --exclude=robots.txt --exclude=api/config.php -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/dev/
 ```
 
 > `--exclude=dev` on main protects the dev subdomain directory from being deleted by `--delete`.
