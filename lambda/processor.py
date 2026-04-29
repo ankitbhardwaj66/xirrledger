@@ -570,7 +570,7 @@ def parse_zerodha_ledger_xlsx(file_bytes: bytes):
     ) if payout_rows or quarterly_rows else pd.DataFrame(columns=["date", "amount"])
 
     if outflows.empty:
-        raise ValueError("No 'Funds added' entries found in Zerodha ledger XLSX.")
+        raise ValueError("No 'Funds added' entries found in this file. Your ledger may not cover the period when you first added funds — try re-downloading with an earlier start date from Zerodha Console.")
 
     return outflows, inflows, client_id
 
