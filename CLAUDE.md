@@ -65,8 +65,18 @@ rsync -avz --delete --exclude=robots.txt -e "ssh -p 65002" website/out/ u8892446
 ## AWS / Terraform
 
 - Always use `--profile ankit` for AWS CLI commands and set `AWS_PROFILE=ankit` for Terraform.
-- For `terraform` commands: `cd terraform-dev && AWS_PROFILE=ankit terraform plan/apply`
 - For `aws` CLI commands: `aws --profile ankit <command> --region ap-south-1`
+
+**Terraform deploy order — always dev first, then prod:**
+```bash
+# 1. Dev first
+cd terraform-dev && AWS_PROFILE=ankit terraform plan && AWS_PROFILE=ankit terraform apply && cd ..
+
+# 2. Prod only after dev apply succeeds
+cd terraform && AWS_PROFILE=ankit terraform plan && AWS_PROFILE=ankit terraform apply && cd ..
+```
+
+Never apply prod Terraform before dev. If something breaks it's easier to catch in dev first.
 
 ## How env files work
 
