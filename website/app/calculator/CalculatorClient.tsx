@@ -362,7 +362,6 @@ export default function CalculatorPage() {
   }
 
   function trackStep(s: Step, u?: User | null) {
-    if (process.env.NEXT_PUBLIC_DEBUG === 'true') return;
     const currentUser = u ?? user;
     fetch('/api/track-step.php', {
       method: 'POST',
@@ -770,13 +769,11 @@ export default function CalculatorPage() {
 
       const detectedBrokers = [...new Set(files.map(f => f.broker).filter(b => b !== 'unknown'))];
       const detectedBroker = detectedBrokers.join(',') || 'unknown';
-      if (process.env.NEXT_PUBLIC_DEBUG !== 'true') {
-        fetch('/api/save-user.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ session_id, name: user?.name, email: user?.email, broker: detectedBroker, google_token: user?.googleToken }),
-        }).catch(() => {});
-      }
+      fetch('/api/save-user.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id, name: user?.name, email: user?.email, broker: detectedBroker, google_token: user?.googleToken }),
+      }).catch(() => {});
 
       // Auto-link dividend files to Zerodha accounts by client ID
       // After XLSX validation, acc.id is already the client ID (e.g. "GZW478").
