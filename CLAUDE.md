@@ -45,6 +45,7 @@ No frontend build needed for Lambda-only changes.
 - All new development goes on the `dev` branch.
 - Merge `dev` → `main` only when ready for production.
 - When the user says "push" without specifying a branch, push the **current branch** (could be `dev` or `main`).
+- **Never commit or deploy directly to `main`** — all changes must go through `dev` first, be tested on dev.xirrledger.com, then merged to `main` for prod.
 
 ## Hostinger Deploy (frontend — rsync from local)
 
