@@ -131,9 +131,8 @@ async function hashFile(file: File): Promise<string> {
 
 async function detectBrokerFromContent(file: File): Promise<Pick<UploadedFile, 'broker' | 'formatError' | 'fyersClientId'>> {
   const name = file.name.toLowerCase();
-  const isPdf  = name.endsWith('.pdf') || file.type === 'application/pdf';
-  const isXlsxExt = name.endsWith('.xlsx');
-  const isCsv  = !isXlsxExt && (name.endsWith('.csv') || file.type === 'text/csv');
+  const isPdf = file.type === 'application/pdf' || name.endsWith('.pdf');
+  const isCsv = file.type === 'text/csv' || name.endsWith('.csv');
 
   if (isPdf) {
     try {
@@ -168,7 +167,7 @@ async function detectBrokerFromContent(file: File): Promise<Pick<UploadedFile, '
     }
   }
 
-  if (isXlsxExt) {
+  if (name.endsWith('.xlsx')) {
     // Verify ZIP/XLSX signature (PK = 0x50 0x4B)
     try {
       const header = new Uint8Array(await file.slice(0, 4).arrayBuffer());
