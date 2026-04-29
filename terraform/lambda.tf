@@ -135,3 +135,63 @@ resource "aws_lambda_permission" "allow_eventbridge_nifty" {
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.nifty_refresh_schedule.arn
 }
+
+# ─────────────────────────────────────────────────────────────
+# Daily support emailer Lambda
+# ─────────────────────────────────────────────────────────────
+resource "aws_lambda_function" "support_emailer" {
+  function_name = "support-emailer"
+  description   = "Sends support emails to users who only had failed sessions today"
+
+  filename         = data.archive_file.lambda_zip.output_path
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+
+  handler       = "emailer.lambda_handler"
+  runtime       = "python3.12"
+  architectures = ["arm64"]
+
+  role        = aws_iam_role.lambda_exec.arn
+  timeout     = 120
+  memory_size = 128
+
+  layers = [aws_lambda_layer_version.deps.arn]
+
+  environment {
+    variables = {
+      SES_FROM_EMAIL       = var.ses_from_email
+      HOSTINGER_API_URL    = var.hostinger_api_url
+      HOSTINGER_API_SECRET = var.hostinger_api_secret
+      AWS_REGION_NAME      = var.aws_region
+    }
+  }
+
+  tracing_config {
+    mode = "PassThrough"
+  }
+}
+
+resource "aws_cloudwatch_log_group" "support_emailer" {
+  name              = "/aws/lambda/${aws_lambda_function.support_emailer.function_name}"
+  retention_in_days = 7
+}
+
+# EventBridge rule — fires daily at 6:00 PM IST (12:30 UTC)
+resource "aws_cloudwatch_event_rule" "support_email_schedule" {
+  name                = "support-email-daily"
+  description         = "Send support emails to failed-session users at 6pm IST"
+  schedule_expression = "cron(30 12 * * ? *)"
+}
+
+resource "aws_cloudwatch_event_target" "support_email_target" {
+  rule      = aws_cloudwatch_event_rule.support_email_schedule.name
+  target_id = "SupportEmailerLambda"
+  arn       = aws_lambda_function.support_emailer.arn
+}
+
+resource "aws_lambda_permission" "allow_eventbridge_support_emailer" {
+  statement_id  = "AllowEventBridgeSupportEmailer"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.support_emailer.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.support_email_schedule.arn
+}

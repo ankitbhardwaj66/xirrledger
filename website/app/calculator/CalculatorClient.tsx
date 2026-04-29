@@ -362,14 +362,14 @@ export default function CalculatorPage() {
     localStorage.removeItem(SESSION_KEY);
   }
 
-  function trackStep(s: Step, u?: User | null) {
+  function trackStep(s: Step, u?: User | null, sid?: string) {
     if (process.env.NEXT_PUBLIC_DEBUG === 'true') return;
     const currentUser = u ?? user;
     fetch('/api/track-step.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        session_id: sessionId,
+        session_id: sid ?? sessionId,
         step: s,
         name: currentUser?.name ?? '',
         email: currentUser?.email ?? '',
@@ -727,7 +727,6 @@ export default function CalculatorPage() {
     if (!allHoldingsEntered || !allManualEntriesLinked || !allManualEntriesFilled) return;
     setProcessingError('');
     setStep('processing');
-    trackStep('processing');
     setProcessingSteps(prev => prev.map((s, i) => ({ ...s, status: i === 0 ? 'active' : 'pending' })));
     const tProcess = performance.now();
 
@@ -828,6 +827,7 @@ export default function CalculatorPage() {
       });
       if (!processRes.ok) throw new Error('Failed to start processing — please try again.');
       devLog(`[XIRR] /process triggered — ${((performance.now() - tProcessCall) / 1000).toFixed(2)}s`);
+      trackStep('processing', null, session_id);
       pollStatus(session_id, tProcess);
     } catch (err) {
       setProcessingError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
@@ -862,7 +862,7 @@ export default function CalculatorPage() {
           devLog(`[XIRR] Done — total processing time: ${elapsed}s | XIRR: ${data.xirr}% | Nifty: ${data.nifty_xirr}%`);
           setResults(data);
           setStep('results');
-          trackStep('results');
+          trackStep('results', null, sid);
         } else if (data.status === 'error') {
           clearInterval(pollingRef.current!);
           devLog(`[XIRR] Error after ${elapsed}s — ${data.message}`);
