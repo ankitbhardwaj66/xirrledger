@@ -9,7 +9,7 @@ const videoSchema = {
   name: 'Your Broker Hides Your Real Returns — Calculate True XIRR Free with XIRR Ledger',
   description: 'Learn how XIRR Ledger calculates your true portfolio returns using your Zerodha, Groww, or Fyers ledger — including all charges, idle cash, and Nifty 50 benchmark comparison.',
   thumbnailUrl: 'https://i.ytimg.com/vi/jnIUkdnjqjo/maxresdefault.jpg',
-  uploadDate: '2026-04-05',
+  uploadDate: '2026-04-05T00:00:00+05:30',
   contentUrl: 'https://www.youtube.com/watch?v=jnIUkdnjqjo',
   embedUrl: 'https://www.youtube.com/embed/jnIUkdnjqjo',
   publisher: { '@id': 'https://xirrledger.com/#organization' },
