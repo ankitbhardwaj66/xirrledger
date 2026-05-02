@@ -47,6 +47,19 @@ No frontend build needed for Lambda-only changes.
 - When the user says "push" without specifying a branch, push the **current branch** (could be `dev` or `main`).
 - **Never commit or deploy directly to `main`** — all changes must go through `dev` first, be tested on dev.xirrledger.com, then merged to `main` for prod.
 
+## Databases
+
+Dev and prod use **separate MySQL databases** on Hostinger. Never assume they share data.
+
+| Environment | DB name | DB user | Config file on server |
+|---|---|---|---|
+| `main` (prod) | `u889244618_xirrledger` | `u889244618_xirrledger` | `/home/.../public_html/api/config.php` |
+| `dev` | `u889244618_dev_xirrledger` | `u889244618_dev_xirrledger` | `/home/.../public_html/dev/api/config.php` |
+
+- The dev `config.php` is **excluded from rsync** (`--exclude=api/config.php`) so it's never overwritten by deploys.
+- When running MySQL commands via SSH, always read the correct `config.php` first to get the right credentials.
+- Schema changes (new tables, columns) must be applied to **both** databases separately.
+
 ## Hostinger Deploy (frontend — rsync from local)
 
 **SSH command:** `ssh -p 65002 u889244618@46.28.45.163`
