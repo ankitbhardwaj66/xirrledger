@@ -42,10 +42,10 @@ No frontend build needed for Lambda-only changes.
 | `main` | xirrledger.com | `/home/u889244618/domains/xirrledger.com/public_html/` |
 | `dev` | dev.xirrledger.com | `/home/u889244618/domains/xirrledger.com/public_html/dev/` |
 
-- All new development goes on the `dev` branch.
-- Merge `dev` → `main` only when ready for production.
+- **ALL work starts on `dev`** — always check `git branch` before making any changes and switch to `dev` if not already there.
+- Merge `dev` → `main` only when the user explicitly says "merge to main" or "deploy to prod".
 - When the user says "push" without specifying a branch, push the **current branch** (could be `dev` or `main`).
-- **Never commit or deploy directly to `main`** — all changes must go through `dev` first, be tested on dev.xirrledger.com, then merged to `main` for prod.
+- **Never commit directly to `main`** — no exceptions. If changes accidentally land on `main`, cherry-pick them back to `dev` to keep branches in sync.
 
 ## Databases
 
