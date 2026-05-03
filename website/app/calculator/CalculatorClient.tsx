@@ -328,18 +328,22 @@ export default function CalculatorPage() {
   const isIOS    = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/i.test(navigator.userAgent);
   const isMobile = isAndroid || isIOS;
 
-  function openBrokerLink(webUrl: string, iosScheme: string, androidIntent: string) {
-    if (isAndroid) {
-      // Intent URL: tries app first, falls back to webUrl automatically
-      window.location.href = androidIntent;
-    } else if (isIOS) {
-      // Try custom scheme; fall back to web after 1.5s if app not installed
+  // Returns the correct href for mobile broker deep links.
+  // Android: intent:// URL — Chrome requires an actual <a href> tap (not window.location.href).
+  // iOS: custom scheme with onClick timeout fallback to web URL if app not installed.
+  function brokerAppHref(links: { web: string; ios: string; android: string }) {
+    if (isAndroid) return links.android;
+    if (isIOS) return links.ios;
+    return links.web;
+  }
+  function brokerApponClick(links: { web: string; ios: string; android: string }) {
+    if (!isIOS) return undefined;
+    return (e: React.MouseEvent<HTMLAnchorElement>) => {
+      e.preventDefault();
       const t = Date.now();
-      window.location.href = iosScheme;
-      setTimeout(() => { if (Date.now() - t < 2500) window.open(webUrl, '_blank'); }, 1500);
-    } else {
-      window.open(webUrl, '_blank');
-    }
+      window.location.href = links.ios;
+      setTimeout(() => { if (Date.now() - t < 2500) window.open(links.web, '_blank'); }, 1500);
+    };
   }
 
   const brokerLinks = {
@@ -1917,7 +1921,7 @@ export default function CalculatorPage() {
                   {isMobile ? (
                     <>
                       {[
-                        <><button onClick={() => openBrokerLink(brokerLinks.zerodha.web, brokerLinks.zerodha.ios, brokerLinks.zerodha.android)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: GOLD, fontWeight: 700, fontSize: '0.88rem' }}>Open Kite App →</button> (opens app or browser if not installed)</>,
+                        <><a href={brokerAppHref(brokerLinks.zerodha)} onClick={brokerApponClick(brokerLinks.zerodha)} style={{ color: GOLD, fontWeight: 700 }}>Open Kite App →</a> (opens app, or browser if not installed)</>,
                         <>In the app go to <strong style={{ color: '#e2e8f0' }}>Account → Funds → Fund Statement</strong></>,
                         <>Select <strong style={{ color: '#e2e8f0' }}>All Segments</strong>, set date range from first investment till today</>,
                         <>Tap the <strong style={{ color: '#e2e8f0' }}>download icon</strong> and choose <strong style={{ color: '#e2e8f0' }}>XLSX</strong></>,
@@ -1962,7 +1966,7 @@ export default function CalculatorPage() {
                       <span style={{ fontSize: '0.78rem', color: '#64748b', whiteSpace: 'nowrap' }}>— Groww Balance Statement</span>
                     </div>
                     {(isMobile ? [
-                      <><button onClick={() => openBrokerLink(brokerLinks.groww.web, brokerLinks.groww.ios, brokerLinks.groww.android)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#10b981', fontWeight: 700, fontSize: '0.88rem' }}>Open Groww App →</button> (opens app or browser)</>,
+                      <><a href={brokerAppHref(brokerLinks.groww)} onClick={brokerApponClick(brokerLinks.groww)} style={{ color: '#10b981', fontWeight: 700 }}>Open Groww App →</a> (opens app, or browser if not installed)</>,
                       <>Tap <strong style={{ color: '#e2e8f0' }}>Reports</strong> → <strong style={{ color: '#e2e8f0' }}>Groww Balance Statement</strong></>,
                       <>Choose format: select <strong style={{ color: '#e2e8f0' }}>PDF</strong> (not Excel)</>,
                       <>Set date range → tap <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
@@ -1991,7 +1995,7 @@ export default function CalculatorPage() {
                       <span style={{ fontSize: '0.78rem', color: '#64748b', whiteSpace: 'nowrap' }}>— Annual Statements</span>
                     </div>
                     {(isMobile ? [
-                      <><button onClick={() => openBrokerLink(brokerLinks.growwBalance.web, brokerLinks.growwBalance.ios, brokerLinks.growwBalance.android)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#10b981', fontWeight: 700, fontSize: '0.88rem' }}>Open Groww Balance →</button> (opens app or browser)</>,
+                      <><a href={brokerAppHref(brokerLinks.growwBalance)} onClick={brokerApponClick(brokerLinks.growwBalance)} style={{ color: '#10b981', fontWeight: 700 }}>Open Groww Balance →</a> (opens app, or browser if not installed)</>,
                       <>Tap <strong style={{ color: '#e2e8f0' }}>All Transactions</strong></>,
                       <>Tap <strong style={{ color: '#e2e8f0' }}>Download statement</strong> (top right)</>,
                       <>Select date range (max 1 year) → <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
@@ -2020,7 +2024,7 @@ export default function CalculatorPage() {
                 <div>
                   <p style={{ margin: '0 0 18px', fontSize: '0.8rem', color: '#64748b' }}>CSV format · no password required</p>
                   {(isMobile ? [
-                    <><button onClick={() => openBrokerLink(brokerLinks.fyers.web, brokerLinks.fyers.ios, brokerLinks.fyers.android)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#818cf8', fontWeight: 700, fontSize: '0.88rem' }}>Open Fyers App →</button> (opens app or browser)</>,
+                    <><a href={brokerAppHref(brokerLinks.fyers)} onClick={brokerApponClick(brokerLinks.fyers)} style={{ color: '#818cf8', fontWeight: 700 }}>Open Fyers App →</a> (opens app, or browser if not installed)</>,
                     <>Tap <strong style={{ color: '#e2e8f0' }}>Reports → Ledger</strong></>,
                     <>Select the <strong style={{ color: '#e2e8f0' }}>Financial Year</strong> → tap <strong style={{ color: '#e2e8f0' }}>Generate</strong></>,
                     <>Tap <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></>,
