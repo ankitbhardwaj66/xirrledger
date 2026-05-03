@@ -80,7 +80,7 @@ try {
 
     // Recent sessions
     $sessions = $pdo->query("
-        SELECT session_id, name, email, broker, last_step, status, xirr, nifty_xirr, error_message, created_at, completed_at
+        SELECT session_id, name, email, broker, last_step, status, xirr, nifty_xirr, error_message, created_at, completed_at, support_email_sent_at
         FROM xirr_sessions
         " . ($where_clause ?: '') . "
         ORDER BY created_at DESC
@@ -338,6 +338,7 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
           <th>Status</th>
           <th>XIRR</th>
           <th>Nifty XIRR</th>
+          <th>Support Email</th>
           <th>Error</th>
         </tr>
       </thead>
@@ -362,11 +363,18 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
               echo "<span style='color:#64748b'>{$v}%</span>";
             } else echo '<span style="color:#475569">—</span>';
           ?></td>
+          <td style="white-space:nowrap"><?php
+            if ($s['support_email_sent_at']) {
+              echo "<span style='color:#f59e0b;font-size:11px'>" . time_ago($s['support_email_sent_at']) . "</span>";
+            } else {
+              echo '<span style="color:#475569">—</span>';
+            }
+          ?></td>
           <td style="max-width:220px;color:#ef4444;font-size:11px"><?= $s['error_message'] ? htmlspecialchars($s['error_message']) : '<span style="color:#475569">—</span>' ?></td>
         </tr>
       <?php endforeach; ?>
       <?php if (empty($sessions)): ?>
-        <tr><td colspan="8" style="text-align:center;color:#475569;padding:32px">No sessions in this period</td></tr>
+        <tr><td colspan="9" style="text-align:center;color:#475569;padding:32px">No sessions in this period</td></tr>
       <?php endif; ?>
       </tbody>
     </table>
