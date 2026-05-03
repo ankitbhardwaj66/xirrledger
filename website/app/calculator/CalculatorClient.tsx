@@ -325,6 +325,8 @@ export default function CalculatorPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
+  const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
   const growwFiles = useMemo(() => files.filter(f => f.broker === 'groww'), [files]);
 
   const effectivePans = useMemo(() => {
@@ -1828,16 +1830,16 @@ export default function CalculatorPage() {
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}
+            style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.6)', overflowX: 'hidden' }}
           >
             {/* Modal header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
               <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>How to download your ledger</h2>
               <button onClick={() => setShowDownloadGuide(false)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', cursor: 'pointer', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 300 }}>×</button>
             </div>
 
             {/* Tabs */}
-            <div style={{ display: 'flex', gap: 6, padding: '16px 24px 0', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <div style={{ display: 'flex', gap: 4, padding: '12px 16px 0', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
               {([
                 { key: 'zerodha', label: 'Zerodha', letter: 'Z', color: GOLD, bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)' },
                 { key: 'groww',   label: 'Groww',   letter: 'G', color: '#10b981', bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.3)' },
@@ -1868,18 +1870,24 @@ export default function CalculatorPage() {
             </div>
 
             {/* Tab content */}
-            <div style={{ padding: '24px 28px' }}>
+            <div style={{ padding: '20px 20px' }}>
 
               {/* Zerodha */}
               {activeGuideTab === 'zerodha' && (
                 <div>
                   <p style={{ margin: '0 0 18px', fontSize: '0.8rem', color: '#64748b' }}>XLSX format · no password required</p>
-                  {[
+                  {(isMobile ? [
+                    <><a href="https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 700, cursor: 'pointer' }}>Open Zerodha Statement →</a></>,
+                    <>Tap the <strong style={{ color: '#e2e8f0' }}>date range</strong> at the top to open Search &amp; filter</>,
+                    <>Set Category to <strong style={{ color: '#e2e8f0' }}>All segments</strong>, set date range from <strong style={{ color: '#e2e8f0' }}>your first investment to today</strong></>,
+                    <>Tap <strong style={{ color: '#e2e8f0' }}>Search</strong> — verify <strong style={{ color: '#10b981' }}>Opening balance = 0</strong> (if not, extend the start date earlier)</>,
+                    <>Tap <strong style={{ color: '#e2e8f0' }}>XLSX</strong> to download</>,
+                  ] : [
                     <><a href="https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 700, cursor: 'pointer' }}>Open Zerodha Statement →</a> (logs in automatically if you're signed in)</>,
                     <>Select <strong style={{ color: '#e2e8f0' }}>All Segments</strong> as category</>,
                     <>Set date range — <strong style={{ color: '#e2e8f0' }}>from your first investment till today</strong></>,
                     <>Click the <strong style={{ color: '#e2e8f0' }}>blue arrow →</strong> then click <strong style={{ color: '#e2e8f0' }}>XLSX</strong></>,
-                  ].map((item, i, arr) => (
+                  ]).map((item, i, arr) => (
                     <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 14 : 0 }}>
                       <span style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', color: GOLD, width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
                       <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0, lineHeight: 1.65 }}>{item}</p>
@@ -1898,17 +1906,22 @@ export default function CalculatorPage() {
 
                   {/* Method 1 */}
                   <div style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 10, padding: '16px', marginBottom: 16 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 8px', marginBottom: 14 }}>
                       <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#10b981' }}>Method 1</span>
-                      <span style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', fontSize: '0.62rem', fontWeight: 700, padding: '2px 8px', borderRadius: 100, border: '1px solid rgba(16,185,129,0.3)' }}>RECOMMENDED</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748b' }}>— Groww Balance Statement</span>
+                      <span style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', fontSize: '0.62rem', fontWeight: 700, padding: '2px 8px', borderRadius: 100, border: '1px solid rgba(16,185,129,0.3)', whiteSpace: 'nowrap' }}>RECOMMENDED</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748b', whiteSpace: 'nowrap' }}>— Groww Balance Statement</span>
                     </div>
-                    {[
+                    {(isMobile ? [
+                      <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700, cursor: 'pointer' }}>Open Groww Reports →</a></>,
+                      <>Tap <strong style={{ color: '#e2e8f0' }}>Groww Balance Statement</strong> — it expands inline</>,
+                      <>Set <strong style={{ color: '#e2e8f0' }}>From</strong> date to your first investment, <strong style={{ color: '#e2e8f0' }}>To</strong> to today</>,
+                      <>Tap <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
+                    ] : [
                       <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700, cursor: 'pointer' }}>Open Groww Reports →</a> (logs in automatically if you&apos;re signed in)</>,
                       <>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions → Groww Balance Statement</strong></>,
                       <>Choose format: select <strong style={{ color: '#e2e8f0' }}>PDF</strong> (not Excel)</>,
                       <>Set date range → click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
-                    ].map((item, i, arr) => (
+                    ]).map((item, i, arr) => (
                       <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 12 : 0 }}>
                         <span style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#10b981', width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 700, flexShrink: 0, marginTop: 2 }}>{i + 1}</span>
                         <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0, lineHeight: 1.65 }}>{item}</p>
@@ -1922,10 +1935,10 @@ export default function CalculatorPage() {
 
                   {/* Method 2 */}
                   <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 8px', marginBottom: 14 }}>
                       <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b' }}>Method 2</span>
-                      <span style={{ background: 'rgba(255,255,255,0.06)', color: '#64748b', fontSize: '0.62rem', fontWeight: 700, padding: '2px 8px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.1)' }}>ALTERNATIVE</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748b' }}>— Annual Statements</span>
+                      <span style={{ background: 'rgba(255,255,255,0.06)', color: '#64748b', fontSize: '0.62rem', fontWeight: 700, padding: '2px 8px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.1)', whiteSpace: 'nowrap' }}>ALTERNATIVE</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748b', whiteSpace: 'nowrap' }}>— Annual Statements</span>
                     </div>
                     {[
                       <><a href="https://groww.in/user/balance/inr" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700, cursor: 'pointer' }}>Open Groww Balance →</a> (logs in automatically if you&apos;re signed in)</>,
