@@ -43,8 +43,9 @@ No frontend build needed for Lambda-only changes.
 | `dev` | dev.xirrledger.com | `/home/u889244618/domains/xirrledger.com/public_html/dev/` |
 
 - **ALL work starts on `dev`** — always check `git branch` before making any changes and switch to `dev` if not already there.
-- Merge `dev` → `main` only when the user explicitly says "merge to main" or "deploy to prod".
-- When the user says "push" without specifying a branch, push the **current branch** (could be `dev` or `main`).
+- **Always ask before merging to main or deploying to prod** — even if the user says "deploy", confirm: "Ready to merge to prod and deploy?" and wait for explicit approval.
+- Default flow: commit → push to `dev` → rsync to dev server → stop and ask the user to test → only then merge + rsync to prod.
+- When the user says "push" without specifying a branch, push the **current branch** only.
 - **Never commit directly to `main`** — no exceptions. If changes accidentally land on `main`, cherry-pick them back to `dev` to keep branches in sync.
 
 ## Databases
