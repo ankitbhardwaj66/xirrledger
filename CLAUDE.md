@@ -134,3 +134,5 @@ When writing a new blog post, **do not reuse an existing image** just because it
 - **Never commit `website/out/`** — it is gitignored and deployed via rsync only.
 - Build commands: `npm run build:dev` (dev branch) or `npm run build` (main branch).
 - `deploy.sh` on the server is no longer used — rsync replaces it.
+- **Never commit changes until the user has tested and confirmed they work.** Build → rsync to dev → wait for user to test → only commit after explicit "looks good" / approval.
+- **Always rsync to dev after every build** — never leave a build sitting locally without deploying it to dev.xirrledger.com.

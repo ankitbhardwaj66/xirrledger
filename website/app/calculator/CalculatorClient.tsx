@@ -324,51 +324,7 @@ export default function CalculatorPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
-  const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
-  const isIOS    = typeof navigator !== 'undefined' && /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const isMobile = isAndroid || isIOS;
-
-  // Returns the correct href for mobile broker deep links.
-  // Android: intent:// URL — Chrome requires an actual <a href> tap (not window.location.href).
-  // iOS: custom scheme with onClick timeout fallback to web URL if app not installed.
-  function brokerAppHref(links: { web: string; ios: string; android: string }) {
-    if (isAndroid) return links.android;
-    if (isIOS) return links.ios;
-    return links.web;
-  }
-  function brokerApponClick(links: { web: string; ios: string; android: string }) {
-    if (!isIOS) return undefined;
-    return (e: React.MouseEvent<HTMLAnchorElement>) => {
-      e.preventDefault();
-      const t = Date.now();
-      window.location.href = links.ios;
-      setTimeout(() => { if (Date.now() - t < 2500) window.open(links.web, '_blank'); }, 1500);
-    };
-  }
-
-  const brokerLinks = {
-    zerodha: {
-      web: 'https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb',
-      // kite.zerodha.com is the domain the Kite app registers App Links for
-      ios: 'kite://',
-      android: 'intent://kite.zerodha.com#Intent;scheme=https;package=com.zerodha.kite3;S.browser_fallback_url=https%3A%2F%2Fkite.zerodha.com;end',
-    },
-    groww: {
-      web: 'https://groww.in/user/profile/report',
-      ios: 'groww://',
-      android: 'intent://groww.in/user/profile/report#Intent;scheme=https;package=com.nextbillion.groww;S.browser_fallback_url=https%3A%2F%2Fgroww.in%2Fuser%2Fprofile%2Freport;end',
-    },
-    growwBalance: {
-      web: 'https://groww.in/user/balance/inr',
-      ios: 'groww://',
-      android: 'intent://groww.in/user/balance/inr#Intent;scheme=https;package=com.nextbillion.groww;S.browser_fallback_url=https%3A%2F%2Fgroww.in%2Fuser%2Fbalance%2Finr;end',
-    },
-    fyers: {
-      web: 'https://fyers.in/web/reports/ledger',
-      ios: 'fyers://',
-      android: 'intent://fyers.in/web/reports/ledger#Intent;scheme=https;package=com.fyers.fyers;S.browser_fallback_url=https%3A%2F%2Ffyers.in%2Fweb%2Freports%2Fledger;end',
-    },
-  };
+  const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   const growwFiles = useMemo(() => files.filter(f => f.broker === 'groww'), [files]);
 
@@ -1919,35 +1875,23 @@ export default function CalculatorPage() {
               {activeGuideTab === 'zerodha' && (
                 <div>
                   <p style={{ margin: '0 0 18px', fontSize: '0.8rem', color: '#64748b' }}>XLSX format · no password required</p>
-                  {isMobile ? (
-                    <>
-                      {[
-                        <><a href={brokerAppHref(brokerLinks.zerodha)} onClick={brokerApponClick(brokerLinks.zerodha)} style={{ color: GOLD, fontWeight: 700 }}>Open Kite App →</a> (opens app, or browser if not installed)</>,
-                        <>In the app go to <strong style={{ color: '#e2e8f0' }}>Account → Funds → Fund Statement</strong></>,
-                        <>Select <strong style={{ color: '#e2e8f0' }}>All Segments</strong>, set date range from first investment till today</>,
-                        <>Tap the <strong style={{ color: '#e2e8f0' }}>download icon</strong> and choose <strong style={{ color: '#e2e8f0' }}>XLSX</strong></>,
-                      ].map((item, i, arr) => (
-                        <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 14 : 0 }}>
-                          <span style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', color: GOLD, width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
-                          <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0, lineHeight: 1.65 }}>{item}</p>
-                        </div>
-                      ))}
-                    </>
-                  ) : (
-                    <>
-                      {[
-                        <><a href="https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 700, cursor: 'pointer' }}>Open Zerodha Statement →</a> (logs in automatically if you're signed in)</>,
-                        <>Select <strong style={{ color: '#e2e8f0' }}>All Segments</strong> as category</>,
-                        <>Set date range — <strong style={{ color: '#e2e8f0' }}>from your first investment till today</strong></>,
-                        <>Click the <strong style={{ color: '#e2e8f0' }}>blue arrow →</strong> then click <strong style={{ color: '#e2e8f0' }}>XLSX</strong></>,
-                      ].map((item, i, arr) => (
-                        <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 14 : 0 }}>
-                          <span style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', color: GOLD, width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
-                          <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0, lineHeight: 1.65 }}>{item}</p>
-                        </div>
-                      ))}
-                    </>
-                  )}
+                  {(isMobile ? [
+                    <><a href="https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 700, cursor: 'pointer' }}>Open Zerodha Statement →</a></>,
+                    <>Tap the <strong style={{ color: '#e2e8f0' }}>date range</strong> at the top to open Search &amp; filter</>,
+                    <>Set Category to <strong style={{ color: '#e2e8f0' }}>All segments</strong>, set date range from <strong style={{ color: '#e2e8f0' }}>your first investment to today</strong></>,
+                    <>Tap <strong style={{ color: '#e2e8f0' }}>Search</strong> — verify <strong style={{ color: '#10b981' }}>Opening balance = 0</strong> (if not, extend the start date earlier)</>,
+                    <>Tap <strong style={{ color: '#e2e8f0' }}>XLSX</strong> to download</>,
+                  ] : [
+                    <><a href="https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 700, cursor: 'pointer' }}>Open Zerodha Statement →</a> (logs in automatically if you're signed in)</>,
+                    <>Select <strong style={{ color: '#e2e8f0' }}>All Segments</strong> as category</>,
+                    <>Set date range — <strong style={{ color: '#e2e8f0' }}>from your first investment till today</strong></>,
+                    <>Click the <strong style={{ color: '#e2e8f0' }}>blue arrow →</strong> then click <strong style={{ color: '#e2e8f0' }}>XLSX</strong></>,
+                  ]).map((item, i, arr) => (
+                    <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 14 : 0 }}>
+                      <span style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', color: GOLD, width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
+                      <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0, lineHeight: 1.65 }}>{item}</p>
+                    </div>
+                  ))}
                   <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                     <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>✓ One XLSX covers all years &nbsp;·&nbsp; Password: not required</p>
                   </div>
@@ -1967,10 +1911,10 @@ export default function CalculatorPage() {
                       <span style={{ fontSize: '0.78rem', color: '#64748b', whiteSpace: 'nowrap' }}>— Groww Balance Statement</span>
                     </div>
                     {(isMobile ? [
-                      <><a href={brokerAppHref(brokerLinks.groww)} onClick={brokerApponClick(brokerLinks.groww)} style={{ color: '#10b981', fontWeight: 700 }}>Open Groww App →</a> (opens app, or browser if not installed)</>,
-                      <>Tap <strong style={{ color: '#e2e8f0' }}>Reports</strong> → <strong style={{ color: '#e2e8f0' }}>Groww Balance Statement</strong></>,
-                      <>Choose format: select <strong style={{ color: '#e2e8f0' }}>PDF</strong> (not Excel)</>,
-                      <>Set date range → tap <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
+                      <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700, cursor: 'pointer' }}>Open Groww Reports →</a></>,
+                      <>Tap <strong style={{ color: '#e2e8f0' }}>Groww Balance Statement</strong> — it expands inline</>,
+                      <>Set <strong style={{ color: '#e2e8f0' }}>From</strong> date to your first investment, <strong style={{ color: '#e2e8f0' }}>To</strong> to today</>,
+                      <>Tap <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
                     ] : [
                       <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700, cursor: 'pointer' }}>Open Groww Reports →</a> (logs in automatically if you&apos;re signed in)</>,
                       <>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions → Groww Balance Statement</strong></>,
@@ -1995,19 +1939,13 @@ export default function CalculatorPage() {
                       <span style={{ background: 'rgba(255,255,255,0.06)', color: '#64748b', fontSize: '0.62rem', fontWeight: 700, padding: '2px 8px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.1)', whiteSpace: 'nowrap' }}>ALTERNATIVE</span>
                       <span style={{ fontSize: '0.78rem', color: '#64748b', whiteSpace: 'nowrap' }}>— Annual Statements</span>
                     </div>
-                    {(isMobile ? [
-                      <><a href={brokerAppHref(brokerLinks.growwBalance)} onClick={brokerApponClick(brokerLinks.growwBalance)} style={{ color: '#10b981', fontWeight: 700 }}>Open Groww Balance →</a> (opens app, or browser if not installed)</>,
-                      <>Tap <strong style={{ color: '#e2e8f0' }}>All Transactions</strong></>,
-                      <>Tap <strong style={{ color: '#e2e8f0' }}>Download statement</strong> (top right)</>,
-                      <>Select date range (max 1 year) → <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
-                      <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
-                    ] : [
+                    {[
                       <><a href="https://groww.in/user/balance/inr" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700, cursor: 'pointer' }}>Open Groww Balance →</a> (logs in automatically if you&apos;re signed in)</>,
                       <>Click <strong style={{ color: '#e2e8f0' }}>All Transactions</strong></>,
                       <>Click <strong style={{ color: '#e2e8f0' }}>Download statement</strong> (top right button)</>,
                       <>Select date range (max 1 year) → <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
                       <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
-                    ]).map((item, i, arr) => (
+                    ].map((item, i, arr) => (
                       <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 12 : 0 }}>
                         <span style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#64748b', width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 700, flexShrink: 0, marginTop: 2 }}>{i + 1}</span>
                         <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0, lineHeight: 1.65 }}>{item}</p>
@@ -2024,19 +1962,13 @@ export default function CalculatorPage() {
               {activeGuideTab === 'fyers' && (
                 <div>
                   <p style={{ margin: '0 0 18px', fontSize: '0.8rem', color: '#64748b' }}>CSV format · no password required</p>
-                  {(isMobile ? [
-                    <><a href={brokerAppHref(brokerLinks.fyers)} onClick={brokerApponClick(brokerLinks.fyers)} style={{ color: '#818cf8', fontWeight: 700 }}>Open Fyers App →</a> (opens app, or browser if not installed)</>,
-                    <>Tap <strong style={{ color: '#e2e8f0' }}>Reports → Ledger</strong></>,
-                    <>Select the <strong style={{ color: '#e2e8f0' }}>Financial Year</strong> → tap <strong style={{ color: '#e2e8f0' }}>Generate</strong></>,
-                    <>Tap <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></>,
-                    <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
-                  ] : [
+                  {[
                     <><a href="https://fyers.in/web/reports/ledger" target="_blank" rel="noopener noreferrer" style={{ color: '#818cf8', fontWeight: 700, cursor: 'pointer' }}>Open Fyers Ledger →</a> (logs in automatically if you&apos;re signed in)</>,
                     <>Select the <strong style={{ color: '#e2e8f0' }}>Financial Year</strong></>,
                     <>Click <strong style={{ color: '#e2e8f0' }}>Generate</strong></>,
                     <>Click <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></>,
                     <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
-                  ]).map((item, i, arr) => (
+                  ].map((item, i, arr) => (
                     <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 14 : 0 }}>
                       <span style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#818cf8', width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
                       <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0, lineHeight: 1.65 }}>{item}</p>
