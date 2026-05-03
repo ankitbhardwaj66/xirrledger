@@ -49,11 +49,22 @@ try {
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 
+    // Record in dedup table (prevents re-sending today)
     $stmt = $pdo->prepare('
         INSERT IGNORE INTO support_emails_sent (email, sent_date)
         VALUES (:email, CURDATE())
     ');
     $stmt->execute([':email' => substr($email, 0, 100)]);
+
+    // Stamp the sent timestamp on all stuck sessions for this email
+    $stmt2 = $pdo->prepare('
+        UPDATE xirr_sessions
+        SET support_email_sent_at = UTC_TIMESTAMP()
+        WHERE email = :email
+          AND status != \'done\'
+          AND support_email_sent_at IS NULL
+    ');
+    $stmt2->execute([':email' => substr($email, 0, 100)]);
 
     echo json_encode(['ok' => true]);
 } catch (PDOException $e) {

@@ -42,10 +42,23 @@ No frontend build needed for Lambda-only changes.
 | `main` | xirrledger.com | `/home/u889244618/domains/xirrledger.com/public_html/` |
 | `dev` | dev.xirrledger.com | `/home/u889244618/domains/xirrledger.com/public_html/dev/` |
 
-- All new development goes on the `dev` branch.
-- Merge `dev` → `main` only when ready for production.
+- **ALL work starts on `dev`** — always check `git branch` before making any changes and switch to `dev` if not already there.
+- Merge `dev` → `main` only when the user explicitly says "merge to main" or "deploy to prod".
 - When the user says "push" without specifying a branch, push the **current branch** (could be `dev` or `main`).
-- **Never commit or deploy directly to `main`** — all changes must go through `dev` first, be tested on dev.xirrledger.com, then merged to `main` for prod.
+- **Never commit directly to `main`** — no exceptions. If changes accidentally land on `main`, cherry-pick them back to `dev` to keep branches in sync.
+
+## Databases
+
+Dev and prod use **separate MySQL databases** on Hostinger. Never assume they share data.
+
+| Environment | DB name | DB user | Config file on server |
+|---|---|---|---|
+| `main` (prod) | `u889244618_xirrledger` | `u889244618_xirrledger` | `/home/.../public_html/api/config.php` |
+| `dev` | `u889244618_dev_xirrledger` | `u889244618_dev_xirrledger` | `/home/.../public_html/dev/api/config.php` |
+
+- The dev `config.php` is **excluded from rsync** (`--exclude=api/config.php`) so it's never overwritten by deploys.
+- When running MySQL commands via SSH, always read the correct `config.php` first to get the right credentials.
+- Schema changes (new tables, columns) must be applied to **both** databases separately.
 
 ## Databases
 
