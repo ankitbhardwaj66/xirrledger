@@ -8,9 +8,9 @@
  * Response: { users: [{ email, name, error_message }] }
  *
  * Logic:
- *   - Sessions from the last 24 hours that are 'error' OR stuck 'pending' (>30 min old)
- *   - Exclude any email that also has a 'done' session in the same window
- *   - Exclude any email already sent a support email today (UTC date)
+ *   - Sessions that are 'error' OR stuck 'pending' (>30 min old) AND support_email_sent_at IS NULL
+ *   - Exclude any email that also has a 'done' session in the last 24 hours (succeeded today)
+ *   - Exclude any email already sent a support email today (UTC date — extra dedup safety net)
  *
  * Required table (run once on Hostinger MySQL):
  *   CREATE TABLE IF NOT EXISTS support_emails_sent (
@@ -66,12 +66,12 @@ try {
         FROM xirr_sessions
         WHERE
             email != ''
-            AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 24 HOUR)
+            AND support_email_sent_at IS NULL
             AND (
                 status = 'error'
                 OR (status = 'pending' AND created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 MINUTE))
             )
-            -- exclude if they also had a successful run in the same window
+            -- exclude if they succeeded in the last 24 hours (no need to intervene)
             AND email NOT IN (
                 SELECT DISTINCT email
                 FROM xirr_sessions
@@ -79,7 +79,7 @@ try {
                     status = 'done'
                     AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 24 HOUR)
             )
-            -- exclude if already sent a support email today
+            -- extra dedup: never send twice on the same UTC day
             AND email NOT IN (
                 SELECT email
                 FROM support_emails_sent
