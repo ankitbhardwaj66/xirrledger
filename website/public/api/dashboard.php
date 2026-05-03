@@ -190,6 +190,31 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
 .xirr-pos { color: #10b981; font-weight: 700; }
 .xirr-neg { color: #ef4444; font-weight: 700; }
 .filter-bar { display: flex; gap: 0; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 28px; }
+
+@media (max-width: 768px) {
+  body { overflow-x: hidden; }
+  .header { padding: 12px 16px; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .header h1 { font-size: 16px; }
+  .header .meta { font-size: 11px; }
+  .container { padding: 20px 14px; }
+  .cards { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .card { padding: 14px 16px; }
+  .card .value { font-size: 26px; }
+  .today-row { gap: 10px; }
+  .today-card { padding: 12px 14px; gap: 10px; }
+  .today-card .num { font-size: 22px; }
+  .today-card .lbl { font-size: 10px; }
+  .funnel { padding: 16px; }
+  .funnel-label { font-size: 12px; }
+  /* Stack step/broker tables vertically */
+  div[style*="grid-template-columns:1fr 1fr"] { display: flex !important; flex-direction: column !important; }
+  /* Sessions table: hide non-essential columns */
+  .hide-mobile { display: none !important; }
+  thead th { padding: 10px 10px; font-size: 10px; }
+  tbody td { padding: 10px 10px; font-size: 12px; }
+  .filter-bar a { padding: 6px 8px; font-size: 12px; }
+  .table-wrap { border-radius: 8px; overflow-x: hidden; }
+}
 </style>
 </head>
 <body>
@@ -332,14 +357,14 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
         <tr>
           <th>Time</th>
           <th>Name</th>
-          <th>Email</th>
-          <th>Broker</th>
-          <th>Last Step</th>
+          <th class="hide-mobile">Email</th>
+          <th class="hide-mobile">Broker</th>
+          <th class="hide-mobile">Last Step</th>
           <th>Status</th>
           <th>XIRR</th>
-          <th>Nifty XIRR</th>
-          <th>Support Email</th>
-          <th>Error</th>
+          <th class="hide-mobile">Nifty XIRR</th>
+          <th class="hide-mobile">Support Email</th>
+          <th class="hide-mobile">Error</th>
         </tr>
       </thead>
       <tbody>
@@ -347,9 +372,9 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
         <tr>
           <td style="color:#64748b;white-space:nowrap"><?= time_ago($s['created_at']) ?></td>
           <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($s['name'] ?: '—') ?></td>
-          <td style="color:#94a3b8;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($s['email'] ?: '—') ?></td>
-          <td><span class="pill"><?= htmlspecialchars($s['broker'] ?: '—') ?></span></td>
-          <td><?= step_badge($s['last_step']) ?></td>
+          <td class="hide-mobile" style="color:#94a3b8;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($s['email'] ?: '—') ?></td>
+          <td class="hide-mobile"><span class="pill"><?= htmlspecialchars($s['broker'] ?: '—') ?></span></td>
+          <td class="hide-mobile"><?= step_badge($s['last_step']) ?></td>
           <td><?= status_badge($s['status'], $s['last_step']) ?></td>
           <td><?php
             if ($s['xirr'] !== null) {
@@ -357,20 +382,20 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
               echo "<span class='" . ($v >= 0 ? 'xirr-pos' : 'xirr-neg') . "'>{$v}%</span>";
             } else echo '<span style="color:#475569">—</span>';
           ?></td>
-          <td><?php
+          <td class="hide-mobile"><?php
             if ($s['nifty_xirr'] !== null) {
               $v = round((float)$s['nifty_xirr'], 1);
               echo "<span style='color:#64748b'>{$v}%</span>";
             } else echo '<span style="color:#475569">—</span>';
           ?></td>
-          <td style="white-space:nowrap"><?php
+          <td class="hide-mobile" style="white-space:nowrap"><?php
             if ($s['support_email_sent_at']) {
               echo "<span style='color:#f59e0b;font-size:11px'>" . time_ago($s['support_email_sent_at']) . "</span>";
             } else {
               echo '<span style="color:#475569">—</span>';
             }
           ?></td>
-          <td style="max-width:220px;color:#ef4444;font-size:11px"><?= $s['error_message'] ? htmlspecialchars($s['error_message']) : '<span style="color:#475569">—</span>' ?></td>
+          <td class="hide-mobile" style="max-width:220px;color:#ef4444;font-size:11px"><?= $s['error_message'] ? htmlspecialchars($s['error_message']) : '<span style="color:#475569">—</span>' ?></td>
         </tr>
       <?php endforeach; ?>
       <?php if (empty($sessions)): ?>
