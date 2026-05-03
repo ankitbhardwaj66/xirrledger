@@ -349,8 +349,9 @@ export default function CalculatorPage() {
   const brokerLinks = {
     zerodha: {
       web: 'https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb',
+      // kite.zerodha.com is the domain the Kite app registers App Links for
       ios: 'kite://',
-      android: 'intent://console.zerodha.com/funds/statement?segment=equity&src=kiteweb#Intent;scheme=https;package=com.zerodha.kite3;S.browser_fallback_url=https%3A%2F%2Fconsole.zerodha.com%2Ffunds%2Fstatement;end',
+      android: 'intent://kite.zerodha.com#Intent;scheme=https;package=com.zerodha.kite3;S.browser_fallback_url=https%3A%2F%2Fkite.zerodha.com;end',
     },
     groww: {
       web: 'https://groww.in/user/profile/report',
