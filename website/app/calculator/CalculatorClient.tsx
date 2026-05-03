@@ -1827,16 +1827,16 @@ export default function CalculatorPage() {
         >
           <div
             onClick={e => e.stopPropagation()}
-            style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}
+            style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.6)', overflowX: 'hidden' }}
           >
             {/* Modal header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '22px 28px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
               <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>How to download your ledger</h2>
               <button onClick={() => setShowDownloadGuide(false)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', cursor: 'pointer', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 300 }}>×</button>
             </div>
 
             {/* Tabs */}
-            <div style={{ display: 'flex', gap: 6, padding: '16px 24px 0', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <div style={{ display: 'flex', gap: 4, padding: '12px 16px 0', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
               {([
                 { key: 'zerodha', label: 'Zerodha', letter: 'Z', color: GOLD, bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)' },
                 { key: 'groww',   label: 'Groww',   letter: 'G', color: '#10b981', bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.3)' },
@@ -1867,7 +1867,7 @@ export default function CalculatorPage() {
             </div>
 
             {/* Tab content */}
-            <div style={{ padding: '24px 28px' }}>
+            <div style={{ padding: '20px 20px' }}>
 
               {/* Zerodha */}
               {activeGuideTab === 'zerodha' && (
@@ -1897,10 +1897,10 @@ export default function CalculatorPage() {
 
                   {/* Method 1 */}
                   <div style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 10, padding: '16px', marginBottom: 16 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 8px', marginBottom: 14 }}>
                       <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#10b981' }}>Method 1</span>
-                      <span style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', fontSize: '0.62rem', fontWeight: 700, padding: '2px 8px', borderRadius: 100, border: '1px solid rgba(16,185,129,0.3)' }}>RECOMMENDED</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748b' }}>— Groww Balance Statement</span>
+                      <span style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', fontSize: '0.62rem', fontWeight: 700, padding: '2px 8px', borderRadius: 100, border: '1px solid rgba(16,185,129,0.3)', whiteSpace: 'nowrap' }}>RECOMMENDED</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748b', whiteSpace: 'nowrap' }}>— Groww Balance Statement</span>
                     </div>
                     {[
                       <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700, cursor: 'pointer' }}>Open Groww Reports →</a> (logs in automatically if you&apos;re signed in)</>,
@@ -1921,10 +1921,10 @@ export default function CalculatorPage() {
 
                   {/* Method 2 */}
                   <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 8px', marginBottom: 14 }}>
                       <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b' }}>Method 2</span>
-                      <span style={{ background: 'rgba(255,255,255,0.06)', color: '#64748b', fontSize: '0.62rem', fontWeight: 700, padding: '2px 8px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.1)' }}>ALTERNATIVE</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748b' }}>— Annual Statements</span>
+                      <span style={{ background: 'rgba(255,255,255,0.06)', color: '#64748b', fontSize: '0.62rem', fontWeight: 700, padding: '2px 8px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.1)', whiteSpace: 'nowrap' }}>ALTERNATIVE</span>
+                      <span style={{ fontSize: '0.78rem', color: '#64748b', whiteSpace: 'nowrap' }}>— Annual Statements</span>
                     </div>
                     {[
                       <><a href="https://groww.in/user/balance/inr" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700, cursor: 'pointer' }}>Open Groww Balance →</a> (logs in automatically if you&apos;re signed in)</>,
