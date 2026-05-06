@@ -549,6 +549,23 @@ def post_comment_on_linkedin(page, post_url: str, comment: str) -> bool:
             print("  [error] Could not find comment box")
         return False
 
+    # Debug: log which element we found
+    try:
+        box_info = comment_box.evaluate("""el => ({
+            tag: el.tagName,
+            id: el.id,
+            cls: el.className.slice(0, 120),
+            placeholder: el.getAttribute('data-placeholder') || el.getAttribute('placeholder') || '',
+            ariaPlaceholder: el.getAttribute('aria-placeholder') || '',
+            contenteditable: el.getAttribute('contenteditable'),
+            role: el.getAttribute('role'),
+            rect: { w: Math.round(el.getBoundingClientRect().width), h: Math.round(el.getBoundingClientRect().height) },
+        })""")
+        print(f"  [debug] Comment box: tag={box_info['tag']} ce={box_info['contenteditable']} role={box_info['role']!r} placeholder={box_info['placeholder']!r} rect={box_info['rect']}")
+        print(f"  [debug]   cls={box_info['cls']}")
+    except Exception as e:
+        print(f"  [debug] Could not inspect comment box: {e}")
+
     try:
         comment_box.click()
         human_delay(0.5, 1.5)
@@ -564,66 +581,193 @@ def post_comment_on_linkedin(page, post_url: str, comment: str) -> bool:
 
     human_delay(1, 2)
 
-    def try_submit(attempt: int):
-        """Try to click the submit button. Returns the method used or None."""
-        if attempt == 0:
-            # Primary: JS click on the blue artdeco Comment button
-            try:
-                return page.evaluate("""
-                    () => {
-                        for (const btn of document.querySelectorAll('button.artdeco-button--primary')) {
-                            const r = btn.getBoundingClientRect();
-                            if (r.width > 0 && r.height > 0 && btn.innerText.trim() === 'Comment') {
-                                btn.scrollIntoView({block:'center'});
-                                btn.click();
-                                return 'primary-js';
-                            }
-                        }
-                        const all = [...document.querySelectorAll('button')].filter(b => {
-                            const r = b.getBoundingClientRect();
-                            return r.width > 0 && r.height > 0 && b.innerText.trim() === 'Comment';
-                        });
-                        if (all.length) {
-                            all[all.length - 1].scrollIntoView({block:'center'});
-                            all[all.length - 1].click();
-                            return 'fallback-js';
-                        }
-                        return null;
+    def find_submit_coords():
+        """Walk up the DOM from the editor. The comment form container holds BOTH an emoji
+        picker button AND the submit button (text='Comment'/'Post'/'Submit'/'Reply').
+        Returns (cx, cy, description) using real screen coordinates for page.mouse.click(),
+        or (None, None, None) if not found."""
+        try:
+            result = comment_box.evaluate("""el => {
+                let node = el.parentElement;
+                for (let i = 0; i < 15; i++) {
+                    if (!node) break;
+                    const btns = [...node.querySelectorAll('button')];
+                    const emojiBtn = btns.find(b => {
+                        const aria = (b.getAttribute('aria-label') || '').toLowerCase();
+                        const r = b.getBoundingClientRect();
+                        return r.width > 0 && r.height > 0 && aria.includes('emoji');
+                    });
+                    // Submit button: has visible text that looks like a submit action
+                    // It sits RIGHT OF the emoji/media buttons in the toolbar
+                    const submitBtn = btns.find(b => {
+                        const txt = b.innerText.trim();
+                        const r = b.getBoundingClientRect();
+                        return r.width > 0 && r.height > 0 &&
+                               (txt === 'Post' || txt === 'Comment' || txt === 'Submit' || txt === 'Reply' ||
+                                txt === 'Save' || txt === 'Done');
+                    });
+                    if (emojiBtn && submitBtn) {
+                        const r = submitBtn.getBoundingClientRect();
+                        return {
+                            found: true,
+                            text: submitBtn.innerText.trim(),
+                            aria: submitBtn.getAttribute('aria-label'),
+                            cx: Math.round(r.x + r.width / 2),
+                            cy: Math.round(r.y + r.height / 2),
+                            rect: { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) },
+                            depth: i,
+                        };
                     }
-                """)
-            except Exception:
-                return None
+                    node = node.parentElement;
+                }
+                return { found: false };
+            }""")
+            if result.get('found'):
+                print(f"  [debug] submit btn: text={result['text']!r} aria={result['aria']!r} at ({result['cx']},{result['cy']}) rect={result['rect']} depth={result['depth']}")
+                return result['cx'], result['cy'], f"emoji-anchor ({result['text']!r})"
+            else:
+                print(f"  [debug] container-walk: no emoji+submit pair found")
+        except Exception as e:
+            print(f"  [debug] container-walk error: {e}")
+
+        return None, None, None
+
+    # Locate the submit button once, reuse across attempts
+    _submit_cx, _submit_cy, _submit_desc = find_submit_coords()
+
+    def try_submit(attempt: int):
+        """Try to submit the comment. Returns the method used or None."""
+        if attempt == 0:
+            # Primary: real mouse click by coordinates (bypasses JS/React dispatch issues)
+            if _submit_cx and _submit_cy:
+                try:
+                    page.mouse.click(_submit_cx, _submit_cy)
+                    return f'mouse-click:{_submit_desc}'
+                except Exception as e:
+                    print(f"  [debug] mouse.click error: {e}")
+            return None
+
         elif attempt == 1:
-            # Retry: focus comment box and press Enter
+            # Mac keyboard shortcut: Cmd+Enter submits TipTap comment
             try:
                 comment_box.focus()
-                time.sleep(0.3)
-                page.keyboard.press("Enter")
-                return 'keyboard-enter'
+                time.sleep(0.4)
+                page.keyboard.press("Meta+Enter")
+                return 'meta-enter'
             except Exception:
                 return None
-        else:
-            # Last resort: Ctrl+Enter (some LinkedIn editors use this)
+
+        elif attempt == 2:
+            # Tab from editor to submit button, press Space (Tab 5 in observed traversal)
             try:
                 comment_box.focus()
                 time.sleep(0.3)
+                _last_focused = None
+                for tab_n in range(8):
+                    page.keyboard.press("Tab")
+                    time.sleep(0.4)
+                    focused = page.evaluate("""() => ({
+                        tag: document.activeElement?.tagName,
+                        text: (document.activeElement?.innerText || '').trim().slice(0, 60),
+                        aria: document.activeElement?.getAttribute('aria-label'),
+                        type: document.activeElement?.getAttribute('type'),
+                    })""")
+                    print(f"  [debug] Tab {tab_n+1}: {focused}")
+                    _last_focused = focused
+                    aria = (focused.get('aria') or '').lower()
+                    text = (focused.get('text') or '').lower()
+                    # Submit button candidates: text matches OR aria matches (but NOT nav/media/dismiss)
+                    skip_aria = {'dismiss', 'show emoji picker', 'share photo', 'close jump menu'}
+                    if aria in skip_aria or text in {'', 'like', 'repost', 'follow', 'home', 'me'}:
+                        continue
+                    if (text in ('comment', 'post', 'submit', 'reply', 'save', 'done') or
+                            aria in ('post', 'post comment', 'submit', 'submit comment')):
+                        page.keyboard.press("Space")
+                        return f'tab-{tab_n+1}-space (text={focused["text"]!r} aria={focused["aria"]!r})'
+                return f'tab-exhausted (last={_last_focused})'
+            except Exception as e:
+                return f'tab-error: {e}'
+
+        else:
+            # Ctrl+Enter fallback
+            try:
+                comment_box.focus()
+                time.sleep(0.4)
                 page.keyboard.press("Control+Enter")
                 return 'ctrl-enter'
             except Exception:
                 return None
 
+    # --- DEBUG: snapshot all visible buttons before submitting ---
+    try:
+        visible_buttons = page.evaluate("""
+            () => [...document.querySelectorAll('button')].filter(b => {
+                const r = b.getBoundingClientRect();
+                return r.width > 0 && r.height > 0;
+            }).map(b => ({
+                text: b.innerText.trim().slice(0, 60),
+                cls: b.className.slice(0, 80),
+                disabled: b.disabled,
+                ariaLabel: b.getAttribute('aria-label') || '',
+                rect: { x: Math.round(b.getBoundingClientRect().x), y: Math.round(b.getBoundingClientRect().y) },
+            }))
+        """)
+        print(f"  [debug] Visible buttons ({len(visible_buttons)}):")
+        for b in visible_buttons:
+            print(f"    text={b['text']!r:30s} disabled={b['disabled']} aria={b['ariaLabel']!r:25s} cls={b['cls'][:60]}")
+    except Exception as e:
+        print(f"  [debug] Could not enumerate buttons: {e}")
+
+    # Screenshot before first submit
+    try:
+        page.screenshot(path=str(SCRIPT_DIR / "debug_before_submit.png"))
+        print(f"  [debug] Screenshot saved: debug_before_submit.png")
+    except Exception:
+        pass
+
     submitted = False
-    for attempt in range(3):
+    for attempt in range(4):
         method = try_submit(attempt)
         print(f"  [submit] attempt {attempt + 1}: {method}")
         human_delay(3, 5)
 
+        # Screenshot after each attempt
+        try:
+            page.screenshot(path=str(SCRIPT_DIR / f"debug_submit_attempt{attempt + 1}.png"))
+            print(f"  [debug] Screenshot: debug_submit_attempt{attempt + 1}.png")
+        except Exception:
+            pass
+
         try:
             text_after = comment_box.inner_text()
+            print(f"  [debug] Comment box text after attempt {attempt + 1}: {text_after[:80]!r}")
             if not text_after.strip():
                 submitted = True
                 break
             print(f"  [warn] Comment box still has text after attempt {attempt + 1} — retrying")
+
+            # Extra debug: re-check what buttons exist now (they may differ post-typing)
+            if attempt == 0:
+                try:
+                    btns_now = page.evaluate("""
+                        () => [...document.querySelectorAll('button')].filter(b => {
+                            const r = b.getBoundingClientRect();
+                            return r.width > 0 && r.height > 0;
+                        }).map(b => ({
+                            text: b.innerText.trim().slice(0, 60),
+                            disabled: b.disabled,
+                            ariaLabel: b.getAttribute('aria-label') || '',
+                            type: b.getAttribute('type') || '',
+                            form: b.form ? b.form.id : null,
+                        }))
+                    """)
+                    print(f"  [debug] Buttons after attempt 1 ({len(btns_now)}):")
+                    for b in btns_now:
+                        print(f"    text={b['text']!r:30s} disabled={b['disabled']} type={b['type']!r} form={b['form']!r}")
+                except Exception as e:
+                    print(f"  [debug] Button re-scan failed: {e}")
+
+
         except Exception:
             submitted = True  # element gone = submitted
             break
