@@ -540,31 +540,8 @@ def post_comment_on_linkedin(page, post_url: str, comment: str) -> bool:
         comment_box = find_comment_box(timeout=6000)
 
     if not comment_box:
-        # Screenshot to diagnose
-        screenshot_path = str(SCRIPT_DIR / "debug_comment_box.png")
-        try:
-            page.screenshot(path=screenshot_path)
-            print(f"  [error] Could not find comment box — screenshot saved to {screenshot_path}")
-        except Exception:
-            print("  [error] Could not find comment box")
+        print("  [error] Could not find comment box")
         return False
-
-    # Debug: log which element we found
-    try:
-        box_info = comment_box.evaluate("""el => ({
-            tag: el.tagName,
-            id: el.id,
-            cls: el.className.slice(0, 120),
-            placeholder: el.getAttribute('data-placeholder') || el.getAttribute('placeholder') || '',
-            ariaPlaceholder: el.getAttribute('aria-placeholder') || '',
-            contenteditable: el.getAttribute('contenteditable'),
-            role: el.getAttribute('role'),
-            rect: { w: Math.round(el.getBoundingClientRect().width), h: Math.round(el.getBoundingClientRect().height) },
-        })""")
-        print(f"  [debug] Comment box: tag={box_info['tag']} ce={box_info['contenteditable']} role={box_info['role']!r} placeholder={box_info['placeholder']!r} rect={box_info['rect']}")
-        print(f"  [debug]   cls={box_info['cls']}")
-    except Exception as e:
-        print(f"  [debug] Could not inspect comment box: {e}")
 
     try:
         comment_box.click()
@@ -623,12 +600,9 @@ def post_comment_on_linkedin(page, post_url: str, comment: str) -> bool:
                 return { found: false };
             }""")
             if result.get('found'):
-                print(f"  [debug] submit btn: text={result['text']!r} aria={result['aria']!r} at ({result['cx']},{result['cy']}) rect={result['rect']} depth={result['depth']}")
                 return result['cx'], result['cy'], f"emoji-anchor ({result['text']!r})"
-            else:
-                print(f"  [debug] container-walk: no emoji+submit pair found")
-        except Exception as e:
-            print(f"  [debug] container-walk error: {e}")
+        except Exception:
+            pass
 
         return None, None, None
 
@@ -643,8 +617,8 @@ def post_comment_on_linkedin(page, post_url: str, comment: str) -> bool:
                 try:
                     page.mouse.click(_submit_cx, _submit_cy)
                     return f'mouse-click:{_submit_desc}'
-                except Exception as e:
-                    print(f"  [debug] mouse.click error: {e}")
+                except Exception:
+                    pass
             return None
 
         elif attempt == 1:
@@ -672,7 +646,6 @@ def post_comment_on_linkedin(page, post_url: str, comment: str) -> bool:
                         aria: document.activeElement?.getAttribute('aria-label'),
                         type: document.activeElement?.getAttribute('type'),
                     })""")
-                    print(f"  [debug] Tab {tab_n+1}: {focused}")
                     _last_focused = focused
                     aria = (focused.get('aria') or '').lower()
                     text = (focused.get('text') or '').lower()
@@ -698,76 +671,18 @@ def post_comment_on_linkedin(page, post_url: str, comment: str) -> bool:
             except Exception:
                 return None
 
-    # --- DEBUG: snapshot all visible buttons before submitting ---
-    try:
-        visible_buttons = page.evaluate("""
-            () => [...document.querySelectorAll('button')].filter(b => {
-                const r = b.getBoundingClientRect();
-                return r.width > 0 && r.height > 0;
-            }).map(b => ({
-                text: b.innerText.trim().slice(0, 60),
-                cls: b.className.slice(0, 80),
-                disabled: b.disabled,
-                ariaLabel: b.getAttribute('aria-label') || '',
-                rect: { x: Math.round(b.getBoundingClientRect().x), y: Math.round(b.getBoundingClientRect().y) },
-            }))
-        """)
-        print(f"  [debug] Visible buttons ({len(visible_buttons)}):")
-        for b in visible_buttons:
-            print(f"    text={b['text']!r:30s} disabled={b['disabled']} aria={b['ariaLabel']!r:25s} cls={b['cls'][:60]}")
-    except Exception as e:
-        print(f"  [debug] Could not enumerate buttons: {e}")
-
-    # Screenshot before first submit
-    try:
-        page.screenshot(path=str(SCRIPT_DIR / "debug_before_submit.png"))
-        print(f"  [debug] Screenshot saved: debug_before_submit.png")
-    except Exception:
-        pass
-
     submitted = False
     for attempt in range(4):
         method = try_submit(attempt)
         print(f"  [submit] attempt {attempt + 1}: {method}")
         human_delay(3, 5)
 
-        # Screenshot after each attempt
-        try:
-            page.screenshot(path=str(SCRIPT_DIR / f"debug_submit_attempt{attempt + 1}.png"))
-            print(f"  [debug] Screenshot: debug_submit_attempt{attempt + 1}.png")
-        except Exception:
-            pass
-
         try:
             text_after = comment_box.inner_text()
-            print(f"  [debug] Comment box text after attempt {attempt + 1}: {text_after[:80]!r}")
             if not text_after.strip():
                 submitted = True
                 break
             print(f"  [warn] Comment box still has text after attempt {attempt + 1} — retrying")
-
-            # Extra debug: re-check what buttons exist now (they may differ post-typing)
-            if attempt == 0:
-                try:
-                    btns_now = page.evaluate("""
-                        () => [...document.querySelectorAll('button')].filter(b => {
-                            const r = b.getBoundingClientRect();
-                            return r.width > 0 && r.height > 0;
-                        }).map(b => ({
-                            text: b.innerText.trim().slice(0, 60),
-                            disabled: b.disabled,
-                            ariaLabel: b.getAttribute('aria-label') || '',
-                            type: b.getAttribute('type') || '',
-                            form: b.form ? b.form.id : null,
-                        }))
-                    """)
-                    print(f"  [debug] Buttons after attempt 1 ({len(btns_now)}):")
-                    for b in btns_now:
-                        print(f"    text={b['text']!r:30s} disabled={b['disabled']} type={b['type']!r} form={b['form']!r}")
-                except Exception as e:
-                    print(f"  [debug] Button re-scan failed: {e}")
-
-
         except Exception:
             submitted = True  # element gone = submitted
             break
