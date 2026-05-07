@@ -24,7 +24,6 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://xirrledger.com'),
   title: 'XIRR Ledger - The Only Ledger-Based XIRR Calculator',
   description: 'Calculate accurate portfolio returns from your actual trading ledger. Multi-broker support with Nifty 50 benchmark comparison. No manual entry required.',
-  keywords: ['XIRR calculator', 'portfolio returns', 'trading ledger', 'Zerodha', 'Groww', 'Nifty 50', 'investment returns'],
   authors: [{ name: 'Ankit Bhardwaj' }],
   openGraph: {
     title: 'XIRR Ledger - Ledger-Based XIRR Calculator',
@@ -33,6 +32,12 @@ export const metadata: Metadata = {
     url: 'https://xirrledger.com/',
     siteName: 'XIRR Ledger',
     images: [{ url: '/opengraph-image', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'XIRR Ledger - Ledger-Based XIRR Calculator',
+    description: 'Calculate accurate portfolio returns from your actual trading ledger. Multi-broker support (Zerodha, Groww, Fyers) with Nifty 50 benchmark comparison.',
+    images: ['/opengraph-image'],
   },
 };
 
@@ -62,6 +67,11 @@ const organizationSchema = {
   sameAs: [
     'https://www.youtube.com/@xirrledger',
   ],
+  foundingDate: '2024',
+  areaServed: {
+    '@type': 'Country',
+    name: 'India',
+  },
 };
 
 export default function RootLayout({
@@ -73,8 +83,12 @@ export default function RootLayout({
     <html lang="en-IN" className={`scroll-smooth ${mono.variable} ${displayFont.variable}`}>
       <head>
         {process.env.NEXT_PUBLIC_GA_ID && (
-          <link rel="preconnect" href="https://www.googletagmanager.com" />
+          <>
+            <link rel="preconnect" href="https://www.googletagmanager.com" />
+            <link rel="preconnect" href="https://www.google-analytics.com" />
+          </>
         )}
+        <link rel="preconnect" href="https://img.youtube.com" />
       </head>
       <body className={inter.className}>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />

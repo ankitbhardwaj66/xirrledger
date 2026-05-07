@@ -20,6 +20,26 @@ import Link from 'next/link';
 import { getAllPosts } from '@/lib/blog';
 import { FaArrowRight } from 'react-icons/fa';
 
+const collectionSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  '@id': 'https://xirrledger.com/blog/#page',
+  name: 'Blog — XIRR Ledger',
+  description: 'Articles on XIRR calculations, XIRR vs CAGR, Nifty 50 benchmarks, and measuring true portfolio returns for Indian investors.',
+  url: 'https://xirrledger.com/blog/',
+  publisher: { '@id': 'https://xirrledger.com/#organization' },
+  inLanguage: 'en-IN',
+};
+
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://xirrledger.com/' },
+    { '@type': 'ListItem', position: 2, name: 'Blog', item: 'https://xirrledger.com/blog/' },
+  ],
+};
+
 const GOLD = '#f59e0b';
 const NAVY = '#0f172a';
 
@@ -34,6 +54,8 @@ export default async function BlogPage() {
 
   return (
     <div style={{ background: NAVY, minHeight: '100vh', paddingTop: '5rem', paddingBottom: '6rem' }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <div className="container-custom">
 
         {/* ── Hero ── */}
