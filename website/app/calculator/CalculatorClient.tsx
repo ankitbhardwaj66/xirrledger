@@ -312,8 +312,7 @@ export default function CalculatorPage() {
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpResent, setOtpResent] = useState(false);
-  const [showDownloadGuide, setShowDownloadGuide] = useState(false);
-  const [activeGuideTab, setActiveGuideTab] = useState<'zerodha' | 'groww' | 'fyers'>('zerodha');
+  const [guideBrokers, setGuideBrokers] = useState<Array<'zerodha' | 'groww' | 'fyers'>>([]);
   const [manualEntries, setManualEntries] = useState<ManualEntry[]>([]);
   const [processingError, setProcessingError] = useState('');
   const [uploadedSession, setUploadedSession] = useState<{ sessionId: string; keyMap: Record<string, string> } | null>(null);
@@ -895,6 +894,7 @@ export default function CalculatorPage() {
     setFileValidationStatus({});
     setFileValidationErrors({});
     setProcessingError('');
+    setGuideBrokers([]);
   }
 
   const STEPS_LABELS = ['Sign In', 'Upload', 'Details'];
@@ -1068,7 +1068,9 @@ export default function CalculatorPage() {
         {step === 'upload' && (
           <div style={{ maxWidth: 560, margin: '0 auto' }}>
             <div style={{ ...card, padding: 32 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
                 {user?.picture && <img src={user.picture} alt="" style={{ width: 36, height: 36, borderRadius: '50%', border: '2px solid rgba(245,158,11,0.3)' }} />}
                 <div>
                   <h2 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: '#ffffff' }}>Upload Ledger Files</h2>
@@ -1079,143 +1081,310 @@ export default function CalculatorPage() {
                 </div>
               </div>
 
-              {/* Download guide link */}
-              <div style={{ marginBottom: 22, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569' }}>Zerodha CSV, Groww PDF &amp; Fyers CSV supported</p>
-                <button
-                  onClick={() => { setShowDownloadGuide(true); setActiveGuideTab('zerodha'); }}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: GOLD, fontSize: '0.82rem', fontWeight: 600, padding: 0 }}
-                >
-                  <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                  How to download?
-                </button>
+              {/* Step 1: Broker selector (multi-select) */}
+              <p style={{ margin: '0 0 4px', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#475569' }}>
+                Step 1 — Select your broker(s)
+              </p>
+              <p style={{ margin: '0 0 10px', fontSize: '0.74rem', color: '#334155' }}>Select all that apply — you can upload files from multiple brokers together.</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 20 }}>
+                {([
+                  { id: 'zerodha', label: 'Zerodha', letter: 'Z', color: '#10b981', bg: 'rgba(16,185,129,0.08)', shadow: 'rgba(16,185,129,0.12)', iconBg: 'rgba(16,185,129,0.12)', fileType: '.xlsx' },
+                  { id: 'groww',   label: 'Groww',   letter: 'G', color: GOLD,      bg: 'rgba(245,158,11,0.08)',  shadow: 'rgba(245,158,11,0.12)',  iconBg: 'rgba(245,158,11,0.12)',  fileType: '.pdf'  },
+                  { id: 'fyers',   label: 'Fyers',   letter: 'F', color: '#818cf8', bg: 'rgba(129,140,248,0.08)', shadow: 'rgba(129,140,248,0.12)', iconBg: 'rgba(129,140,248,0.12)', fileType: '.csv'  },
+                ] as const).map(b => {
+                  const isActive = guideBrokers.includes(b.id);
+                  return (
+                    <button key={b.id} onClick={() => setGuideBrokers(prev => isActive ? prev.filter(x => x !== b.id) : [...prev, b.id])} style={{
+                      borderRadius: 12, padding: '14px 10px 12px', textAlign: 'center', cursor: 'pointer',
+                      border: `1.5px solid ${isActive ? b.color : 'rgba(255,255,255,0.08)'}`,
+                      background: isActive ? b.bg : 'rgba(255,255,255,0.03)',
+                      boxShadow: isActive ? `0 0 0 3px ${b.shadow}` : 'none',
+                      transition: 'all 0.18s', outline: 'none', fontFamily: 'inherit', position: 'relative',
+                    }}>
+                      {isActive && (
+                        <span style={{ position: 'absolute', top: 7, right: 7, width: 16, height: 16, borderRadius: '50%', background: b.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <svg width="9" height="9" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#0a1020" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </span>
+                      )}
+                      <div style={{
+                        width: 34, height: 34, borderRadius: 9, margin: '0 auto 8px',
+                        background: isActive ? b.iconBg : 'rgba(255,255,255,0.05)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '0.75rem', fontWeight: 800, color: isActive ? b.color : '#475569', transition: 'all 0.18s',
+                      }}>{b.letter}</div>
+                      <p style={{ margin: 0, fontSize: '0.82rem', fontWeight: 700, color: isActive ? '#ffffff' : '#94a3b8' }}>{b.label}</p>
+                      <p style={{ margin: '2px 0 0', fontSize: '0.68rem', color: isActive ? b.color : '#334155', fontFamily: 'monospace' }}>{b.fileType}</p>
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* Drop zone */}
-              <div
-                onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                style={{
-                  border: `2px dashed ${isDragging ? GOLD : 'rgba(255,255,255,0.12)'}`,
-                  borderRadius: 12, padding: '32px 20px', textAlign: 'center',
-                  background: isDragging ? 'rgba(245,158,11,0.05)' : 'rgba(255,255,255,0.02)',
-                  cursor: 'pointer', transition: 'all 0.2s',
-                }}
-              >
-                <svg width="38" height="38" fill="none" stroke={isDragging ? GOLD : '#475569'} viewBox="0 0 24 24" style={{ margin: '0 auto 10px', display: 'block' }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <p style={{ fontWeight: 600, color: isDragging ? GOLD : '#94a3b8', margin: '0 0 4px', fontSize: '0.9rem' }}>
-                  Drop files here or click to browse
-                </p>
-                <p style={{ color: '#334155', fontSize: '0.78rem', margin: 0 }}>
-                  Zerodha XLSX · Groww PDF · Fyers CSV · Zerodha dividend XLSX (optional)
-                </p>
-                <input ref={fileInputRef} type="file" multiple accept=".csv,.pdf,.xlsx"
-                  onChange={e => e.target.files && addFiles(e.target.files)} style={{ display: 'none' }} />
-              </div>
-
-              {duplicateWarning && (
-                <div style={{ marginTop: 14, padding: '10px 14px', borderRadius: 8, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', color: GOLD, fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  ⚠️ {duplicateWarning}
-                </div>
-              )}
-
-              {files.length > 0 && (
-                <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {files.map((f, i) => {
-                    const vStatus = fileValidationStatus[f.file.name];
-                    const vError = f.formatError || fileValidationErrors[f.file.name];
-                    const hasError = !!f.formatError || vStatus === 'invalid';
-                    return (
-                      <div key={i}>
-                        <div style={{
-                          display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
-                          ...innerCard,
-                          border: hasError ? '1px solid rgba(239,68,68,0.35)' : vStatus === 'valid' ? '1px solid rgba(16,185,129,0.25)' : innerCard.border,
-                          background: hasError ? 'rgba(239,68,68,0.05)' : vStatus === 'valid' ? 'rgba(16,185,129,0.04)' : innerCard.background,
-                        }}>
-                          <div style={{
-                            width: 32, height: 32, borderRadius: 7, flexShrink: 0,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: f.broker === 'zerodha' ? 'rgba(16,185,129,0.15)' : f.broker === 'groww' ? 'rgba(245,158,11,0.15)' : f.broker === 'fyers' ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.06)',
-                            fontSize: '0.65rem', fontWeight: 700,
-                            color: f.broker === 'zerodha' ? '#10b981' : f.broker === 'groww' ? GOLD : f.broker === 'fyers' ? '#818cf8' : '#64748b',
-                          }}>
-                            {f.broker === 'zerodha' ? 'XLS' : f.broker === 'groww' ? 'PDF' : f.broker === 'fyers' ? 'CSV' : '?'}
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.file.name}</p>
-                            <p style={{ margin: 0, fontSize: '0.75rem', color: '#475569', textTransform: 'capitalize' }}>
-                              {f.broker === 'unknown' ? 'Unknown file type' : f.broker === 'fyers' ? `Fyers · ${(f.file.size / 1024).toFixed(0)} KB` : `${f.broker} · ${(f.file.size / 1024).toFixed(0)} KB`}
-                            </p>
-                          </div>
-                          {vStatus === 'validating' && <span style={{ color: GOLD, fontSize: '0.75rem', flexShrink: 0 }}>checking…</span>}
-                          {vStatus === 'valid' && !f.formatError && <span style={{ color: '#10b981', fontWeight: 700, flexShrink: 0 }}>✓</span>}
-                          {hasError
-                            ? <button onClick={() => removeFile(i)} style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#ef4444', cursor: 'pointer', padding: '3px 9px', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0 }}>Remove</button>
-                            : <button onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: 4, fontSize: '1.2rem', lineHeight: 1 }}>×</button>
-                          }
-                        </div>
-                        {vError && (
-                          <p style={{ margin: '4px 0 0 4px', fontSize: '0.75rem', color: '#ef4444', fontWeight: 500 }}>
-                            ⚠ {vError}
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* ── Dividend files section ── */}
-              <div style={{ marginTop: 16, padding: '10px 14px', borderRadius: 8, background: 'rgba(245,158,11,0.04)', border: '1px solid rgba(245,158,11,0.12)' }}>
-                <p style={{ margin: '0 0 4px', fontSize: '0.78rem', color: GOLD, fontWeight: 600 }}>
-                  Optional: Zerodha dividend statement (.xlsx)
-                </p>
-                <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748b', lineHeight: 1.5 }}>
-                  Adds dividend income as inflows to your XIRR.{' '}
-                  Download from{' '}
-                  <a href="https://console.zerodha.com/reports/downloads" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, textDecoration: 'underline' }}>
-                    Zerodha Console → Reports → Downloads
-                  </a>
-                  {' '}→ select <b style={{ color: '#94a3b8' }}>Dividend statement</b>, choose FY, click Download. Upload one file per FY.
-                </p>
-              </div>
-
-              {dividendFiles.length > 0 && (
-                <div style={{ marginTop: 10 }}>
-                  <p style={{ margin: '0 0 8px', fontSize: '0.78rem', color: GOLD, fontWeight: 600 }}>
-                    Dividend statements detected — inflows will be included in XIRR
-                  </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {dividendFiles.map((f, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 14px', ...innerCard, border: '1px solid rgba(245,158,11,0.2)' }}>
-                        <div style={{ width: 32, height: 32, borderRadius: 7, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(245,158,11,0.12)', fontSize: '0.6rem', fontWeight: 700, color: GOLD }}>
-                          XLSX
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</p>
-                          <p style={{ margin: 0, fontSize: '0.75rem', color: '#475569' }}>Zerodha dividend statement · {(f.size / 1024).toFixed(0)} KB</p>
-                        </div>
-                        <button onClick={() => setDividendFiles(prev => prev.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: 4, fontSize: '1.2rem', lineHeight: 1 }}>×</button>
+              {/* Step 2: Inline instructions for each selected broker */}
+              {guideBrokers.includes('zerodha') && (
+                <div style={{ borderRadius: 12, padding: '18px 20px', marginBottom: 20, background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
+                    <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#10b981' }}>Step 2 — Zerodha</p>
+                    <a href="https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb" target="_blank" rel="noopener noreferrer"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: 'rgba(16,185,129,0.12)', color: '#10b981', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                      Open Console ↗
+                    </a>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', borderRadius: 8, marginBottom: 14, fontFamily: 'monospace' }}>
+                    {(['Zerodha Console', 'Funds', 'Statement', 'All Segments', 'XLSX'] as const).map((seg, i, arr) => (
+                      <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: (i === 0 || i === arr.length - 1) ? 'rgba(16,185,129,0.15)' : 'transparent', color: (i === 0 || i === arr.length - 1) ? '#10b981' : '#64748b' }}>{seg}</span>
+                        {i < arr.length - 1 && <span style={{ color: '#334155', fontSize: '0.65rem' }}>›</span>}
+                      </span>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {(isMobile ? [
+                      <><a href="https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700 }}>Open Zerodha Statement →</a></>,
+                      <>Tap the <strong style={{ color: '#e2e8f0' }}>date range</strong> — set Category to <strong style={{ color: '#e2e8f0' }}>All Segments</strong>, set start date to before your first investment</>,
+                      <>Tap <strong style={{ color: '#e2e8f0' }}>Search</strong> — check the <strong style={{ color: '#10b981' }}>Opening balance</strong> shown. If it shows <strong style={{ color: '#10b981' }}>0</strong>, your dates are correct. If not, move the start date earlier and search again.</>,
+                      <>Tap <strong style={{ color: '#e2e8f0' }}>XLSX</strong> to download</>,
+                    ] : [
+                      <>Use this link to go directly to the Zerodha Statement page: <a href="https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700 }}>Open Zerodha Statement →</a></>,
+                      <>Set Category to <strong style={{ color: '#e2e8f0' }}>All Segments</strong>, set start date to before your first investment</>,
+                      <>Click the <strong style={{ color: '#e2e8f0' }}>blue arrow →</strong> — check <strong style={{ color: '#10b981' }}>Opening balance</strong>. If it shows <strong style={{ color: '#10b981' }}>0</strong>, your dates are correct. If not, move the start date earlier.</>,
+                      <>Click <strong style={{ color: '#e2e8f0' }}>XLSX</strong> to download</>,
+                    ] as React.ReactNode[]).map((s, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                        <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(16,185,129,0.12)', color: '#10b981', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
+                        <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.55 }}>{s}</p>
                       </div>
                     ))}
+                  </div>
+                  <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 7, background: 'rgba(0,0,0,0.2)', fontSize: '0.74rem', color: '#64748b' }}>
+                    ✓ One XLSX covers all years &nbsp;·&nbsp; No password required
                   </div>
                 </div>
               )}
 
+              {guideBrokers.includes('groww') && (
+                <div style={{ borderRadius: 12, padding: '18px 20px', marginBottom: 20, background: 'rgba(245,158,11,0.05)', border: `1px solid rgba(245,158,11,0.2)` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
+                    <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: GOLD }}>Step 2 — Groww</p>
+                    <a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: 'rgba(245,158,11,0.12)', color: GOLD, textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                      Open Groww ↗
+                    </a>
+                  </div>
+                  {/* Method 1 */}
+                  <div style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 10, padding: 14, marginBottom: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#10b981' }}>Method 1</span>
+                      <span style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', fontSize: '0.6rem', fontWeight: 700, padding: '1px 7px', borderRadius: 100, border: '1px solid rgba(16,185,129,0.25)' }}>RECOMMENDED</span>
+                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>— Balance Statement</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                      {(isMobile ? [
+                        <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700 }}>Open Groww Reports →</a></>,
+                        <>Tap <strong style={{ color: '#e2e8f0' }}>Groww Balance Statement</strong></>,
+                        <>Set date range from first investment to today → tap <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
+                      ] : [
+                        <>Use this link to go directly to the Groww Reports page: <a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700 }}>Open Groww Reports →</a></>,
+                        <>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions → Groww Balance Statement</strong></>,
+                        <>Select format <strong style={{ color: '#e2e8f0' }}>PDF</strong> (not Excel), set date range → <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
+                      ] as React.ReactNode[]).map((s, i) => (
+                        <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                          <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(16,185,129,0.1)', color: '#10b981', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
+                          <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.55 }}>{s}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <p style={{ margin: '10px 0 0', fontSize: '0.72rem', color: '#92400e' }}>⚠ Only available from Apr 2023 in-app. For earlier history, contact Groww support.</p>
+                  </div>
+                  {/* Method 2 */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b' }}>Method 2</span>
+                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>— Annual Statements (one PDF per year)</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                      {([
+                        <><a href="https://groww.in/user/balance/inr" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 700 }}>Open Groww Balance →</a></>,
+                        <>Click <strong style={{ color: '#e2e8f0' }}>All Transactions</strong> → <strong style={{ color: '#e2e8f0' }}>Download statement</strong></>,
+                        <>Select date range (max 1 year) → <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
+                        <><strong style={{ color: '#e2e8f0' }}>Repeat for each year</strong> from first investment till today</>,
+                      ] as React.ReactNode[]).map((s, i) => (
+                        <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                          <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', color: '#64748b', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
+                          <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.55 }}>{s}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 7, background: 'rgba(0,0,0,0.2)', fontSize: '0.74rem', color: '#64748b', lineHeight: 1.5 }}>
+                    🔑 PDF password = your <strong style={{ color: '#e2e8f0' }}>PAN number</strong> (e.g. ABCDE1234F) &nbsp;·&nbsp; Upload one PDF per FY
+                  </div>
+                </div>
+              )}
+
+              {guideBrokers.includes('fyers') && (
+                <div style={{ borderRadius: 12, padding: '18px 20px', marginBottom: 20, background: 'rgba(129,140,248,0.05)', border: '1px solid rgba(129,140,248,0.2)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
+                    <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#818cf8' }}>Step 2 — Fyers</p>
+                    <a href="https://fyers.in/web/reports/ledger" target="_blank" rel="noopener noreferrer"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: 'rgba(129,140,248,0.12)', color: '#818cf8', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                      Open Fyers ↗
+                    </a>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', borderRadius: 8, marginBottom: 14, fontFamily: 'monospace' }}>
+                    {(['Fyers One', 'Reports', 'Ledger', 'Select FY', 'Download CSV'] as const).map((seg, i, arr) => (
+                      <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: (i === 0 || i === arr.length - 1) ? 'rgba(129,140,248,0.15)' : 'transparent', color: (i === 0 || i === arr.length - 1) ? '#818cf8' : '#64748b' }}>{seg}</span>
+                        {i < arr.length - 1 && <span style={{ color: '#334155', fontSize: '0.65rem' }}>›</span>}
+                      </span>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {([
+                      <>Use this link to go directly to the Fyers Ledger page: <a href="https://fyers.in/web/reports/ledger" target="_blank" rel="noopener noreferrer" style={{ color: '#818cf8', fontWeight: 700 }}>Open Fyers Ledger →</a></>,
+                      <>Select the <strong style={{ color: '#e2e8f0' }}>Financial Year</strong></>,
+                      <>Click <strong style={{ color: '#e2e8f0' }}>Generate</strong></>,
+                      <>Click <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></>,
+                      <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
+                    ] as React.ReactNode[]).map((s, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                        <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(129,140,248,0.12)', color: '#818cf8', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
+                        <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.55 }}>{s}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 7, background: 'rgba(0,0,0,0.2)', fontSize: '0.74rem', color: '#64748b' }}>
+                    ✓ No password required &nbsp;·&nbsp; ⚠ Download one CSV per financial year
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Upload — only visible once at least one broker selected */}
+              {guideBrokers.length > 0 && (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0 16px' }}>
+                    <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#334155', whiteSpace: 'nowrap' }}>Step 3 — Upload your file</span>
+                    <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.07)' }} />
+                  </div>
+
+                  <div
+                    onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      border: `2px dashed ${isDragging ? GOLD : guideBrokers.length === 1 && guideBrokers[0] === 'zerodha' ? 'rgba(16,185,129,0.35)' : guideBrokers.length === 1 && guideBrokers[0] === 'fyers' ? 'rgba(129,140,248,0.35)' : 'rgba(245,158,11,0.35)'}`,
+                      borderRadius: 12, padding: '28px 20px', textAlign: 'center',
+                      background: isDragging ? 'rgba(245,158,11,0.04)' : 'rgba(255,255,255,0.02)',
+                      cursor: 'pointer', transition: 'all 0.2s',
+                    }}
+                  >
+                    <svg width="36" height="36" fill="none" stroke={isDragging ? GOLD : '#475569'} viewBox="0 0 24 24" style={{ margin: '0 auto 10px', display: 'block' }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <p style={{ fontWeight: 600, color: isDragging ? GOLD : '#94a3b8', margin: '0 0 6px', fontSize: '0.9rem' }}>
+                      Drop your files here, or click to browse
+                    </p>
+                    <p style={{ margin: '0 0 10px', color: '#334155', fontSize: '0.76rem' }}>
+                      Upload all files together — one drop for all brokers
+                    </p>
+                    <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
+                      {guideBrokers.includes('zerodha') && <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, fontFamily: 'monospace', background: 'rgba(16,185,129,0.1)', color: '#10b981' }}>Zerodha · .xlsx</span>}
+                      {guideBrokers.includes('groww')   && <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, fontFamily: 'monospace', background: 'rgba(245,158,11,0.1)', color: GOLD }}>Groww · .pdf</span>}
+                      {guideBrokers.includes('fyers')   && <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, fontFamily: 'monospace', background: 'rgba(129,140,248,0.1)', color: '#818cf8' }}>Fyers · .csv</span>}
+                    </div>
+                    <input ref={fileInputRef} type="file" multiple accept=".csv,.pdf,.xlsx"
+                      onChange={e => e.target.files && addFiles(e.target.files)} style={{ display: 'none' }} />
+                  </div>
+
+                  {duplicateWarning && (
+                    <div style={{ marginTop: 14, padding: '10px 14px', borderRadius: 8, background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', color: GOLD, fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      ⚠️ {duplicateWarning}
+                    </div>
+                  )}
+
+                  {files.length > 0 && (
+                    <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {files.map((f, i) => {
+                        const vStatus = fileValidationStatus[f.file.name];
+                        const vError = f.formatError || fileValidationErrors[f.file.name];
+                        const hasError = !!f.formatError || vStatus === 'invalid';
+                        return (
+                          <div key={i}>
+                            <div style={{
+                              display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', ...innerCard,
+                              border: hasError ? '1px solid rgba(239,68,68,0.35)' : vStatus === 'valid' ? '1px solid rgba(16,185,129,0.25)' : innerCard.border,
+                              background: hasError ? 'rgba(239,68,68,0.05)' : vStatus === 'valid' ? 'rgba(16,185,129,0.04)' : innerCard.background,
+                            }}>
+                              <div style={{
+                                width: 32, height: 32, borderRadius: 7, flexShrink: 0,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                background: f.broker === 'zerodha' ? 'rgba(16,185,129,0.15)' : f.broker === 'groww' ? 'rgba(245,158,11,0.15)' : f.broker === 'fyers' ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.06)',
+                                fontSize: '0.65rem', fontWeight: 700,
+                                color: f.broker === 'zerodha' ? '#10b981' : f.broker === 'groww' ? GOLD : f.broker === 'fyers' ? '#818cf8' : '#64748b',
+                              }}>
+                                {f.broker === 'zerodha' ? 'XLS' : f.broker === 'groww' ? 'PDF' : f.broker === 'fyers' ? 'CSV' : '?'}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.file.name}</p>
+                                <p style={{ margin: 0, fontSize: '0.75rem', color: '#475569', textTransform: 'capitalize' }}>
+                                  {f.broker === 'unknown' ? 'Unknown file type' : f.broker === 'fyers' ? `Fyers · ${(f.file.size / 1024).toFixed(0)} KB` : `${f.broker} · ${(f.file.size / 1024).toFixed(0)} KB`}
+                                </p>
+                              </div>
+                              {vStatus === 'validating' && <span style={{ color: GOLD, fontSize: '0.75rem', flexShrink: 0 }}>checking…</span>}
+                              {vStatus === 'valid' && !f.formatError && <span style={{ color: '#10b981', fontWeight: 700, flexShrink: 0 }}>✓</span>}
+                              {hasError
+                                ? <button onClick={() => removeFile(i)} style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#ef4444', cursor: 'pointer', padding: '3px 9px', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0 }}>Remove</button>
+                                : <button onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: 4, fontSize: '1.2rem', lineHeight: 1 }}>×</button>
+                              }
+                            </div>
+                            {vError && <p style={{ margin: '4px 0 0 4px', fontSize: '0.75rem', color: '#ef4444', fontWeight: 500 }}>⚠ {vError}</p>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Dividend — Zerodha only */}
+                  {guideBrokers.includes('zerodha') && (
+                    <div style={{ marginTop: 14, padding: '10px 14px', borderRadius: 8, background: 'rgba(245,158,11,0.04)', border: '1px solid rgba(245,158,11,0.12)' }}>
+                      <p style={{ margin: '0 0 4px', fontSize: '0.78rem', color: GOLD, fontWeight: 600 }}>Optional: Zerodha dividend statement (.xlsx)</p>
+                      <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748b', lineHeight: 1.5 }}>
+                        Adds dividend income as inflows to your XIRR. Download from{' '}
+                        <a href="https://console.zerodha.com/reports/downloads" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, textDecoration: 'underline' }}>Console → Reports → Downloads</a>
+                        {' '}→ select <b style={{ color: '#94a3b8' }}>Dividend statement</b>, choose FY, click Download. Upload one file per FY.
+                      </p>
+                    </div>
+                  )}
+
+                  {dividendFiles.length > 0 && (
+                    <div style={{ marginTop: 10 }}>
+                      <p style={{ margin: '0 0 8px', fontSize: '0.78rem', color: GOLD, fontWeight: 600 }}>Dividend statements detected — inflows will be included in XIRR</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {dividendFiles.map((f, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 14px', ...innerCard, border: '1px solid rgba(245,158,11,0.2)' }}>
+                            <div style={{ width: 32, height: 32, borderRadius: 7, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(245,158,11,0.12)', fontSize: '0.6rem', fontWeight: 700, color: GOLD }}>XLSX</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ margin: 0, fontWeight: 600, fontSize: '0.875rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</p>
+                              <p style={{ margin: 0, fontSize: '0.75rem', color: '#475569' }}>Zerodha dividend statement · {(f.size / 1024).toFixed(0)} KB</p>
+                            </div>
+                            <button onClick={() => setDividendFiles(prev => prev.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', padding: 4, fontSize: '1.2rem', lineHeight: 1 }}>×</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Buttons */}
               {(() => {
                 const hasFormatErrors = files.some(f => f.formatError);
                 const hasValidationErrors = Object.values(fileValidationErrors).length > 0 && files.some(f => fileValidationStatus[f.file.name] === 'invalid');
                 const canContinue = files.length > 0 && !hasFormatErrors && !hasValidationErrors && !isUploading;
                 return (
                   <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
-                    <button onClick={() => setStep('auth')} style={{ ...btnSecondary, flex: 1, padding: 12, fontSize: '0.9rem' }}>
-                      ← Back
-                    </button>
+                    <button onClick={() => setStep('auth')} style={{ ...btnSecondary, flex: 1, padding: 12, fontSize: '0.9rem' }}>← Back</button>
                     <button onClick={handleContinueToDetails} disabled={!canContinue} style={{
                       ...btnPrimary, flex: 2, padding: 12, fontSize: '0.9rem',
                       background: canContinue ? GOLD : 'rgba(255,255,255,0.08)',
@@ -1588,21 +1757,21 @@ export default function CalculatorPage() {
               </div>
 
               {/* XIRR vs Nifty */}
-              <div style={{ padding: '28px 32px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  <div style={{ textAlign: 'center', padding: '22px 16px', background: 'rgba(245,158,11,0.08)', borderRadius: 12, border: `1.5px solid rgba(245,158,11,0.3)` }}>
-                    <p style={{ margin: '0 0 6px', fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 1 }}>Your XIRR</p>
-                    <p style={{ margin: 0, fontSize: '2.8rem', fontWeight: 900, color: GOLD, lineHeight: 1 }}>
+              <div style={{ padding: isMobile ? '20px 16px' : '28px 32px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: isMobile ? 10 : 16 }}>
+                  <div style={{ textAlign: 'center', padding: isMobile ? '16px 10px' : '22px 16px', background: 'rgba(245,158,11,0.08)', borderRadius: 12, border: `1.5px solid rgba(245,158,11,0.3)`, minWidth: 0 }}>
+                    <p style={{ margin: '0 0 6px', fontSize: '0.68rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 1 }}>Your XIRR</p>
+                    <p style={{ margin: 0, fontSize: isMobile ? '2rem' : '2.8rem', fontWeight: 900, color: GOLD, lineHeight: 1 }}>
                       {results.xirr != null ? `${results.xirr.toFixed(2)}%` : 'N/A'}
                     </p>
-                    <p style={{ margin: '5px 0 0', fontSize: '0.72rem', color: '#64748b' }}>annualised return</p>
+                    <p style={{ margin: '5px 0 0', fontSize: '0.68rem', color: '#64748b' }}>annualised return</p>
                   </div>
-                  <div style={{ textAlign: 'center', padding: '22px 16px', ...innerCard }}>
-                    <p style={{ margin: '0 0 6px', fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 1 }}>Nifty 50 XIRR</p>
-                    <p style={{ margin: 0, fontSize: '2.8rem', fontWeight: 900, color: '#64748b', lineHeight: 1 }}>
+                  <div style={{ textAlign: 'center', padding: isMobile ? '16px 10px' : '22px 16px', ...innerCard, minWidth: 0 }}>
+                    <p style={{ margin: '0 0 6px', fontSize: '0.68rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 1 }}>Nifty 50 XIRR</p>
+                    <p style={{ margin: 0, fontSize: isMobile ? '2rem' : '2.8rem', fontWeight: 900, color: '#64748b', lineHeight: 1 }}>
                       {results.nifty_xirr != null ? `${results.nifty_xirr.toFixed(2)}%` : 'N/A'}
                     </p>
-                    <p style={{ margin: '5px 0 0', fontSize: '0.72rem', color: '#475569' }}>same cash flows</p>
+                    <p style={{ margin: '5px 0 0', fontSize: '0.68rem', color: '#475569' }}>same cash flows</p>
                   </div>
                 </div>
 
@@ -1818,171 +1987,6 @@ export default function CalculatorPage() {
             >
               ← Go Back &amp; Try Again
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Download Guide Modal ── */}
-      {showDownloadGuide && (
-        <div
-          onClick={() => setShowDownloadGuide(false)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backdropFilter: 'blur(4px)' }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{ background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 80px rgba(0,0,0,0.6)', overflowX: 'hidden' }}
-          >
-            {/* Modal header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-              <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#ffffff' }}>How to download your ledger</h2>
-              <button onClick={() => setShowDownloadGuide(false)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#94a3b8', cursor: 'pointer', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 300 }}>×</button>
-            </div>
-
-            {/* Tabs */}
-            <div style={{ display: 'flex', gap: 4, padding: '12px 16px 0', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-              {([
-                { key: 'zerodha', label: 'Zerodha', letter: 'Z', color: GOLD, bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)' },
-                { key: 'groww',   label: 'Groww',   letter: 'G', color: '#10b981', bg: 'rgba(16,185,129,0.1)', border: 'rgba(16,185,129,0.3)' },
-                { key: 'fyers',   label: 'Fyers',   letter: 'F', color: '#818cf8', bg: 'rgba(99,102,241,0.12)', border: 'rgba(99,102,241,0.3)' },
-              ] as const).map(({ key, label, letter, color, bg, border }) => {
-                const active = activeGuideTab === key;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => setActiveGuideTab(key)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '10px 16px', borderRadius: '8px 8px 0 0',
-                      border: 'none', cursor: 'pointer',
-                      background: active ? 'rgba(255,255,255,0.05)' : 'transparent',
-                      borderBottom: active ? `2px solid ${color}` : '2px solid transparent',
-                      color: active ? '#ffffff' : '#64748b',
-                      fontWeight: active ? 700 : 500,
-                      fontSize: '0.88rem',
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    <span style={{ width: 22, height: 22, borderRadius: 6, background: active ? bg : 'transparent', border: active ? `1px solid ${border}` : '1px solid transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, color: active ? color : '#475569', transition: 'all 0.15s' }}>{letter}</span>
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Tab content */}
-            <div style={{ padding: '20px 20px' }}>
-
-              {/* Zerodha */}
-              {activeGuideTab === 'zerodha' && (
-                <div>
-                  <p style={{ margin: '0 0 18px', fontSize: '0.8rem', color: '#64748b' }}>XLSX format · no password required</p>
-                  {(isMobile ? [
-                    <><a href="https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 700, cursor: 'pointer' }}>Open Zerodha Statement →</a></>,
-                    <>Tap the <strong style={{ color: '#e2e8f0' }}>date range</strong> at the top to open Search &amp; filter</>,
-                    <>Set Category to <strong style={{ color: '#e2e8f0' }}>All segments</strong>, set date range from <strong style={{ color: '#e2e8f0' }}>your first investment to today</strong></>,
-                    <>Tap <strong style={{ color: '#e2e8f0' }}>Search</strong> — verify <strong style={{ color: '#10b981' }}>Opening balance = 0</strong> (if not, extend the start date earlier)</>,
-                    <>Tap <strong style={{ color: '#e2e8f0' }}>XLSX</strong> to download</>,
-                  ] : [
-                    <><a href="https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 700, cursor: 'pointer' }}>Open Zerodha Statement →</a> (logs in automatically if you're signed in)</>,
-                    <>Select <strong style={{ color: '#e2e8f0' }}>All Segments</strong> as category</>,
-                    <>Set date range — <strong style={{ color: '#e2e8f0' }}>from your first investment till today</strong></>,
-                    <>Click the <strong style={{ color: '#e2e8f0' }}>blue arrow →</strong> then click <strong style={{ color: '#e2e8f0' }}>XLSX</strong></>,
-                  ]).map((item, i, arr) => (
-                    <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 14 : 0 }}>
-                      <span style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)', color: GOLD, width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
-                      <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0, lineHeight: 1.65 }}>{item}</p>
-                    </div>
-                  ))}
-                  <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                    <p style={{ fontSize: '0.78rem', color: '#475569', margin: 0 }}>✓ One XLSX covers all years &nbsp;·&nbsp; Password: not required</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Groww */}
-              {activeGuideTab === 'groww' && (
-                <div>
-                  <p style={{ margin: '0 0 18px', fontSize: '0.8rem', color: '#64748b' }}>PDF format · password: your PAN (uppercase)</p>
-
-                  {/* Method 1 */}
-                  <div style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 10, padding: '16px', marginBottom: 16 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 8px', marginBottom: 14 }}>
-                      <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#10b981' }}>Method 1</span>
-                      <span style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', fontSize: '0.62rem', fontWeight: 700, padding: '2px 8px', borderRadius: 100, border: '1px solid rgba(16,185,129,0.3)', whiteSpace: 'nowrap' }}>RECOMMENDED</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748b', whiteSpace: 'nowrap' }}>— Groww Balance Statement</span>
-                    </div>
-                    {(isMobile ? [
-                      <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700, cursor: 'pointer' }}>Open Groww Reports →</a></>,
-                      <>Tap <strong style={{ color: '#e2e8f0' }}>Groww Balance Statement</strong> — it expands inline</>,
-                      <>Set <strong style={{ color: '#e2e8f0' }}>From</strong> date to your first investment, <strong style={{ color: '#e2e8f0' }}>To</strong> to today</>,
-                      <>Tap <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
-                    ] : [
-                      <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700, cursor: 'pointer' }}>Open Groww Reports →</a> (logs in automatically if you&apos;re signed in)</>,
-                      <>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions → Groww Balance Statement</strong></>,
-                      <>Choose format: select <strong style={{ color: '#e2e8f0' }}>PDF</strong> (not Excel)</>,
-                      <>Set date range → click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
-                    ]).map((item, i, arr) => (
-                      <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 12 : 0 }}>
-                        <span style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#10b981', width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 700, flexShrink: 0, marginTop: 2 }}>{i + 1}</span>
-                        <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0, lineHeight: 1.65 }}>{item}</p>
-                      </div>
-                    ))}
-                    <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 5 }}>
-                      <p style={{ fontSize: '0.77rem', color: '#475569', margin: 0 }}>✓ All transactions in a single file</p>
-                      <p style={{ fontSize: '0.77rem', color: '#92400e', margin: 0 }}>⚠ As of Feb 2026, only available from 1 Apr 2023 in-app. For earlier history, contact Groww support via chat or email to request your full statement.</p>
-                    </div>
-                  </div>
-
-                  {/* Method 2 */}
-                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 8px', marginBottom: 14 }}>
-                      <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b' }}>Method 2</span>
-                      <span style={{ background: 'rgba(255,255,255,0.06)', color: '#64748b', fontSize: '0.62rem', fontWeight: 700, padding: '2px 8px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.1)', whiteSpace: 'nowrap' }}>ALTERNATIVE</span>
-                      <span style={{ fontSize: '0.78rem', color: '#64748b', whiteSpace: 'nowrap' }}>— Annual Statements</span>
-                    </div>
-                    {[
-                      <><a href="https://groww.in/user/balance/inr" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700, cursor: 'pointer' }}>Open Groww Balance →</a> (logs in automatically if you&apos;re signed in)</>,
-                      <>Click <strong style={{ color: '#e2e8f0' }}>All Transactions</strong></>,
-                      <>Click <strong style={{ color: '#e2e8f0' }}>Download statement</strong> (top right button)</>,
-                      <>Select date range (max 1 year) → <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
-                      <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
-                    ].map((item, i, arr) => (
-                      <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 12 : 0 }}>
-                        <span style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#64748b', width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 700, flexShrink: 0, marginTop: 2 }}>{i + 1}</span>
-                        <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0, lineHeight: 1.65 }}>{item}</p>
-                      </div>
-                    ))}
-                    <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                      <p style={{ fontSize: '0.77rem', color: '#92400e', margin: 0 }}>⚠ Download one PDF per year — repeat for each year separately</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Fyers */}
-              {activeGuideTab === 'fyers' && (
-                <div>
-                  <p style={{ margin: '0 0 18px', fontSize: '0.8rem', color: '#64748b' }}>CSV format · no password required</p>
-                  {[
-                    <><a href="https://fyers.in/web/reports/ledger" target="_blank" rel="noopener noreferrer" style={{ color: '#818cf8', fontWeight: 700, cursor: 'pointer' }}>Open Fyers Ledger →</a> (logs in automatically if you&apos;re signed in)</>,
-                    <>Select the <strong style={{ color: '#e2e8f0' }}>Financial Year</strong></>,
-                    <>Click <strong style={{ color: '#e2e8f0' }}>Generate</strong></>,
-                    <>Click <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></>,
-                    <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
-                  ].map((item, i, arr) => (
-                    <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: i < arr.length - 1 ? 14 : 0 }}>
-                      <span style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#818cf8', width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
-                      <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: 0, lineHeight: 1.65 }}>{item}</p>
-                    </div>
-                  ))}
-                  <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                    <p style={{ fontSize: '0.78rem', color: '#475569', margin: '0 0 4px' }}>✓ Password: not required</p>
-                    <p style={{ fontSize: '0.78rem', color: '#92400e', margin: 0 }}>⚠ Download one CSV per financial year for the full period</p>
-                  </div>
-                </div>
-              )}
-
-            </div>
           </div>
         </div>
       )}
