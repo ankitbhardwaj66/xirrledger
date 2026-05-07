@@ -69,7 +69,7 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
       name: 'Ankit Bhardwaj',
       url: 'https://ankitbhardwaj.in',
     },
-    image: 'https://xirrledger.com/opengraph-image',
+    image: `https://xirrledger.com/blog/${slug}.webp`,
     publisher: { '@id': 'https://xirrledger.com/#organization' },
     mainEntityOfPage: {
       '@type': 'WebPage',

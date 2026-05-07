@@ -43,13 +43,13 @@ export default function Navigation() {
           <div className="hidden md:flex items-center" style={{ gap: '2rem' }}>
             {[
               { href: '/', label: 'Home' },
-              { href: '/features', label: 'Features' },
-              { href: '/how-it-works', label: 'How It Works' },
-              { href: '/how-to-calculate-xirr', label: 'XIRR Formula' },
-              { href: '/blog', label: 'Blog' },
-              { href: '/faq', label: 'FAQ' },
-              { href: '/about', label: 'About' },
-              { href: '/contact', label: 'Contact' },
+              { href: '/features/', label: 'Features' },
+              { href: '/how-it-works/', label: 'How It Works' },
+              { href: '/how-to-calculate-xirr/', label: 'XIRR Formula' },
+              { href: '/blog/', label: 'Blog' },
+              { href: '/faq/', label: 'FAQ' },
+              { href: '/about/', label: 'About' },
+              { href: '/contact/', label: 'Contact' },
             ].map(({ href, label }) => {
               const active = isActive(href);
               return (
@@ -119,13 +119,13 @@ export default function Navigation() {
           >
             {[
               { href: '/', label: 'Home' },
-              { href: '/features', label: 'Features' },
-              { href: '/how-it-works', label: 'How It Works' },
-              { href: '/how-to-calculate-xirr', label: 'XIRR Formula' },
-              { href: '/blog', label: 'Blog' },
-              { href: '/faq', label: 'FAQ' },
-              { href: '/about', label: 'About' },
-              { href: '/contact', label: 'Contact' },
+              { href: '/features/', label: 'Features' },
+              { href: '/how-it-works/', label: 'How It Works' },
+              { href: '/how-to-calculate-xirr/', label: 'XIRR Formula' },
+              { href: '/blog/', label: 'Blog' },
+              { href: '/faq/', label: 'FAQ' },
+              { href: '/about/', label: 'About' },
+              { href: '/contact/', label: 'Contact' },
             ].map(({ href, label }) => {
               const active = isActive(href);
               return (

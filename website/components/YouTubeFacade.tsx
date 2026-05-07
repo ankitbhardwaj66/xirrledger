@@ -32,6 +32,7 @@ export default function YouTubeFacade({ videoId, title }: { videoId: string; tit
         alt={title}
         width={960}
         height={540}
+        fetchPriority="high"
         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
       />
       {/* Play button overlay */}
