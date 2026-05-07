@@ -11,7 +11,6 @@ Each email address receives at most one support email per UTC day
 (enforced by the support_emails_sent table on Hostinger MySQL).
 """
 
-import json
 import os
 import logging
 import boto3
@@ -22,6 +21,7 @@ logger.setLevel(logging.INFO)
 
 AWS_REGION           = os.environ.get("AWS_REGION_NAME", "ap-south-1")
 SES_FROM_EMAIL       = os.environ.get("SES_FROM_EMAIL", "reports@xirrledger.com")
+SES_REPLY_TO         = "contact@xirrledger.com"
 HOSTINGER_API_URL    = os.environ.get("HOSTINGER_API_URL", "")
 HOSTINGER_API_SECRET = os.environ.get("HOSTINGER_API_SECRET", "")
 
@@ -79,6 +79,7 @@ def _send_email(email: str, name: str) -> bool:
         html_body = _render(name)
         ses.send_email(
             Source=f"XIRR Ledger <{SES_FROM_EMAIL}>",
+            ReplyToAddresses=[SES_REPLY_TO],
             Destination={"ToAddresses": [email]},
             Message={
                 "Subject": {
@@ -90,9 +91,10 @@ def _send_email(email: str, name: str) -> bool:
                     "Text": {
                         "Data": (
                             f"Hi {name or 'there'},\n\n"
-                            "It looks like your XIRR calculation didn't complete today. "
-                            "We want to help you fix it.\n\n"
-                            "Chat with us on WhatsApp: https://wa.me/916239618150\n"
+                            "Finding the Ledger can feel overwhelming at first — and that's completely okay. "
+                            "We are here to help you for free.\n\n"
+                            "Just reply to this email or reach us on WhatsApp:\n"
+                            "https://wa.me/916239618150\n"
                             "Or call / WhatsApp: +91 6239 618 150\n\n"
                             "Try again: https://xirrledger.com/\n\n"
                             "— XIRR Ledger Team"
