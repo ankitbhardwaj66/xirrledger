@@ -58,7 +58,7 @@ def lambda_handler(event, context):
     # ── Async processing mode (self-invoked) ────────────────
     if event.get("async_mode"):
         from processor import run_processing
-        run_processing(event, s3, UPLOADS_BUCKET, REPORTS_BUCKET, JOBS_BUCKET)
+        run_processing(event, s3_presign, UPLOADS_BUCKET, REPORTS_BUCKET, JOBS_BUCKET)
         return {"status": "done"}
 
     # ── HTTP API Gateway routing ─────────────────────────────
