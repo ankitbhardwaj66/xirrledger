@@ -6,7 +6,17 @@
 ┌─────────────────────────────────────────────────────────────┐
 │  Hostinger (Static Hosting)                                 │
 │  Next.js static export → Apache serves HTML/CSS/JS          │
-│  PHP bridge API → MySQL user database                       │
+│                                                             │
+│  PHP Bridge (MySQL user database)                           │
+│    save-user.php          — session create + device detect  │
+│    track-step.php         — wizard step tracking            │
+│    update-session.php     — Lambda result callback (COALESCE│
+│                             prevents null overwrites)       │
+│    get-report.php         — fresh S3 presigned URL on demand│
+│    get-failed-sessions.php — support email candidate query  │
+│    mark-support-email-sent.php                              │
+│    dashboard.php          — admin funnel dashboard          │
+│  config.php — gitignored; managed on server via SSH only   │
 └───────────────────┬─────────────────────────────────────────┘
                     │ API calls from browser
 ┌───────────────────▼─────────────────────────────────────────┐
@@ -20,11 +30,16 @@
 │    POST /process    — trigger async XIRR computation        │
 │                    ↕                                        │
 │                   S3                                        │
-│             ├── xirrledger-uploads/   (ledger files)        │
-│             ├── xirrledger-jobs/      (status.json, OTPs, Nifty) │
-│             └── xirrledger-reports/   (PDF reports)         │
+│             ├── xirrledger-uploads/   (ledger files, no expiry)   │
+│             ├── xirrledger-jobs/      (status.json, OTPs, Nifty, 7d dev) │
+│             └── xirrledger-reports/   (PDF reports, no expiry)    │
 │                    ↕                                        │
 │                   SES  (OTP email + report email on done)   │
+│                                                             │
+│  IAM Users                                                  │
+│    ankit           — admin (local CLI + Terraform only)     │
+│    xirrledger-server — s3:GetObject on reports/* only       │
+│                       (used by get-report.php on Hostinger) │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -332,7 +347,7 @@ XIRR (Annualised)   │ 7.94%           ← amber, bold; uses all cash flows inc
 - [ ] Duplicate file upload detection (same file content, different filename)
 - [ ] Edit Holdings → recalculate — verify state is fully preserved
 - [ ] Stop & Edit on processing page — verify polling cancelled, Step 3 restored
-- [ ] PDF report opens in new tab; confirm 24h presigned URL works
+- [ ] PDF report opens in new tab; confirm presigned URL works
 - [ ] Email received with correct figures matching on-screen results
 - [ ] Mobile responsiveness — all 5 steps on small screens
 
@@ -358,9 +373,16 @@ XIRR (Annualised)   │ 7.94%           ← amber, bold; uses all cash flows inc
 
 #### S3 & Presigned URLs
 - [ ] Attempt to access another job's `status.json` by guessing the session UUID
-- [ ] Attempt to access the PDF report URL after 24h expiry — should return 403
 - [ ] Attempt direct S3 bucket listing — bucket policy should deny `s3:ListBucket`
 - [ ] Attempt to upload directly to S3 using a presigned upload URL from another session
+- [ ] Access `get-report.php` without the dashboard key — should return 403
+- [ ] Access `get-report.php` with a session that has `status != 'done'` — should return 404
+- [ ] Access `dashboard.php` without the key — should return 403
+
+#### PHP Bridge
+- [ ] POST to `update-session.php` without `X-API-Secret` header — should return 403
+- [ ] POST to `update-session.php` with null xirr — verify COALESCE preserves existing value in DB
+- [ ] Verify `config.php` returns 403 if accessed directly via browser
 
 #### Frontend & CORS
 - [ ] Call API Gateway from an unlisted origin — CORS policy should block it
@@ -420,11 +442,15 @@ XIRR (Annualised)   │ 7.94%           ← amber, bold; uses all cash flows inc
 | GA4 Measurement ID | G-2YGVB963RE | `layout.tsx` |
 | Google OAuth Client ID | `1030081614603-...` | `calculator/page.tsx` |
 | AWS Account ID | `681745772892` | — |
-| AWS IAM profile | `ankit` | `~/.aws/credentials` |
+| AWS IAM profile (admin) | `ankit` | `~/.aws/credentials` |
+| AWS IAM user (server) | `xirrledger-server` | Hostinger `config.php` (gitignored) |
 | AWS Region | `ap-south-1` | `terraform/terraform.tfvars` |
-| API Gateway URL | `https://3cvw6sp1sf.execute-api.ap-south-1.amazonaws.com/` | `.env.production` |
+| API Gateway URL (prod) | `https://3cvw6sp1sf.execute-api.ap-south-1.amazonaws.com/` | `.env.production` |
+| API Gateway URL (dev) | `https://wu3hy4822m.execute-api.ap-south-1.amazonaws.com` | `.env.dev` |
 | S3 jobs polling base | `https://xirrledger-jobs.s3.ap-south-1.amazonaws.com` | `calculator/page.tsx` |
-| Lambda → PHP secret | (in `terraform/terraform.tfvars`) | Lambda env + Hostinger config.php |
+| Lambda → PHP secret | (in `terraform/terraform.tfvars`) | Lambda env + Hostinger `config.php` |
+| Dashboard key | (in Hostinger `config.php`) | `DASHBOARD_KEY` constant |
+| Server `config.php` | gitignored — see `config.example.php` | SSH to server to edit |
 
 ---
 
@@ -471,14 +497,22 @@ cd ../terraform && AWS_PROFILE=ankit terraform apply -auto-approve
 ```bash
 # Prod (main branch):
 cd website && rm -rf out/ && npm run build && cd ..
-rsync -avz --delete --exclude=dev -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
+rsync -avz --delete --exclude=dev --exclude=api/config.php -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
 
 # Dev (dev branch):
 cd website && rm -rf out/ && npm run build:dev && cd ..
-rsync -avz --delete -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/dev/
+rsync -avz --delete --exclude=robots.txt --exclude=api/config.php -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/dev/
 ```
 > `website/out/` is **gitignored** — never commit it. Always rsync directly to server.
+> `api/config.php` is **gitignored** — manage it on the server via SSH. Use `config.example.php` as the template.
 > `deploy.sh` is no longer used.
+
+### Refresh expired report presigned URLs in DB
+Run when `report_url` values in the DB have expired (e.g. after a long gap since last run):
+```bash
+python3 scripts/refresh_report_urls.py
+```
+Scans `xirrledger-reports` S3 bucket, generates fresh 7-day URLs using the `ankit` IAM profile, updates DB via `update-session.php`. Safe to re-run — COALESCE in `update-session.php` prevents overwriting existing XIRR values.
 
 ### Apply Terraform changes
 ```bash
@@ -503,8 +537,8 @@ AWS_PROFILE=ankit aws logs tail /aws/lambda/xirr-processor --follow --region ap-
 
 | Branch | URL | Build command | Hostinger path |
 |---|---|---|---|
-| `main` | xirrledger.com | `npm run build` | `/home/u889244618/domains/xirrledger.com/public_html/xirrcalculator/` |
-| `dev` | dev.xirrledger.com | `npm run build:dev` | `/home/u889244618/domains/xirrledger.com/public_html/dev/xirrcalculator/` |
+| `main` | xirrledger.com | `npm run build` | `/home/u889244618/domains/xirrledger.com/public_html/` |
+| `dev` | dev.xirrledger.com | `npm run build:dev` | `/home/u889244618/domains/xirrledger.com/public_html/dev/` |
 
 ### Feature Revert Reference
 
@@ -527,3 +561,7 @@ AWS_PROFILE=ankit aws logs tail /aws/lambda/xirr-processor --follow --region ap-
 | devLog / timing logs | (2026-02-27) | Remove `devLog()` calls and `performance.now()` timing in `calculator/page.tsx` |
 | SEND_EMAIL flag (Lambda) | (2026-02-27) | Remove env var check in `processor.py`; set `SEND_EMAIL` back to `true` on dev |
 | SES template → file() | (2026-02-27) | Revert `terraform/ses.tf` to inline HTML; update to match `report-ready.html` |
+| Dashboard device column + PDF proxy | `dbeceed` | Revert `dashboard.php`, `save-user.php`; drop `device_type` column from DB; delete `get-report.php` |
+| `get-report.php` S3 presigned proxy | `8012647` | Delete `get-report.php`; revert `dashboard.php` PDF cell to use `report_url` directly |
+| COALESCE in `update-session.php` | `4b049d7` | Revert `update-session.php` to direct SET (caution: partial updates will null existing fields) |
+| `config.php` gitignored | `e5a1559` | Remove from `.gitignore`; `git add website/public/api/config.php`; remove `config.example.php` |
