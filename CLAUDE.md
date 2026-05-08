@@ -34,15 +34,36 @@ rsync -avz --delete --exclude=dev --exclude=api/config.php -e "ssh -p 65002" web
 
 ## Lambda Deploy
 
-When the user says "deploy the lambda" (or "deploy lambda"):
+Same dev-first rule as frontend — never deploy straight to prod.
+
+### Step 1 — Commit and deploy to dev Lambda
 ```bash
+git checkout dev
+git add lambda/
+git commit -m "..."
+git push origin dev
+
 zip -j lambda/dist/lambda.zip lambda/handler.py lambda/processor.py lambda/refresher.py
-AWS_PROFILE=ankit aws lambda update-function-code \
+aws --profile ankit lambda update-function-code \
+  --function-name xirr-processor-dev \
+  --zip-file fileb://lambda/dist/lambda.zip \
+  --region ap-south-1
+```
+Test at **dev.xirrledger.com** — stop and wait for user to confirm it works.
+
+### Step 2 — Deploy to prod Lambda (only after user confirms)
+```bash
+git checkout main
+git merge dev
+git push origin main
+
+aws --profile ankit lambda update-function-code \
   --function-name xirr-processor \
   --zip-file fileb://lambda/dist/lambda.zip \
   --region ap-south-1
 ```
-No frontend build needed for Lambda-only changes.
+
+> The zip from Step 1 can be reused in Step 2 — no need to re-zip if nothing changed.
 
 ## Branches
 
