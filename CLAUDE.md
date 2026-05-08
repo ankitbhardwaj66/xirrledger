@@ -1,27 +1,36 @@
 # Claude Instructions for xirrcalculator
 
-## Push Procedure
+## Deploy Flow
 
-When the user says "push" (or "deploy frontend", "push frontend"):
+All work happens on `dev` first. Never touch `main` directly.
 
-1. Check `git status` / `git diff --stat` for any changes under `website/` (i.e. `website/app/`, `website/content/`, `website/lib/`, etc.)
-2. If there are frontend changes (anything inside `website/` — `out/` is gitignored, no need to stage it):
-   - `cd website && rm -rf out/`
-   - On `dev` branch: `npm run build:dev` — on `main` branch: `npm run build`
-   - `cd ..` (back to repo root)
-3. Stage and commit any remaining uncommitted source changes (Lambda, source files, etc.)
-4. `git push`
-5. Rsync the built `out/` to Hostinger:
-   - **main branch:**
-     ```bash
-     rsync -avz --delete --exclude=dev --exclude=api/config.php -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
-     ```
-   - **dev branch:**
-     ```bash
-     rsync -avz --delete --exclude=robots.txt --exclude=api/config.php -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/dev/
-     ```
+### Step 1 — Develop on dev
+```bash
+git checkout dev
+# make changes, then:
+git add <files>
+git commit -m "..."
+git push origin dev
+```
 
-> `website/out/` is gitignored — never commit it. Always rsync it directly to the server.
+### Step 2 — Build and deploy to dev server
+```bash
+cd website && rm -rf out/ && npm run build:dev && cd ..
+rsync -avz --delete --exclude=robots.txt --exclude=api/config.php -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/dev/
+```
+Test at **dev.xirrledger.com** — stop here and wait for user to confirm it works.
+
+### Step 3 — Merge to main and deploy to prod (only after user confirms)
+```bash
+git checkout main
+git merge dev
+git push origin main
+cd website && rm -rf out/ && npm run build && cd ..
+rsync -avz --delete --exclude=dev --exclude=api/config.php -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
+```
+
+> `website/out/` is gitignored — never commit it. Always rsync it directly to the server.  
+> `api/config.php` is gitignored — never overwritten by rsync. Edit it on the server via SSH.
 
 ## Lambda Deploy
 
