@@ -38,6 +38,15 @@ $email        = substr($body['email'] ?? '', 0, 100);
 $broker       = substr($body['broker'] ?? '', 0, 20);
 $google_token = $body['google_token'] ?? null;
 
+$ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+if (preg_match('/Mobile|iPhone|Windows Phone/i', $ua)) {
+    $device_type = 'mobile';
+} elseif (preg_match('/iPad|Tablet|Android/i', $ua)) {
+    $device_type = 'tablet';
+} else {
+    $device_type = 'desktop';
+}
+
 // Extract google sub (user ID) from JWT payload — for deduplication only, not for auth
 $google_id = null;
 if ($google_token) {
@@ -57,20 +66,22 @@ try {
     );
 
     $stmt = $pdo->prepare('
-        INSERT INTO xirr_sessions (session_id, google_id, name, email, broker, status)
-        VALUES (:session_id, :google_id, :name, :email, :broker, \'pending\')
+        INSERT INTO xirr_sessions (session_id, google_id, name, email, broker, status, device_type)
+        VALUES (:session_id, :google_id, :name, :email, :broker, \'pending\', :device_type)
         ON DUPLICATE KEY UPDATE
-            name      = VALUES(name),
-            email     = VALUES(email),
-            broker    = VALUES(broker),
-            google_id = COALESCE(VALUES(google_id), google_id)
+            name        = VALUES(name),
+            email       = VALUES(email),
+            broker      = VALUES(broker),
+            google_id   = COALESCE(VALUES(google_id), google_id),
+            device_type = COALESCE(device_type, VALUES(device_type))
     ');
     $stmt->execute([
-        ':session_id' => $session_id,
-        ':google_id'  => $google_id,
-        ':name'       => $name,
-        ':email'      => $email,
-        ':broker'     => $broker,
+        ':session_id'  => $session_id,
+        ':google_id'   => $google_id,
+        ':name'        => $name,
+        ':email'       => $email,
+        ':broker'      => $broker,
+        ':device_type' => $device_type,
     ]);
 
     echo json_encode(['ok' => true]);
