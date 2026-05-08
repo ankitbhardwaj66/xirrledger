@@ -14,7 +14,7 @@ When the user says "push" (or "deploy frontend", "push frontend"):
 5. Rsync the built `out/` to Hostinger:
    - **main branch:**
      ```bash
-     rsync -avz --delete --exclude=dev -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
+     rsync -avz --delete --exclude=dev --exclude=api/config.php -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
      ```
    - **dev branch:**
      ```bash
@@ -57,7 +57,7 @@ Dev and prod use **separate MySQL databases** on Hostinger. Never assume they sh
 | `main` (prod) | `u889244618_xirrledger` | `u889244618_xirrledger` | `/home/.../public_html/api/config.php` |
 | `dev` | `u889244618_dev_xirrledger` | `u889244618_dev_xirrledger` | `/home/.../public_html/dev/api/config.php` |
 
-- The dev `config.php` is **excluded from rsync** (`--exclude=api/config.php`) so it's never overwritten by deploys.
+- Both dev and prod `config.php` are **excluded from rsync** so they're never overwritten by deploys. Manage them directly on the server via SSH.
 - When running MySQL commands via SSH, always read the correct `config.php` first to get the right credentials.
 - Schema changes (new tables, columns) must be applied to **both** databases separately.
 
@@ -67,7 +67,7 @@ Dev and prod use **separate MySQL databases** on Hostinger. Never assume they sh
 
 **Production (main):**
 ```bash
-rsync -avz --delete --exclude=dev -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
+rsync -avz --delete --exclude=dev --exclude=api/config.php -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
 ```
 
 **Dev (dev branch):**
@@ -114,7 +114,7 @@ git merge dev
 git push origin main
 # Then rsync the freshly built out/ to prod:
 cd website && rm -rf out/ && npm run build && cd ..
-rsync -avz --delete --exclude=dev -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
+rsync -avz --delete --exclude=dev --exclude=api/config.php -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
 ```
 
 ## Blog Post Images

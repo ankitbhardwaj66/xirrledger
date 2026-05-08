@@ -16,6 +16,9 @@
 # Static export (deployed via rsync, not git)
 /out
 
+# Server config — credentials live on the server only, never in git
+/public/api/config.php
+
 # Misc
 .DS_Store
 *.pem
