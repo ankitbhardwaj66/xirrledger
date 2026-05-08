@@ -346,11 +346,11 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             ContentType="application/pdf",
         )
 
-        # Generate presigned URL (1 year — report files are kept indefinitely in prod)
+        # Generate presigned URL (7 days — AWS hard cap for presigned URLs)
         report_url = s3_client.generate_presigned_url(
             "get_object",
             Params={"Bucket": reports_bucket, "Key": pdf_key},
-            ExpiresIn=365 * 24 * 3600,
+            ExpiresIn=7 * 24 * 3600,
         )
 
         xirr_pct       = combined_stats.get("xirr_percentage")
