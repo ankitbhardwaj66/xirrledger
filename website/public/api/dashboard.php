@@ -82,7 +82,7 @@ try {
 
     // Recent sessions
     $sessions = $pdo->query("
-        SELECT session_id, name, email, broker, last_step, status, xirr, nifty_xirr, error_message, created_at, completed_at, support_email_sent_at
+        SELECT session_id, name, email, broker, last_step, status, xirr, nifty_xirr, error_message, created_at, completed_at, support_email_sent_at, report_url, device_type
         FROM xirr_sessions
         " . ($where_clause ?: '') . "
         ORDER BY created_at DESC
@@ -128,6 +128,28 @@ function status_badge($status, $last_step) {
     if ($status === 'error') return "<span style='background:#ef444422;color:#ef4444;border:1px solid #ef444444;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:600'>Error</span>";
     if ($last_step === 'processing') return "<span style='background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b44;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:600'>Stuck</span>";
     return "<span style='background:#64748b22;color:#94a3b8;border:1px solid #64748b44;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:600'>Pending</span>";
+}
+function device_badge($type) {
+    $icons = [
+        'mobile' => [
+            'svg'   => '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
+            'label' => 'Phone',
+            'color' => '#3b82f6',
+        ],
+        'tablet' => [
+            'svg'   => '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
+            'label' => 'Tablet',
+            'color' => '#a78bfa',
+        ],
+        'desktop' => [
+            'svg'   => '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+            'label' => 'Desktop',
+            'color' => '#64748b',
+        ],
+    ];
+    $d = $icons[$type] ?? null;
+    if (!$d) return '<span style="color:#475569">—</span>';
+    return "<span style='color:{$d['color']};display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600'>{$d['svg']} {$d['label']}</span>";
 }
 function time_ago($dt) {
     if (!$dt) return '—';
@@ -361,10 +383,11 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
           <th>Name</th>
           <th class="hide-mobile">Email</th>
           <th class="hide-mobile">Broker</th>
+          <th class="hide-mobile">Device</th>
           <th class="hide-mobile">Last Step</th>
-          <th>Status</th>
           <th>XIRR</th>
           <th class="hide-mobile">Nifty XIRR</th>
+          <th class="hide-mobile">PDF</th>
           <th class="hide-mobile">Support Email</th>
           <th class="hide-mobile">Error</th>
         </tr>
@@ -376,8 +399,8 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
           <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($s['name'] ?: '—') ?></td>
           <td class="hide-mobile" style="color:#94a3b8;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($s['email'] ?: '—') ?></td>
           <td class="hide-mobile"><span class="pill"><?= htmlspecialchars($s['broker'] ?: '—') ?></span></td>
+          <td class="hide-mobile"><?= device_badge($s['device_type']) ?></td>
           <td class="hide-mobile"><?= step_badge($s['last_step']) ?></td>
-          <td><?= status_badge($s['status'], $s['last_step']) ?></td>
           <td><?php
             if ($s['xirr'] !== null) {
               $v = round((float)$s['xirr'], 1);
@@ -390,6 +413,13 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
               echo "<span style='color:#64748b'>{$v}%</span>";
             } else echo '<span style="color:#475569">—</span>';
           ?></td>
+          <td class="hide-mobile"><?php
+            if ($s['report_url']) {
+              echo "<a href='" . htmlspecialchars($s['report_url']) . "' target='_blank' style='color:#e2c97e;font-size:11px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;font-weight:600' title='Download PDF'><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"7 10 12 15 17 10\"/><line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"/></svg> PDF</a>";
+            } else {
+              echo '<span style="color:#475569">—</span>';
+            }
+          ?></td>
           <td class="hide-mobile" style="white-space:nowrap"><?php
             if ($s['support_email_sent_at']) {
               echo "<span style='color:#f59e0b;font-size:11px'>" . time_ago($s['support_email_sent_at']) . "</span>";
@@ -401,7 +431,7 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
         </tr>
       <?php endforeach; ?>
       <?php if (empty($sessions)): ?>
-        <tr><td colspan="9" style="text-align:center;color:#475569;padding:32px">No sessions in this period</td></tr>
+        <tr><td colspan="11" style="text-align:center;color:#475569;padding:32px">No sessions in this period</td></tr>
       <?php endif; ?>
       </tbody>
     </table>
