@@ -60,10 +60,10 @@ try {
         UPDATE xirr_sessions
         SET status        = :status,
             last_step     = CASE WHEN :status2 = \'done\' THEN \'results\' ELSE last_step END,
-            report_url    = :report_url,
-            xirr          = :xirr,
-            nifty_xirr    = :nifty_xirr,
-            error_message = :error_message,
+            report_url    = COALESCE(:report_url,    report_url),
+            xirr          = COALESCE(:xirr,          xirr),
+            nifty_xirr    = COALESCE(:nifty_xirr,    nifty_xirr),
+            error_message = COALESCE(:error_message, error_message),
             completed_at  = NOW()
         WHERE session_id = :session_id
     ');
