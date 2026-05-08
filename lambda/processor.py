@@ -335,6 +335,13 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             individual_stats.append(stats)
 
         # ── Generate PDF ──────────────────────────────────────
+        if combined_stats.get("xirr_percentage") is None:
+            raise ValueError(
+                "We couldn't calculate your XIRR — the solver didn't converge. "
+                "This can happen with very few transactions or an unusual cash flow pattern. "
+                "Please double-check that your holdings value and file are correct and try again."
+            )
+
         update_status({"status": "report", "message": "Generating PDF report..."})
         pdf_bytes = generate_pdf_report(individual_stats, combined_stats, name, manual_entries=manual_entries)
 
@@ -1055,16 +1062,17 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
     xirr_v   = f"{cs['xirr_percentage']:.2f}%"       if cs.get("xirr_percentage")      is not None else "N/A"
     nifty_v  = f"{cs['nifty_xirr_percentage']:.2f}%" if cs.get("nifty_xirr_percentage") is not None else "N/A"
 
+    has_xirr  = cs.get("xirr_percentage") is not None
     has_nifty = cs.get("nifty_xirr_percentage") is not None
-    if has_nifty:
+    if has_xirr and has_nifty:
         diff     = cs["xirr_percentage"] - cs["nifty_xirr_percentage"]
         beat_v   = f"+{diff:.2f}%" if diff > 0 else f"{diff:.2f}%"
         beat_lbl = "vs Nifty 50"
         kpi3_bg  = "#1b5e20" if diff > 0 else "#b71c1c"
     else:
         beat_v   = "N/A"
-        beat_lbl = "Nifty data unavailable"
-        kpi3_bg  = "#37474f"  # neutral dark grey when no comparison possible
+        beat_lbl = "Nifty data unavailable" if not has_nifty else "XIRR unavailable"
+        kpi3_bg  = "#37474f"
 
     kpi_row = [[
         _kpi_cell("YOUR XIRR",     xirr_v,  "annualised return", "#0f172a"),
