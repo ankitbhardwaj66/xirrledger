@@ -10,6 +10,8 @@
 
 require_once __DIR__ . '/config.php';
 
+header('X-Robots-Tag: noindex, nofollow');
+
 // ── Auth ────────────────────────────────────────────────────────────────────
 $key = $_GET['key'] ?? '';
 if ($key !== DASHBOARD_KEY) {
