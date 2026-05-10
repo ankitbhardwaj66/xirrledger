@@ -1607,7 +1607,6 @@ export default function CalculatorPage() {
                 {/* Multi-file drop zone */}
                 {(() => {
                   const hasErrors = currentDraft.mfFiles.some(e => e.error);
-                  const hasOverlaps = currentDraft.mfFiles.some(e => e.overlapsWith.length > 0);
                   const borderColor = draftMfDragging ? GOLD : hasErrors ? 'rgba(239,68,68,0.5)' : hasMf ? 'rgba(16,185,129,0.5)' : 'rgba(246,70,26,0.3)';
 
                   return (
@@ -1640,17 +1639,16 @@ export default function CalculatorPage() {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                             {currentDraft.mfFiles.map((entry, i) => {
                               const isErr = !!entry.error;
-                              const isOverlap = entry.overlapsWith.length > 0;
-                              const rowBorder = isErr ? '1px solid rgba(239,68,68,0.35)' : isOverlap ? '1px solid rgba(245,158,11,0.35)' : '1px solid rgba(16,185,129,0.2)';
-                              const rowBg = isErr ? 'rgba(239,68,68,0.05)' : isOverlap ? 'rgba(245,158,11,0.05)' : innerCard.background;
-                              const tagColor = isErr ? '#ef4444' : isOverlap ? GOLD : '#10b981';
-                              const tagBg = isErr ? 'rgba(239,68,68,0.12)' : isOverlap ? 'rgba(245,158,11,0.12)' : 'rgba(16,185,129,0.12)';
+                              const rowBorder = isErr ? '1px solid rgba(239,68,68,0.35)' : '1px solid rgba(16,185,129,0.2)';
+                              const rowBg = isErr ? 'rgba(239,68,68,0.05)' : innerCard.background;
+                              const tagColor = isErr ? '#ef4444' : '#10b981';
+                              const tagBg = isErr ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)';
 
                               return (
                                 <div key={i}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', ...innerCard, border: rowBorder, background: rowBg }}>
                                     <div style={{ width: 30, height: 30, borderRadius: 7, background: tagBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 700, color: tagColor, flexShrink: 0 }}>
-                                      {isErr ? '!' : isOverlap ? '⚠' : 'XLS'}
+                                      {isErr ? '!' : 'XLS'}
                                     </div>
                                     <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
                                       <p style={{ margin: 0, fontWeight: 600, fontSize: '0.845rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.file.name}</p>
@@ -1675,11 +1673,6 @@ export default function CalculatorPage() {
                                       });
                                     }} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '1.1rem', padding: '2px 6px', flexShrink: 0 }}>×</button>
                                   </div>
-                                  {isOverlap && !isErr && (
-                                    <p style={{ margin: '3px 0 0 4px', fontSize: '0.72rem', color: GOLD }}>
-                                      ⚠ Date range overlaps with: {entry.overlapsWith.join(', ')} — duplicate trades in the overlap will be deduplicated during calculation
-                                    </p>
-                                  )}
                                 </div>
                               );
                             })}
@@ -1701,7 +1694,7 @@ export default function CalculatorPage() {
                       </div>
 
                       {/* Coverage summary when valid files exist */}
-                      {hasMf && !hasErrors && !hasOverlaps && (() => {
+                      {hasMf && !hasErrors && (() => {
                         const valid = currentDraft.mfFiles.filter(e => e.dateFrom);
                         if (valid.length === 0) return null;
                         const allDates = valid.flatMap(e => [e.dateFrom, e.dateTo]).sort();
@@ -1761,7 +1754,7 @@ export default function CalculatorPage() {
           const canContinue = hasLedger && (!isGroww || (currentDraft.pan?.length === 10 && growwPanValid));
 
           const brokerMeta = {
-            zerodha: { accept: '.xlsx,.csv', label: 'Zerodha Ledger (XLSX or CSV)', hint: 'Console → Funds → Statement → All Segments → XLSX', link: 'https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb' },
+            zerodha: { accept: '.xlsx', label: 'Zerodha Ledger (XLSX)', hint: 'Console → Funds → Statement → All Segments → XLSX', link: 'https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb' },
             groww:   { accept: '.pdf',       label: 'Groww Balance Statement (PDF)', hint: 'Groww app → Reports → Balance Statement → PDF', link: 'https://groww.in/user/profile/report' },
             fyers:   { accept: '.csv',       label: 'Fyers Ledger (CSV)', hint: 'Fyers One → Reports → Ledger → Download CSV', link: 'https://fyers.in/web/reports/ledger' },
           }[broker];
@@ -1781,13 +1774,44 @@ export default function CalculatorPage() {
                 <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', lineHeight: 1.2 }}>Upload your ledger</h2>
                 <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 20px' }}>{brokerMeta.label}</p>
 
-                {/* Instructions */}
-                <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 18, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                    <span style={{ fontSize: '0.85rem', marginTop: 2 }}>📥</span>
-                    <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', lineHeight: 1.6 }}>{brokerMeta.hint}</p>
+                {/* Instructions — per broker */}
+                <div style={{ borderRadius: 12, background: `${brokerColor}0d`, border: `1px solid ${brokerColor}33`, marginBottom: 18, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: `1px solid ${brokerColor}22` }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: brokerColor, letterSpacing: '0.06em', textTransform: 'uppercase' }}>How to download</span>
+                    <a href={brokerMeta.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: `${brokerColor}22`, color: brokerColor, textDecoration: 'none', whiteSpace: 'nowrap' }}>Open ↗</a>
                   </div>
-                  <a href={brokerMeta.link} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0, fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: `${brokerColor}22`, color: brokerColor, textDecoration: 'none', whiteSpace: 'nowrap' }}>Open ↗</a>
+                  <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {broker === 'zerodha' && ([
+                      { n: 1, text: <>Set <strong style={{ color: '#e2e8f0' }}>Category</strong> to <strong style={{ color: '#e2e8f0' }}>All Segments</strong>, set start date to <strong style={{ color: '#e2e8f0' }}>before your first investment</strong></> },
+                      { n: 2, text: <>Click the <strong style={{ color: '#e2e8f0' }}>blue → arrow</strong> — check <strong style={{ color: '#f6461a' }}>Opening Balance</strong> shows <strong style={{ color: '#10b981' }}>0</strong>. If not, move start date earlier.</> },
+                      { n: 3, text: <>Click <strong style={{ color: '#e2e8f0' }}>XLSX</strong> to download. One file covers your full history — no need to download per year.</> },
+                    ] as {n:number, text:React.ReactNode}[]).map(({ n, text }) => (
+                      <div key={n} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                        <span style={{ width: 20, height: 20, borderRadius: '50%', background: `${brokerColor}22`, color: brokerColor, fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{n}</span>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.55 }}>{text}</p>
+                      </div>
+                    ))}
+                    {broker === 'groww' && ([
+                      { n: 1, text: <>Go to <strong style={{ color: '#e2e8f0' }}>Reports</strong> → scroll to <strong style={{ color: '#e2e8f0' }}>Groww Balance Statement</strong></> },
+                      { n: 2, text: <>Select format <strong style={{ color: '#e2e8f0' }}>PDF</strong>, set date range from first investment to today → <strong style={{ color: '#e2e8f0' }}>Download</strong></> },
+                      { n: 3, text: <>PDF password = your <strong style={{ color: '#e2e8f0' }}>PAN number</strong> (e.g. ABCDE1234F)</> },
+                    ] as {n:number, text:React.ReactNode}[]).map(({ n, text }) => (
+                      <div key={n} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                        <span style={{ width: 20, height: 20, borderRadius: '50%', background: `${brokerColor}22`, color: brokerColor, fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{n}</span>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.55 }}>{text}</p>
+                      </div>
+                    ))}
+                    {broker === 'fyers' && ([
+                      { n: 1, text: <>Go to <strong style={{ color: '#e2e8f0' }}>Reports → Ledger</strong>, select a <strong style={{ color: '#e2e8f0' }}>Financial Year</strong></> },
+                      { n: 2, text: <>Click <strong style={{ color: '#e2e8f0' }}>Generate</strong> then <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></> },
+                      { n: 3, text: <><strong style={{ color: '#e2e8f0' }}>Repeat for each year</strong> from your first investment to today — upload all CSVs together</> },
+                    ] as {n:number, text:React.ReactNode}[]).map(({ n, text }) => (
+                      <div key={n} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                        <span style={{ width: 20, height: 20, borderRadius: '50%', background: `${brokerColor}22`, color: brokerColor, fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{n}</span>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.55 }}>{text}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Drop zone */}
@@ -1910,12 +1934,29 @@ export default function CalculatorPage() {
                   Optional
                 </div>
                 <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', lineHeight: 1.2 }}>Add dividend data?</h2>
-                <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 6px' }}>
+                <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 18px' }}>
                   Adds dividend income as inflows — improves XIRR accuracy
                 </p>
-                <p style={{ color: '#475569', fontSize: '0.78rem', margin: '0 0 22px' }}>
-                  Console → Reports → Downloads → Dividend statement → Select FY → Download XLSX
-                </p>
+
+                {/* Instructions */}
+                <div style={{ borderRadius: 12, background: 'rgba(246,70,26,0.05)', border: '1px solid rgba(246,70,26,0.2)', marginBottom: 22, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid rgba(246,70,26,0.15)' }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#f6461a', letterSpacing: '0.06em', textTransform: 'uppercase' }}>How to download</span>
+                    <a href="https://console.zerodha.com/reports/downloads" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: 'rgba(246,70,26,0.15)', color: '#f6461a', textDecoration: 'none', whiteSpace: 'nowrap' }}>Open Downloads ↗</a>
+                  </div>
+                  <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {([
+                      { n: 1, text: <>In the <strong style={{ color: '#e2e8f0' }}>Statement</strong> dropdown, select <strong style={{ color: '#e2e8f0' }}>Dividend statement</strong></> },
+                      { n: 2, text: <>Select a <strong style={{ color: '#e2e8f0' }}>Financial Year</strong> and click <strong style={{ color: '#e2e8f0' }}>Download</strong></> },
+                      { n: 3, text: <><strong style={{ color: '#e2e8f0' }}>Repeat for each FY</strong> from your first investment to today — upload all files below</> },
+                    ]).map(({ n, text }) => (
+                      <div key={n} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                        <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(246,70,26,0.15)', color: '#f6461a', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{n}</span>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.55 }}>{text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Drop zone */}
                 <div

@@ -214,19 +214,38 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                 except Exception as e:
                     logger.warning("Failed to parse MF tradebook %s: %s", mk, e)
 
-            mf_out_df = pd.concat(mf_outflows_all, ignore_index=True) if mf_outflows_all else pd.DataFrame(columns=["date", "amount"])
-            mf_inf_df = pd.concat(mf_inflows_all,  ignore_index=True) if mf_inflows_all  else pd.DataFrame(columns=["date", "amount"])
+            mf_out_df = pd.concat(mf_outflows_all, ignore_index=True) if mf_outflows_all else pd.DataFrame(columns=["date", "amount", "trade_id"])
+            mf_inf_df = pd.concat(mf_inflows_all,  ignore_index=True) if mf_inflows_all  else pd.DataFrame(columns=["date", "amount", "trade_id"])
+
+            # Dedup across files by Trade ID — catches identical files or overlapping date ranges
+            for _df_name, _df_ref in [("buy", mf_out_df), ("sell", mf_inf_df)]:
+                pass  # handled below
+            def _dedup_mf(df):
+                if df.empty or "trade_id" not in df.columns:
+                    return df.drop(columns=["trade_id"], errors="ignore")
+                before = len(df)
+                # Rows with a real trade_id: dedup by it; rows without: keep as-is
+                has_id = df["trade_id"].ne("")
+                deduped = pd.concat([
+                    df[has_id].drop_duplicates(subset=["trade_id"]),
+                    df[~has_id],
+                ], ignore_index=True) if has_id.any() else df
+                logger.info("MF dedup: %d → %d rows", before, len(deduped))
+                return deduped.drop(columns=["trade_id"], errors="ignore")
+
+            mf_out_df = _dedup_mf(mf_out_df)
+            mf_inf_df = _dedup_mf(mf_inf_df)
 
             # Track MF totals for PDF breakdown
             mf_invested  = float(-mf_out_df["amount"].sum()) if not mf_out_df.empty else 0.0
             mf_redeemed  = float( mf_inf_df["amount"].sum()) if not mf_inf_df.empty else 0.0
             trade_type_val = account.get("trade_type", "stocks")
 
-            # Merge MF cashflows into XIRR only for MF-only accounts.
-            # For 'both' accounts the stock ledger already captures all bank
-            # transfers including MF purchases — adding tradebook buys/sells
-            # would double-count every MF investment.
-            if trade_type_val == "mf":
+            # Merge MF tradebook flows into XIRR for both 'mf' and 'both' modes.
+            # Zerodha Coin MF purchases go directly bank → BSE STAR MF, they
+            # never appear in the Zerodha trading ledger. So MF cashflows must
+            # always be added separately from the tradebook.
+            if trade_type_val in ("mf", "both"):
                 if not mf_out_df.empty:
                     acc_out = pd.concat([acc_out, mf_out_df], ignore_index=True)
                 if not mf_inf_df.empty:
@@ -706,7 +725,6 @@ def parse_zerodha_mf_tradebook(file_bytes: bytes):
         return pd.DataFrame(columns=["date", "amount"]), pd.DataFrame(columns=["date", "amount"])
 
     outflow_rows, inflow_rows = [], []
-    seen_ids: set = set()
 
     for row in rows[header_idx + 1:]:
         if not any(row):
@@ -720,23 +738,23 @@ def parse_zerodha_mf_tradebook(file_bytes: bytes):
 
             if not date_raw or qty == 0 or price == 0:
                 continue
-            if trade_id:
-                if trade_id in seen_ids:
-                    continue          # cross-file duplicate
-                seen_ids.add(trade_id)
 
             date_str = date_raw.strftime("%Y-%m-%d") if hasattr(date_raw, "strftime") else str(date_raw)[:10]
             amount   = qty * price
+            # Include trade_id so caller can dedup across multiple files
+            entry = {"date": date_str, "amount": 0.0, "trade_id": trade_id or ""}
 
             if ttype == "buy":
-                outflow_rows.append({"date": date_str, "amount": -amount})
+                entry["amount"] = -amount
+                outflow_rows.append(entry)
             elif ttype == "sell":
-                inflow_rows.append({"date": date_str, "amount": amount})
+                entry["amount"] = amount
+                inflow_rows.append(entry)
         except (ValueError, TypeError, IndexError):
             continue
 
-    outflows = pd.DataFrame(outflow_rows) if outflow_rows else pd.DataFrame(columns=["date", "amount"])
-    inflows  = pd.DataFrame(inflow_rows)  if inflow_rows  else pd.DataFrame(columns=["date", "amount"])
+    outflows = pd.DataFrame(outflow_rows) if outflow_rows else pd.DataFrame(columns=["date", "amount", "trade_id"])
+    inflows  = pd.DataFrame(inflow_rows)  if inflow_rows  else pd.DataFrame(columns=["date", "amount", "trade_id"])
     return outflows, inflows
 
 
@@ -1494,7 +1512,11 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
             mf_invested  = stats.get("mf_invested", 0.0)
             mf_redeemed  = stats.get("mf_redeemed", 0.0)
             trade_type   = stats.get("trade_type", "stocks")
-            has_mf_split = mf_invested > 0 and trade_type in ("mf", "both")
+            # For 'both': total_invested = stocks (from ledger) + MF (from tradebook).
+            # We track mf_invested/mf_redeemed before merging, so we can back-calculate
+            # the stocks portion: stocks_invested = total_invested - mf_invested.
+            mf_net           = max(mf_invested - mf_redeemed, 0)
+            has_mf_split     = mf_invested > 0 and trade_type == "both"
             stocks_invested  = max(stats["total_invested"]  - mf_invested,  0) if has_mf_split else 0
             stocks_withdrawn = max(stats["total_withdrawn"] - mf_redeemed,  0) if has_mf_split else 0
 
@@ -1526,7 +1548,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
             ]
             sub_style_rows = []  # list of (row_idx, label_color_hex, bg_color_hex)
 
-            # MF + Stocks invested sub-rows (only when MF tradebook was uploaded)
+            # MF + Stocks invested sub-rows (net position, only when tradebook uploaded)
             if has_mf_split:
                 rows.append(["└ Stocks", _fmt_inr(stocks_invested)])
                 sub_style_rows.append((len(rows) - 1, "#475569", "#f1f5f9"))
@@ -1540,11 +1562,10 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                 sub_style_rows.append((len(rows) - 1, "#64748b", "#eef2f7"))
 
             rows.append(["Total Withdrawn",    _fmt_inr(stats["total_withdrawn"])])
-            # MF + Stocks withdrawn sub-rows
             if has_mf_split:
                 rows.append(["└ Stocks withdrawn", _fmt_inr(stocks_withdrawn)])
                 sub_style_rows.append((len(rows) - 1, "#475569", "#f1f5f9"))
-                rows.append(["└ MF Redeemed", _fmt_inr(mf_redeemed)])
+                rows.append(["└ MF Redeemed",      _fmt_inr(mf_redeemed)])
                 sub_style_rows.append((len(rows) - 1, "#475569", "#f1f5f9"))
 
             rows.append(["Current Value",      _fmt_inr(stats["current_value"])])
@@ -1582,6 +1603,13 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                 ])
             at.setStyle(TableStyle(style_cmds))
             elements.append(at)
+
+            if has_mf_split:
+                elements.append(Paragraph(
+                    f"MF activity (gross): ₹{mf_invested:,.2f} invested across all trades,  "
+                    f"₹{mf_redeemed:,.2f} redeemed.  Net MF position = ₹{mf_net:,.2f}.",
+                    note_s
+                ))
 
             if linked_manual:
                 entries_note = "  \u2022  ".join(
