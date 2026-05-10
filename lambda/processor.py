@@ -181,11 +181,11 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                 account_outflows.append(out)
                 account_inflows.append(inf)
 
-            if not account_outflows:
+            if not account_outflows and account.get("trade_type", "stocks") != "mf":
                 logger.warning("No transactions found for account %s", pan or broker)
                 continue
 
-            acc_out = pd.concat(account_outflows, ignore_index=True)
+            acc_out = pd.concat(account_outflows, ignore_index=True) if account_outflows else pd.DataFrame(columns=["date", "amount", "_file_idx"])
             acc_inf = pd.concat(account_inflows, ignore_index=True) if account_inflows else pd.DataFrame(columns=["date", "amount", "_file_idx"])
 
             # For Groww/Fyers accounts with multiple files: remove cross-file duplicates only.
@@ -198,10 +198,8 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                 acc_out = acc_out.drop(columns=["_file_idx"], errors="ignore")
                 acc_inf = acc_inf.drop(columns=["_file_idx"], errors="ignore")
 
-            all_outflows.append(acc_out)
-            all_inflows.append(acc_inf)
-
             # ── Process MF tradebook files (new flow) ────────────
+            # NOTE: all_outflows.append happens AFTER MF merging below
             mf_file_keys   = account.get("mf_file_keys", [])
             mf_outflows_all, mf_inflows_all = [], []
             for mk in mf_file_keys:
@@ -222,12 +220,23 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             # Track MF totals for PDF breakdown
             mf_invested  = float(-mf_out_df["amount"].sum()) if not mf_out_df.empty else 0.0
             mf_redeemed  = float( mf_inf_df["amount"].sum()) if not mf_inf_df.empty else 0.0
+            trade_type_val = account.get("trade_type", "stocks")
 
-            # Merge MF cashflows into account outflows/inflows for XIRR
-            if not mf_out_df.empty:
-                acc_out = pd.concat([acc_out, mf_out_df], ignore_index=True)
-            if not mf_inf_df.empty:
-                acc_inf = pd.concat([acc_inf, mf_inf_df], ignore_index=True)
+            # Merge MF cashflows into XIRR only for MF-only accounts.
+            # For 'both' accounts the stock ledger already captures all bank
+            # transfers including MF purchases — adding tradebook buys/sells
+            # would double-count every MF investment.
+            if trade_type_val == "mf":
+                if not mf_out_df.empty:
+                    acc_out = pd.concat([acc_out, mf_out_df], ignore_index=True)
+                if not mf_inf_df.empty:
+                    acc_inf = pd.concat([acc_inf, mf_inf_df], ignore_index=True)
+            logger.info("MF breakdown — invested: %.2f, redeemed: %.2f, trade_type: %s",
+                        mf_invested, mf_redeemed, trade_type_val)
+
+            # Append to combined outflows AFTER MF merging (MF-only path needs this)
+            all_outflows.append(acc_out)
+            all_inflows.append(acc_inf)
 
             # ── Collect dividend inflows (Zerodha dividend XLSX) ──
             # Kept separate from broker inflows so total_withdrawn stays broker-only.
@@ -676,7 +685,7 @@ def parse_zerodha_mf_tradebook(file_bytes: bytes):
     from io import BytesIO
     import openpyxl
 
-    wb = openpyxl.load_workbook(BytesIO(file_bytes), read_only=True, data_only=True)
+    wb = openpyxl.load_workbook(BytesIO(file_bytes), data_only=True)
     ws = wb["Mutual Funds"] if "Mutual Funds" in wb.sheetnames else wb.active
     rows = list(ws.iter_rows(values_only=True))
 
