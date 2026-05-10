@@ -201,6 +201,34 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             all_outflows.append(acc_out)
             all_inflows.append(acc_inf)
 
+            # ── Process MF tradebook files (new flow) ────────────
+            mf_file_keys   = account.get("mf_file_keys", [])
+            mf_outflows_all, mf_inflows_all = [], []
+            for mk in mf_file_keys:
+                try:
+                    obj      = s3_client.get_object(Bucket=uploads_bucket, Key=mk)
+                    mf_o, mf_i = parse_zerodha_mf_tradebook(obj["Body"].read())
+                    if not mf_o.empty:
+                        mf_outflows_all.append(mf_o)
+                    if not mf_i.empty:
+                        mf_inflows_all.append(mf_i)
+                    logger.info("Parsed MF tradebook %s — %d buys, %d sells", mk, len(mf_o), len(mf_i))
+                except Exception as e:
+                    logger.warning("Failed to parse MF tradebook %s: %s", mk, e)
+
+            mf_out_df = pd.concat(mf_outflows_all, ignore_index=True) if mf_outflows_all else pd.DataFrame(columns=["date", "amount"])
+            mf_inf_df = pd.concat(mf_inflows_all,  ignore_index=True) if mf_inflows_all  else pd.DataFrame(columns=["date", "amount"])
+
+            # Track MF totals for PDF breakdown
+            mf_invested  = float(-mf_out_df["amount"].sum()) if not mf_out_df.empty else 0.0
+            mf_redeemed  = float( mf_inf_df["amount"].sum()) if not mf_inf_df.empty else 0.0
+
+            # Merge MF cashflows into account outflows/inflows for XIRR
+            if not mf_out_df.empty:
+                acc_out = pd.concat([acc_out, mf_out_df], ignore_index=True)
+            if not mf_inf_df.empty:
+                acc_inf = pd.concat([acc_inf, mf_inf_df], ignore_index=True)
+
             # ── Collect dividend inflows (Zerodha dividend XLSX) ──
             # Kept separate from broker inflows so total_withdrawn stays broker-only.
             # Dividends are passed into compute_portfolio_stats as dividend_cashflows
@@ -258,6 +286,9 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                 "current_value": current_value,
                 "dividend_cashflows": dividend_cashflows,
                 "dividend_details": dividend_details,
+                "mf_invested": mf_invested,
+                "mf_redeemed": mf_redeemed,
+                "trade_type": account.get("trade_type", "stocks"),
             })
 
         if not all_outflows:
@@ -332,6 +363,9 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             stats["account_name"]     = acc["name"]
             stats["account_id"]       = acc.get("id", "")
             stats["dividend_details"] = acc.get("dividend_details", [])
+            stats["mf_invested"]      = acc.get("mf_invested", 0.0)
+            stats["mf_redeemed"]      = acc.get("mf_redeemed", 0.0)
+            stats["trade_type"]       = acc.get("trade_type", "stocks")
             individual_stats.append(stats)
 
         # ── Generate PDF ──────────────────────────────────────
@@ -629,6 +663,72 @@ def parse_zerodha_dividends_xlsx(file_bytes: bytes):
 
     xirr_df = pd.DataFrame(xirr_rows) if xirr_rows else pd.DataFrame(columns=["date", "amount"])
     return xirr_df, detail_rows
+
+
+def parse_zerodha_mf_tradebook(file_bytes: bytes):
+    """
+    Parse a Zerodha MF Tradebook XLSX (one file per ≤365-day range).
+    Returns (outflows_df, inflows_df) where:
+      buy  → outflows  (amount = -(qty * price), negative)
+      sell → inflows   (amount = +(qty * price), positive)
+    Deduplicates rows by Trade ID to handle overlapping date-range files.
+    """
+    from io import BytesIO
+    import openpyxl
+
+    wb = openpyxl.load_workbook(BytesIO(file_bytes), read_only=True, data_only=True)
+    ws = wb["Mutual Funds"] if "Mutual Funds" in wb.sheetnames else wb.active
+    rows = list(ws.iter_rows(values_only=True))
+
+    # Locate header row by finding "Trade Date" column
+    header_idx = trade_date_col = trade_type_col = qty_col = price_col = trade_id_col = None
+    for i, row in enumerate(rows[:20]):
+        norm = [str(c).lower().strip() if c is not None else "" for c in row]
+        if "trade date" in norm:
+            header_idx    = i
+            trade_date_col = norm.index("trade date")
+            trade_type_col = norm.index("trade type") if "trade type" in norm else None
+            qty_col        = norm.index("quantity")   if "quantity"   in norm else None
+            price_col      = norm.index("price")      if "price"      in norm else None
+            trade_id_col   = norm.index("trade id")   if "trade id"   in norm else None
+            break
+
+    if header_idx is None:
+        return pd.DataFrame(columns=["date", "amount"]), pd.DataFrame(columns=["date", "amount"])
+
+    outflow_rows, inflow_rows = [], []
+    seen_ids: set = set()
+
+    for row in rows[header_idx + 1:]:
+        if not any(row):
+            continue
+        try:
+            date_raw   = row[trade_date_col]   if trade_date_col  is not None else None
+            ttype      = str(row[trade_type_col]).strip().lower() if trade_type_col is not None and row[trade_type_col] else ""
+            qty        = float(row[qty_col])   if qty_col   is not None and row[qty_col]   else 0.0
+            price      = float(row[price_col]) if price_col is not None and row[price_col] else 0.0
+            trade_id   = str(row[trade_id_col]) if trade_id_col is not None and row[trade_id_col] else None
+
+            if not date_raw or qty == 0 or price == 0:
+                continue
+            if trade_id:
+                if trade_id in seen_ids:
+                    continue          # cross-file duplicate
+                seen_ids.add(trade_id)
+
+            date_str = date_raw.strftime("%Y-%m-%d") if hasattr(date_raw, "strftime") else str(date_raw)[:10]
+            amount   = qty * price
+
+            if ttype == "buy":
+                outflow_rows.append({"date": date_str, "amount": -amount})
+            elif ttype == "sell":
+                inflow_rows.append({"date": date_str, "amount": amount})
+        except (ValueError, TypeError, IndexError):
+            continue
+
+    outflows = pd.DataFrame(outflow_rows) if outflow_rows else pd.DataFrame(columns=["date", "amount"])
+    inflows  = pd.DataFrame(inflow_rows)  if inflow_rows  else pd.DataFrame(columns=["date", "amount"])
+    return outflows, inflows
 
 
 def parse_groww_pdf(file_bytes, password=None):
@@ -1381,6 +1481,14 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
             acc_gain_bg = colors.HexColor("#d1fae5") if (stats.get("net_gain") or 0) >= 0 \
                           else colors.HexColor("#fee2e2")
 
+            # MF / stocks breakdown
+            mf_invested  = stats.get("mf_invested", 0.0)
+            mf_redeemed  = stats.get("mf_redeemed", 0.0)
+            trade_type   = stats.get("trade_type", "stocks")
+            has_mf_split = mf_invested > 0 and trade_type in ("mf", "both")
+            stocks_invested  = max(stats["total_invested"]  - mf_invested,  0) if has_mf_split else 0
+            stocks_withdrawn = max(stats["total_withdrawn"] - mf_redeemed,  0) if has_mf_split else 0
+
             # Find manual entries linked to this account
             acc_id = stats.get("account_id", "")
             logger.info("PDF: account=%r  acc_id=%r  manual_entries=%r",
@@ -1399,23 +1507,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
 
             # Row layout (0-indexed):
             # 0  header
-            # 1  Investment Period
-            # 2  Total Transactions
-            # 3  Total Invested
-            # 4,5 optional: └ Broker / └ Outside (if linked_manual)
-            # (4+sub) Total Withdrawn
-            # (5+sub) Current Value
-            # (6+sub) Dividend Income  ← only if total_div > 0
-            # (6+sub or 7+sub) Net Gain / Loss
-            # (7+sub or 8+sub) XIRR
-            sub_rows    = 2 if linked_manual else 0
-            div_present = total_div > 0
-            withdrawn_idx = 4 + sub_rows
-            cv_idx        = 5 + sub_rows
-            div_row_idx   = (6 + sub_rows) if div_present else None
-            gain_idx      = (7 + sub_rows) if div_present else (6 + sub_rows)
-            xirr_idx      = gain_idx + 1
-
+            # Build rows dynamically — row indices computed at runtime for styling
             elements.append(Paragraph(stats.get("account_name", "Account"), acct_h_s))
             rows = [
                 ["Metric",            "Value"],
@@ -1423,14 +1515,38 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                 ["Total Transactions", acc_txn],
                 ["Total Invested",     _fmt_inr(stats["total_invested"])],
             ]
+            sub_style_rows = []  # list of (row_idx, label_color_hex, bg_color_hex)
+
+            # MF + Stocks invested sub-rows (only when MF tradebook was uploaded)
+            if has_mf_split:
+                rows.append(["└ Stocks", _fmt_inr(stocks_invested)])
+                sub_style_rows.append((len(rows) - 1, "#475569", "#f1f5f9"))
+                rows.append(["└ Mutual Funds", _fmt_inr(mf_invested)])
+                sub_style_rows.append((len(rows) - 1, "#475569", "#f1f5f9"))
+            # Outside investment sub-rows
             if linked_manual:
-                rows.append(["\u2514 Broker transactions",   _fmt_inr(broker_invested)])
-                rows.append(["\u2514 Outside investments",   _fmt_inr(manual_total)])
+                rows.append(["└ Broker transactions", _fmt_inr(broker_invested)])
+                sub_style_rows.append((len(rows) - 1, "#64748b", "#eef2f7"))
+                rows.append(["└ Outside investments", _fmt_inr(manual_total)])
+                sub_style_rows.append((len(rows) - 1, "#64748b", "#eef2f7"))
+
             rows.append(["Total Withdrawn",    _fmt_inr(stats["total_withdrawn"])])
+            # MF + Stocks withdrawn sub-rows
+            if has_mf_split:
+                rows.append(["└ Stocks withdrawn", _fmt_inr(stocks_withdrawn)])
+                sub_style_rows.append((len(rows) - 1, "#475569", "#f1f5f9"))
+                rows.append(["└ MF Redeemed", _fmt_inr(mf_redeemed)])
+                sub_style_rows.append((len(rows) - 1, "#475569", "#f1f5f9"))
+
             rows.append(["Current Value",      _fmt_inr(stats["current_value"])])
+            div_present = total_div > 0
+            div_row_idx = None
             if div_present:
+                div_row_idx = len(rows)
                 rows.append(["Dividend Income", _fmt_inr(total_div)])
+            gain_idx = len(rows)
             rows.append(["Net Gain / Loss",    _fmt_inr(stats["net_gain"])])
+            xirr_idx = len(rows)
             rows.append(["XIRR (Annualised)",  acc_xirr])
 
             at = Table(rows, colWidths=[page_w * 0.56, page_w * 0.44])
@@ -1447,16 +1563,14 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                     ("TEXTCOLOR", (1, div_row_idx), (1, div_row_idx), colors.HexColor("#f59e0b")),
                     ("FONTNAME",  (1, div_row_idx), (1, div_row_idx), "Helvetica-Bold"),
                 ])
-            if linked_manual:
-                sub_bg = colors.HexColor("#eef2f7")
-                for r in (4, 5):
-                    style_cmds.extend([
-                        ("BACKGROUND",  (0, r), (-1, r), sub_bg),
-                        ("FONTSIZE",    (0, r), (-1, r), 8),
-                        ("TEXTCOLOR",   (0, r), (0, r),  colors.HexColor("#64748b")),
-                        ("TEXTCOLOR",   (1, r), (1, r),  colors.HexColor("#64748b")),
-                        ("LEFTPADDING", (0, r), (0, r),  26),
-                    ])
+            for r_idx, lbl_hex, bg_hex in sub_style_rows:
+                style_cmds.extend([
+                    ("BACKGROUND",  (0, r_idx), (-1, r_idx), colors.HexColor(bg_hex)),
+                    ("FONTSIZE",    (0, r_idx), (-1, r_idx), 8),
+                    ("TEXTCOLOR",   (0, r_idx), (0,  r_idx), colors.HexColor(lbl_hex)),
+                    ("TEXTCOLOR",   (1, r_idx), (1,  r_idx), colors.HexColor(lbl_hex)),
+                    ("LEFTPADDING", (0, r_idx), (0,  r_idx), 26),
+                ])
             at.setStyle(TableStyle(style_cmds))
             elements.append(at)
 

@@ -7,7 +7,7 @@ const GOOGLE_CLIENT_ID = '1030081614603-onnmmupafevkn0hojoj4qk023tuohius.apps.go
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 const JOBS_BASE_URL = process.env.NEXT_PUBLIC_JOBS_BASE_URL || 'https://xirrledger-jobs.s3.ap-south-1.amazonaws.com';
 
-type Step = 'auth' | 'otp' | 'upload' | 'details' | 'processing' | 'results';
+type Step = 'auth' | 'otp' | 'broker' | 'trade-type' | 'upload-mf' | 'upload-ledger' | 'upload-dividend' | 'holdings' | 'account-done' | 'upload' | 'details' | 'processing' | 'results';
 
 interface User {
   name: string;
@@ -31,6 +31,30 @@ interface Account {
   fileNames: string[];
   holdings: string;
   cash: string;
+}
+
+interface MfFileEntry {
+  file: File;
+  hash: string;
+  dateFrom: string;    // YYYY-MM-DD — earliest trade date in file
+  dateTo: string;      // YYYY-MM-DD — latest trade date in file
+  tradeCount: number;
+  error?: string;      // parse or validation error
+  overlapsWith: string[]; // names of other files whose date ranges overlap
+}
+
+interface AccountDraft {
+  id: string;
+  broker: 'zerodha' | 'groww' | 'fyers';
+  tradeType: 'stocks' | 'mf' | 'both';
+  ledgerFiles: UploadedFile[];
+  mfFiles: MfFileEntry[];
+  dividendFiles: File[];
+  holdings: string;
+  cash: string;
+  pan?: string;
+  panValidStatus?: 'idle' | 'validating' | 'valid' | 'invalid';
+  panValidError?: string;
 }
 
 interface ManualEntry {
@@ -251,6 +275,64 @@ function buildAccounts(files: UploadedFile[], filePans: Record<string, string>, 
   return accounts;
 }
 
+function emptyDraft(): AccountDraft {
+  return { id: crypto.randomUUID(), broker: 'zerodha', tradeType: 'stocks', ledgerFiles: [], mfFiles: [], dividendFiles: [], holdings: '', cash: '' };
+}
+
+async function parseMfTradebook(file: File): Promise<{ dateFrom: string; dateTo: string; tradeCount: number; error?: string }> {
+  try {
+    const XLSX = await import('xlsx');
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+
+    const sheet = wb.Sheets['Mutual Funds'];
+    if (!sheet) return { dateFrom: '', dateTo: '', tradeCount: 0, error: 'Sheet "Mutual Funds" not found — please upload the Zerodha MF Tradebook XLSX.' };
+
+    const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
+
+    // Find header row — looks for 'Trade Date' in columns
+    let headerIdx = -1;
+    let tradeDateCol = -1;
+    let tradeTypeCol = -1;
+    for (let i = 0; i < Math.min(rows.length, 20); i++) {
+      const row = rows[i] as string[];
+      const tdIdx = row.findIndex(c => typeof c === 'string' && c.toLowerCase().includes('trade date'));
+      if (tdIdx !== -1) { headerIdx = i; tradeDateCol = tdIdx; tradeTypeCol = row.findIndex(c => typeof c === 'string' && c.toLowerCase().includes('trade type')); break; }
+    }
+    if (headerIdx === -1 || tradeDateCol === -1) return { dateFrom: '', dateTo: '', tradeCount: 0, error: 'Could not find "Trade Date" column — is this a Zerodha MF Tradebook?' };
+
+    const dates: string[] = [];
+    for (let i = headerIdx + 1; i < rows.length; i++) {
+      const row = rows[i] as string[];
+      const raw = row[tradeDateCol];
+      if (!raw) continue;
+      const dateStr = String(raw).substring(0, 10); // take YYYY-MM-DD prefix
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) dates.push(dateStr);
+    }
+
+    if (dates.length === 0) return { dateFrom: '', dateTo: '', tradeCount: 0, error: 'No trades found in this file — check the Segment is set to "Mutual funds" and the date range is correct.' };
+
+    dates.sort();
+    return { dateFrom: dates[0], dateTo: dates[dates.length - 1], tradeCount: dates.length };
+  } catch {
+    return { dateFrom: '', dateTo: '', tradeCount: 0, error: 'Could not read this file — make sure it is the Zerodha MF Tradebook XLSX.' };
+  }
+}
+
+function datesOverlap(aFrom: string, aTo: string, bFrom: string, bTo: string): boolean {
+  return aFrom <= bTo && bFrom <= aTo;
+}
+
+function getFlowSteps(draft: AccountDraft): Step[] {
+  const steps: Step[] = ['broker', 'trade-type'];
+  if (draft.tradeType === 'mf' || draft.tradeType === 'both') steps.push('upload-mf');
+  if (draft.tradeType === 'stocks' || draft.tradeType === 'both') steps.push('upload-ledger');
+  if (draft.broker === 'zerodha' && (draft.tradeType === 'stocks' || draft.tradeType === 'both')) steps.push('upload-dividend');
+  steps.push('holdings');
+  steps.push('account-done');
+  return steps;
+}
+
 /* ── Shared style tokens ── */
 const GOLD = '#f59e0b';
 const devLog = (...args: unknown[]) => {
@@ -320,8 +402,17 @@ export default function CalculatorPage() {
   const [fileValidationErrors, setFileValidationErrors] = useState<Record<string, string>>({});
   const [isUploading, setIsUploading] = useState(false);
   const [uploadPhase, setUploadPhase] = useState<'uploading' | 'validating'>('uploading');
+  const [currentDraft, setCurrentDraft] = useState<AccountDraft>(emptyDraft());
+  const [completedAccounts, setCompletedAccounts] = useState<AccountDraft[]>([]);
+  const [draftLedgerDragging, setDraftLedgerDragging] = useState(false);
+  const [draftMfDragging, setDraftMfDragging] = useState(false);
+  const [draftDivDragging, setDraftDivDragging] = useState(false);
+  const [mfParsing, setMfParsing] = useState(false);
   const googleBtnRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const ledgerInputRef = useRef<HTMLInputElement>(null);
+  const mfInputRef = useRef<HTMLInputElement>(null);
+  const divInputRef = useRef<HTMLInputElement>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -384,7 +475,7 @@ export default function CalculatorPage() {
       const { user: savedUser, expiresAt } = JSON.parse(raw);
       if (Date.now() > expiresAt) { localStorage.removeItem(SESSION_KEY); return; }
       setUser(savedUser);
-      setStep('upload');
+      setStep('broker');
     } catch { /* ignore */ }
   }, []);
 
@@ -426,8 +517,8 @@ export default function CalculatorPage() {
     const u = { name: payload.name, email: payload.email, picture: payload.picture, googleToken: response.credential };
     setUser(u);
     saveSession(u);
-    setStep('upload');
-    trackStep('upload', u);
+    setStep('broker');
+    trackStep('broker', u);
   }
 
   async function handleManualContinue() {
@@ -469,8 +560,8 @@ export default function CalculatorPage() {
       const u = { name: manualName.trim(), email: manualEmail.trim() };
       setUser(u);
       saveSession(u);
-      setStep('upload');
-      trackStep('upload', u);
+      setStep('broker');
+      trackStep('broker', u);
     } catch (err: unknown) {
       setOtpError(err instanceof Error ? err.message : 'Verification failed. Please try again.');
     } finally {
@@ -875,6 +966,202 @@ export default function CalculatorPage() {
     return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, []);
 
+  async function handleDraftCalculate() {
+    const allDrafts = [...completedAccounts, currentDraft];
+    const xlsxMime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+    setIsUploading(true);
+    setUploadPhase('uploading');
+    setProcessingError('');
+
+    try {
+      // Collect all unique files across drafts
+      type FileEntry = { name: string; type: string; fileObj: File; draftId: string; isDiv: boolean; isMf: boolean };
+      const allFileEntries: FileEntry[] = [];
+      const seenNames = new Set<string>();
+
+      for (const draft of allDrafts) {
+        for (const uf of draft.ledgerFiles) {
+          if (!seenNames.has(uf.file.name)) {
+            seenNames.add(uf.file.name);
+            allFileEntries.push({ name: uf.file.name, type: uf.file.name.toLowerCase().endsWith('.xlsx') ? xlsxMime : (uf.file.type || 'application/octet-stream'), fileObj: uf.file, draftId: draft.id, isDiv: false, isMf: false });
+          }
+        }
+        for (const mf of draft.mfFiles) {
+          if (!seenNames.has(mf.file.name)) {
+            seenNames.add(mf.file.name);
+            allFileEntries.push({ name: mf.file.name, type: xlsxMime, fileObj: mf.file, draftId: draft.id, isDiv: false, isMf: true });
+          }
+        }
+        for (const df of draft.dividendFiles) {
+          if (!seenNames.has(df.name)) {
+            seenNames.add(df.name);
+            allFileEntries.push({ name: df.name, type: xlsxMime, fileObj: df, draftId: draft.id, isDiv: true, isMf: false });
+          }
+        }
+      }
+
+      // Create session
+      const sessionRes = await fetch(`${API_BASE}/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: allFileEntries.map(f => ({ name: f.name, type: f.type })) }),
+      });
+      if (!sessionRes.ok) throw new Error('Upload failed — please try again.');
+      const { session_id, upload_urls } = await sessionRes.json();
+
+      // Upload all files
+      const keyMap: Record<string, string> = {};
+      await Promise.all(
+        (upload_urls as { name: string; url: string; key: string }[]).map(async ({ name, url, key }) => {
+          const entry = allFileEntries.find(f => f.name === name);
+          if (!entry) return;
+          const putRes = await fetch(url, { method: 'PUT', body: entry.fileObj, headers: { 'Content-Type': entry.type } });
+          if (!putRes.ok) throw new Error(`Failed to upload ${name}`);
+          keyMap[name] = key;
+        })
+      );
+
+      setUploadPhase('validating');
+
+      // Validate non-Groww ledger files
+      for (const draft of allDrafts) {
+        if (draft.broker === 'groww') continue;
+        for (const uf of draft.ledgerFiles) {
+          const fileKey = keyMap[uf.file.name];
+          if (!fileKey) continue;
+          try {
+            await fetch(`${API_BASE}/validate`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ session_id, file_key: fileKey, broker: uf.broker }),
+            });
+          } catch { /* continue on network error */ }
+        }
+      }
+
+      // Save user to DB
+      const brokerList = [...new Set(allDrafts.map(d => d.broker))].join(',');
+      fetch('/api/save-user.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id, name: user?.name, email: user?.email, broker: brokerList, google_token: user?.googleToken }),
+      }).catch(() => {});
+
+      // Build accounts payload for Lambda
+      const accountsPayload = allDrafts.map(draft => ({
+        id: draft.id,
+        broker: draft.broker,
+        trade_type: draft.tradeType,
+        pan: draft.broker === 'groww' ? (draft.pan ?? null) : null,
+        pan_password: draft.broker === 'groww' ? (draft.pan ?? null) : null,
+        file_keys: draft.ledgerFiles.map(uf => keyMap[uf.file.name]).filter(Boolean),
+        mf_file_keys: draft.mfFiles.map(e => keyMap[e.file.name]).filter(Boolean),
+        dividend_file_keys: draft.dividendFiles.map(f => keyMap[f.name]).filter(Boolean),
+        holdings: parseFloat(draft.holdings) || 0,
+        cash: parseFloat(draft.cash) || 0,
+      }));
+
+      // Populate synthetic Account[] for results display
+      const syntheticAccounts: Account[] = allDrafts.map(draft => ({
+        id: draft.id,
+        name: `${draft.broker.charAt(0).toUpperCase() + draft.broker.slice(1)} — ${draft.tradeType}`,
+        broker: draft.broker,
+        fileNames: [...draft.ledgerFiles.map(f => f.file.name), ...draft.mfFiles.map(e => e.file.name)],
+        holdings: draft.holdings,
+        cash: draft.cash,
+      }));
+      setAccounts(syntheticAccounts);
+
+      setIsUploading(false);
+      setStep('processing');
+      setProcessingSteps(prev => prev.map((s, i) => ({ ...s, status: i === 0 ? 'active' : 'pending' })));
+
+      const tProcess = performance.now();
+      const processRes = await fetch(`${API_BASE}/process`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id, name: user?.name, email: user?.email, accounts: accountsPayload, manual_entries: [] }),
+      });
+      if (!processRes.ok) throw new Error('Failed to start processing — please try again.');
+      trackStep('processing', null, session_id);
+      pollStatus(session_id, tProcess);
+
+    } catch (err) {
+      setIsUploading(false);
+      setProcessingError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
+    }
+  }
+
+  async function addMfFiles(incoming: File[]) {
+    if (incoming.length === 0) return;
+    setMfParsing(true);
+    try {
+      // Parse each new file
+      const parsed: MfFileEntry[] = await Promise.all(
+        incoming.map(async file => {
+          const [hash, meta] = await Promise.all([hashFile(file), parseMfTradebook(file)]);
+          return { file, hash, dateFrom: meta.dateFrom, dateTo: meta.dateTo, tradeCount: meta.tradeCount, error: meta.error, overlapsWith: [] };
+        })
+      );
+
+      setCurrentDraft(prev => {
+        // 1. Reject exact duplicates (same hash already in list)
+        const existingHashes = new Set(prev.mfFiles.map(e => e.hash));
+        const existingNames = new Set(prev.mfFiles.map(e => e.file.name));
+        const toAdd = parsed.filter(e => !existingHashes.has(e.hash) && !existingNames.has(e.file.name));
+
+        const combined = [...prev.mfFiles, ...toAdd];
+
+        // 2. Recompute overlaps across the full combined list
+        const valid = combined.filter(e => !e.error && e.dateFrom && e.dateTo);
+        for (const entry of combined) {
+          if (entry.error || !entry.dateFrom) { entry.overlapsWith = []; continue; }
+          entry.overlapsWith = valid
+            .filter(other => other !== entry && datesOverlap(entry.dateFrom, entry.dateTo, other.dateFrom, other.dateTo))
+            .map(other => other.file.name);
+        }
+
+        return { ...prev, mfFiles: combined };
+      });
+    } finally {
+      setMfParsing(false);
+    }
+  }
+
+  async function addLedgerFileToDraft(incoming: File) {
+    const [detected, hash] = await Promise.all([detectBrokerFromContent(incoming), hashFile(incoming)]);
+    const uf: UploadedFile = { file: incoming, broker: detected.broker, hash, formatError: detected.formatError, fyersClientId: detected.fyersClientId };
+    setCurrentDraft(prev => {
+      const exists = prev.ledgerFiles.some(f => f.hash === hash || f.file.name === incoming.name);
+      if (exists) return prev;
+      return { ...prev, ledgerFiles: [...prev.ledgerFiles, uf] };
+    });
+  }
+
+  function validateDraftPan(pan: string) {
+    const growwFiles = currentDraft.ledgerFiles.filter(f => f.broker === 'groww');
+    if (growwFiles.length === 0 || pan.length !== 10) return;
+    setCurrentDraft(prev => ({ ...prev, panValidStatus: 'validating', panValidError: undefined }));
+    import('pdfjs-dist/legacy/build/pdf.mjs').then(async pdfjsLib => {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+      try {
+        for (const uf of growwFiles) {
+          const data = await uf.file.arrayBuffer();
+          await pdfjsLib.getDocument({ data, password: pan }).promise;
+        }
+        setCurrentDraft(prev => ({ ...prev, panValidStatus: 'valid', panValidError: undefined }));
+      } catch (e: unknown) {
+        const err = e as { name?: string };
+        if (err?.name === 'PasswordException') {
+          setCurrentDraft(prev => ({ ...prev, panValidStatus: 'invalid', panValidError: 'Incorrect PAN — could not unlock this PDF' }));
+        } else {
+          setCurrentDraft(prev => ({ ...prev, panValidStatus: 'valid' }));
+        }
+      }
+    });
+  }
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [step]);
@@ -895,10 +1182,32 @@ export default function CalculatorPage() {
     setFileValidationErrors({});
     setProcessingError('');
     setGuideBrokers([]);
+    setCurrentDraft(emptyDraft());
+    setCompletedAccounts([]);
+  }
+
+  function resetForNewCalculation() {
+    setFiles([]);
+    setFilePans({});
+    setSamePanForAll(false);
+    setSharedPan('');
+    setAccounts([]);
+    setManualEntries([]);
+    setResults(null);
+    setProcessingSteps(PROCESSING_STEPS.map(s => ({ ...s, status: 'pending' as const })));
+    setUploadedSession(null);
+    setFileValidationStatus({});
+    setFileValidationErrors({});
+    setProcessingError('');
+    setCurrentDraft(emptyDraft());
+    setCompletedAccounts([]);
+    setStep('broker');
   }
 
   const STEPS_LABELS = ['Sign In', 'Upload', 'Details'];
-  const stepIndex: Record<Step, number> = { auth: 0, otp: 0, upload: 1, details: 2, processing: 3, results: 4 };
+  const stepIndex: Record<Step, number> = { auth: 0, otp: 0, broker: 1, 'trade-type': 1, 'upload-mf': 1, 'upload-ledger': 1, 'upload-dividend': 1, holdings: 1, 'account-done': 1, upload: 1, details: 2, processing: 3, results: 4 };
+  const isNewFlowStep = ['broker', 'trade-type', 'upload-mf', 'upload-ledger', 'upload-dividend', 'holdings', 'account-done'].includes(step);
+  const NEW_FLOW_STEPS: Step[] = ['broker', 'trade-type', 'upload-mf', 'upload-ledger', 'upload-dividend', 'holdings', 'account-done'];
 
   /* ── pan input border helper ── */
   function panBorder(key: string) {
@@ -917,10 +1226,21 @@ export default function CalculatorPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0f172a' }}>
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes drawLineLoop { 0%{stroke-dashoffset:420} 60%{stroke-dashoffset:0} 100%{stroke-dashoffset:0} }
+        @keyframes chartTipPulse { 0%,100%{r:4} 50%{r:5.5} }
+        @keyframes chartTipGlow { 0%,100%{opacity:.6} 50%{opacity:1} }
+        @keyframes tickerScroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+        @keyframes chartFadeIn { from{opacity:0} to{opacity:1} }
+        .broker-card:hover { border-color: var(--broker-color) !important; background: var(--broker-bg) !important; }
+        .option-card:hover { border-color: rgba(245,158,11,0.5) !important; background: rgba(245,158,11,0.06) !important; }
+        .drop-zone:hover { border-color: rgba(245,158,11,0.5) !important; background: rgba(245,158,11,0.04) !important; }
+      `}</style>
 
       {/* ── Step indicator ── */}
-      {step !== 'processing' && step !== 'results' && (
+      {step !== 'processing' && step !== 'results' && !isNewFlowStep && (
         <div style={{ background: '#0d1526', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '14px 0' }}>
           <div className="container-custom">
             <div style={{ display: 'flex', alignItems: 'center', maxWidth: 400 }}>
@@ -1064,7 +1384,770 @@ export default function CalculatorPage() {
           </div>
         )}
 
-        {/* ── STEP 2: UPLOAD ── */}
+        {/* ── NEW FLOW: Shared progress bar rendered inside each card ── */}
+        {/* Helper rendered inline in each screen */}
+
+        {/* ── SCREEN 1: BROKER SELECTION ── */}
+        {step === 'broker' && (() => {
+          const flowSteps = getFlowSteps(currentDraft);
+          const currentIdx = 0;
+          return (
+            <div style={{ maxWidth: 480, margin: '0 auto', animation: 'fadeSlideIn 0.3s ease' }}>
+              {/* Progress dots */}
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginBottom: 24 }}>
+                {flowSteps.map((s, i) => (
+                  <div key={s} style={{ height: 6, width: i === currentIdx ? 28 : 6, borderRadius: 3, background: i < currentIdx ? '#10b981' : i === currentIdx ? GOLD : 'rgba(255,255,255,0.15)', transition: 'all 0.3s' }} />
+                ))}
+              </div>
+
+              {/* Completed accounts chips */}
+              {completedAccounts.length > 0 && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14, justifyContent: 'center' }}>
+                  {completedAccounts.map((a, i) => {
+                    const c = a.broker === 'zerodha' ? '#f6461a' : a.broker === 'groww' ? '#22c55e' : '#818cf8';
+                    return (
+                      <span key={a.id} style={{ padding: '4px 12px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700, background: `${c}22`, color: c, border: `1px solid ${c}44` }}>
+                        ✓ {a.broker.charAt(0).toUpperCase() + a.broker.slice(1)} #{i + 1} · {a.tradeType}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div style={{ ...card, padding: '36px 28px' }}>
+                <p style={{ margin: '0 0 4px', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#475569' }}>
+                  {completedAccounts.length > 0 ? `Account ${completedAccounts.length + 1}` : 'Step 1 of ' + flowSteps.length}
+                </p>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', lineHeight: 1.2 }}>Which broker do you use?</h2>
+                <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 28px' }}>
+                  Select one — you can add more accounts after
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {([
+                    { id: 'zerodha' as const, label: 'Zerodha', desc: 'Upload your ledger XLSX or CSV', color: '#f6461a', bg: 'rgba(246,70,26,0.08)', border: 'rgba(246,70,26,0.3)' },
+                    { id: 'groww'   as const, label: 'Groww',   desc: 'Upload your P&L PDF',            color: '#22c55e', bg: 'rgba(34,197,94,0.08)',  border: 'rgba(34,197,94,0.3)'  },
+                    { id: 'fyers'   as const, label: 'Fyers',   desc: 'Upload your ledger CSV',          color: '#818cf8', bg: 'rgba(129,140,248,0.08)', border: 'rgba(129,140,248,0.3)' },
+                  ]).map(b => (
+                    <button
+                      key={b.id}
+                      onClick={() => {
+                        setCurrentDraft(prev => ({ ...prev, broker: b.id }));
+                        setStep('trade-type');
+                        trackStep('trade-type');
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 16, padding: '18px 20px',
+                        border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: 14, cursor: 'pointer',
+                        background: 'rgba(255,255,255,0.03)', textAlign: 'left', fontFamily: 'inherit',
+                        transition: 'all 0.18s', outline: 'none',
+                        // CSS vars for hover via class
+                      }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = b.border;
+                        (e.currentTarget as HTMLButtonElement).style.background = b.bg;
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)';
+                        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.03)';
+                      }}
+                    >
+                      <div style={{ width: 44, height: 44, borderRadius: 12, background: b.bg, border: `1px solid ${b.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1rem', fontWeight: 800, color: b.color }}>
+                        {b.id === 'zerodha'
+                          ? <img src="/kite-logo.svg" alt="Zerodha Kite" style={{ width: 26, height: 18 }} />
+                          : b.id[0].toUpperCase()
+                        }
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: '#ffffff' }}>{b.label}</p>
+                        <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#64748b' }}>{b.desc}</p>
+                      </div>
+                      <svg width="18" height="18" fill="none" stroke="#475569" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 22, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  {user?.picture && <img src={user.picture} alt="" style={{ width: 24, height: 24, borderRadius: '50%' }} />}
+                  <span style={{ fontSize: '0.78rem', color: '#475569' }}>Signed in as {user?.name}</span>
+                  <button onClick={resetAll} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#ef4444', fontSize: '0.75rem', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>Sign out</button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── SCREEN 2: TRADE TYPE ── */}
+        {step === 'trade-type' && (() => {
+          const flowSteps = getFlowSteps(currentDraft);
+          const currentIdx = 1;
+          const brokerLabel = currentDraft.broker.charAt(0).toUpperCase() + currentDraft.broker.slice(1);
+          const brokerColor = currentDraft.broker === 'zerodha' ? '#f6461a' : currentDraft.broker === 'groww' ? '#22c55e' : '#818cf8';
+
+          return (
+            <div style={{ maxWidth: 480, margin: '0 auto', animation: 'fadeSlideIn 0.3s ease' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginBottom: 24 }}>
+                {flowSteps.map((s, i) => (
+                  <div key={s} style={{ height: 6, width: i === currentIdx ? 28 : 6, borderRadius: 3, background: i < currentIdx ? '#10b981' : i === currentIdx ? GOLD : 'rgba(255,255,255,0.15)', transition: 'all 0.3s' }} />
+                ))}
+              </div>
+
+              <div style={{ ...card, padding: '36px 28px' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700, background: `${brokerColor}22`, color: brokerColor, border: `1px solid ${brokerColor}44`, marginBottom: 14 }}>
+                  {brokerLabel}
+                </span>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', lineHeight: 1.2 }}>What do you trade?</h2>
+                <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 28px' }}>We'll ask you to upload the right files</p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {([
+                    { id: 'stocks' as const, label: 'Stocks', sublabel: 'Equity trades — buy & sell', icon: (
+                      <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/><polyline points="16 7 22 7 22 13" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    )},
+                    { id: 'mf' as const, label: 'Mutual Funds', sublabel: 'SIPs and lump sum investments', icon: (
+                      <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth={2}/><path d="M12 6v6l4 2" strokeWidth={2} strokeLinecap="round"/></svg>
+                    )},
+                    { id: 'both' as const, label: 'Both', sublabel: 'I have stocks and mutual funds', icon: (
+                      <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" strokeWidth={2}/><path d="M8 21h8M12 17v4" strokeWidth={2} strokeLinecap="round"/></svg>
+                    )},
+                  ]).map(opt => (
+                    <button
+                      key={opt.id}
+                      onClick={() => {
+                        const updated = { ...currentDraft, tradeType: opt.id };
+                        setCurrentDraft(updated);
+                        const nextSteps = getFlowSteps(updated);
+                        const nextStep = nextSteps[2] as Step;
+                        setStep(nextStep);
+                        trackStep(nextStep);
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 16, padding: '18px 20px',
+                        border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: 14, cursor: 'pointer',
+                        background: 'rgba(255,255,255,0.03)', textAlign: 'left', fontFamily: 'inherit',
+                        transition: 'all 0.18s', outline: 'none',
+                        color: '#94a3b8',
+                      }}
+                      onMouseEnter={e => {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = `rgba(245,158,11,0.5)`;
+                        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(245,158,11,0.06)';
+                        (e.currentTarget as HTMLButtonElement).style.color = GOLD;
+                      }}
+                      onMouseLeave={e => {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)';
+                        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.03)';
+                        (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8';
+                      }}
+                    >
+                      <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        {opt.icon}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: '#ffffff' }}>{opt.label}</p>
+                        <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#64748b' }}>{opt.sublabel}</p>
+                      </div>
+                      <svg width="18" height="18" fill="none" stroke="#475569" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                  ))}
+                </div>
+
+                <button onClick={() => setStep('broker')} style={{ ...btnSecondary, width: '100%', padding: '11px', marginTop: 18, fontSize: '0.875rem' }}>← Back</button>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── SCREEN 3: MF TRADEBOOK UPLOAD ── */}
+        {step === 'upload-mf' && (() => {
+          const flowSteps = getFlowSteps(currentDraft);
+          const currentIdx = flowSteps.indexOf('upload-mf');
+          const hasMf = currentDraft.mfFiles.length > 0;
+          const brokerLabel = currentDraft.broker.charAt(0).toUpperCase() + currentDraft.broker.slice(1);
+
+          return (
+            <div style={{ maxWidth: 480, margin: '0 auto', animation: 'fadeSlideIn 0.3s ease' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginBottom: 24 }}>
+                {flowSteps.map((s, i) => (
+                  <div key={s} style={{ height: 6, width: i === currentIdx ? 28 : 6, borderRadius: 3, background: i < currentIdx ? '#10b981' : i === currentIdx ? GOLD : 'rgba(255,255,255,0.15)', transition: 'all 0.3s' }} />
+                ))}
+              </div>
+
+              <div style={{ ...card, padding: '36px 28px' }}>
+                <span style={{ display: 'inline-flex', gap: 6, padding: '3px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700, background: 'rgba(245,158,11,0.1)', color: GOLD, border: `1px solid rgba(245,158,11,0.3)`, marginBottom: 14 }}>
+                  {brokerLabel} · Mutual Funds
+                </span>
+                <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', lineHeight: 1.2 }}>Upload your MF Tradebook</h2>
+                <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 24px' }}>
+                  We&apos;ll read each SIP and trade to calculate your exact XIRR
+                </p>
+
+                {/* Instructions */}
+                <div style={{ borderRadius: 12, background: 'rgba(246,70,26,0.05)', border: '1px solid rgba(246,70,26,0.2)', marginBottom: 20, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid rgba(246,70,26,0.15)' }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#f6461a', letterSpacing: '0.06em', textTransform: 'uppercase' }}>How to download</span>
+                    <a href="https://console.zerodha.com/reports/tradebook" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: 'rgba(246,70,26,0.15)', color: '#f6461a', textDecoration: 'none', whiteSpace: 'nowrap' }}>Open Tradebook ↗</a>
+                  </div>
+                  <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {([
+                      { n: 1, text: <>In the <strong style={{ color: '#e2e8f0' }}>Segment</strong> dropdown, select <strong style={{ color: '#e2e8f0' }}>Mutual funds</strong></> },
+                      { n: 2, text: <>Set <strong style={{ color: '#e2e8f0' }}>Date range</strong> to one financial year (max 365 days) — click <strong style={{ color: '#e2e8f0' }}>→</strong> then <strong style={{ color: '#e2e8f0' }}>Download XLSX</strong></> },
+                      { n: 3, text: <><strong style={{ color: '#e2e8f0' }}>Repeat for each year</strong> from your first MF purchase till today — upload all files together below</> },
+                    ]).map(({ n, text }) => (
+                      <div key={n} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                        <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(246,70,26,0.15)', color: '#f6461a', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{n}</span>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.55 }}>{text}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ padding: '8px 14px 10px', borderTop: '1px solid rgba(246,70,26,0.12)', fontSize: '0.72rem', color: '#64748b' }}>
+                    ⚠ Zerodha limits tradebook downloads to <strong style={{ color: '#94a3b8' }}>365 days</strong> per export — one file per year
+                  </div>
+                </div>
+
+                {/* Multi-file drop zone */}
+                {(() => {
+                  const hasErrors = currentDraft.mfFiles.some(e => e.error);
+                  const hasOverlaps = currentDraft.mfFiles.some(e => e.overlapsWith.length > 0);
+                  const borderColor = draftMfDragging ? GOLD : hasErrors ? 'rgba(239,68,68,0.5)' : hasMf ? 'rgba(16,185,129,0.5)' : 'rgba(246,70,26,0.3)';
+
+                  return (
+                    <div>
+                      <div
+                        onDragOver={e => { e.preventDefault(); setDraftMfDragging(true); }}
+                        onDragLeave={() => setDraftMfDragging(false)}
+                        onDrop={e => {
+                          e.preventDefault(); setDraftMfDragging(false);
+                          const incoming = Array.from(e.dataTransfer.files).filter(f => f.name.toLowerCase().endsWith('.xlsx'));
+                          addMfFiles(incoming);
+                        }}
+                        onClick={() => !mfParsing && mfInputRef.current?.click()}
+                        style={{
+                          border: `2px dashed ${borderColor}`,
+                          borderRadius: 14, padding: hasMf ? '14px' : '32px 20px', textAlign: 'center',
+                          background: draftMfDragging ? 'rgba(245,158,11,0.04)' : 'rgba(255,255,255,0.02)',
+                          cursor: mfParsing ? 'wait' : 'pointer', transition: 'all 0.2s',
+                        }}
+                      >
+                        {mfParsing ? (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '8px 0' }}>
+                            <svg width="16" height="16" viewBox="0 0 72 72" style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }}>
+                              <circle cx="36" cy="36" r="30" fill="none" stroke="rgba(245,158,11,0.2)" strokeWidth="8" />
+                              <circle cx="36" cy="36" r="30" fill="none" stroke={GOLD} strokeWidth="8" strokeDasharray="60 120" strokeLinecap="round" />
+                            </svg>
+                            <span style={{ color: GOLD, fontSize: '0.875rem', fontWeight: 600 }}>Reading file dates…</span>
+                          </div>
+                        ) : hasMf ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {currentDraft.mfFiles.map((entry, i) => {
+                              const isErr = !!entry.error;
+                              const isOverlap = entry.overlapsWith.length > 0;
+                              const rowBorder = isErr ? '1px solid rgba(239,68,68,0.35)' : isOverlap ? '1px solid rgba(245,158,11,0.35)' : '1px solid rgba(16,185,129,0.2)';
+                              const rowBg = isErr ? 'rgba(239,68,68,0.05)' : isOverlap ? 'rgba(245,158,11,0.05)' : innerCard.background;
+                              const tagColor = isErr ? '#ef4444' : isOverlap ? GOLD : '#10b981';
+                              const tagBg = isErr ? 'rgba(239,68,68,0.12)' : isOverlap ? 'rgba(245,158,11,0.12)' : 'rgba(16,185,129,0.12)';
+
+                              return (
+                                <div key={i}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', ...innerCard, border: rowBorder, background: rowBg }}>
+                                    <div style={{ width: 30, height: 30, borderRadius: 7, background: tagBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 700, color: tagColor, flexShrink: 0 }}>
+                                      {isErr ? '!' : isOverlap ? '⚠' : 'XLS'}
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                                      <p style={{ margin: 0, fontWeight: 600, fontSize: '0.845rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.file.name}</p>
+                                      {!isErr && entry.dateFrom && (
+                                        <p style={{ margin: '2px 0 0', fontSize: '0.72rem', color: '#475569' }}>
+                                          {entry.dateFrom} → {entry.dateTo} · {entry.tradeCount} trade{entry.tradeCount !== 1 ? 's' : ''}
+                                        </p>
+                                      )}
+                                      {isErr && <p style={{ margin: '2px 0 0', fontSize: '0.72rem', color: '#ef4444' }}>{entry.error}</p>}
+                                    </div>
+                                    <button onClick={ev => {
+                                      ev.stopPropagation();
+                                      setCurrentDraft(prev => {
+                                        const next = prev.mfFiles.filter((_, j) => j !== i);
+                                        // Recompute overlaps after removal
+                                        const valid = next.filter(e => !e.error && e.dateFrom);
+                                        for (const e of next) {
+                                          if (e.error || !e.dateFrom) { e.overlapsWith = []; continue; }
+                                          e.overlapsWith = valid.filter(o => o !== e && datesOverlap(e.dateFrom, e.dateTo, o.dateFrom, o.dateTo)).map(o => o.file.name);
+                                        }
+                                        return { ...prev, mfFiles: next };
+                                      });
+                                    }} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '1.1rem', padding: '2px 6px', flexShrink: 0 }}>×</button>
+                                  </div>
+                                  {isOverlap && !isErr && (
+                                    <p style={{ margin: '3px 0 0 4px', fontSize: '0.72rem', color: GOLD }}>
+                                      ⚠ Date range overlaps with: {entry.overlapsWith.join(', ')} — duplicate trades in the overlap will be deduplicated during calculation
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })}
+                            <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#475569' }}>+ Drop more yearly files or click to add</p>
+                          </div>
+                        ) : (
+                          <>
+                            <svg width="38" height="38" fill="none" stroke={draftMfDragging ? GOLD : '#475569'} viewBox="0 0 24 24" style={{ margin: '0 auto 12px', display: 'block' }}>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <p style={{ fontWeight: 600, color: draftMfDragging ? GOLD : '#94a3b8', margin: '0 0 6px', fontSize: '0.95rem' }}>Drop all your yearly tradebooks here</p>
+                            <p style={{ margin: '0 0 10px', fontSize: '0.78rem', color: '#475569' }}>One XLSX per financial year — upload all at once</p>
+                            <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, fontFamily: 'monospace', background: 'rgba(246,70,26,0.1)', color: '#f6461a' }}>.xlsx · multiple files ok</span>
+                          </>
+                        )}
+                        <input ref={mfInputRef} type="file" accept=".xlsx" multiple onChange={e => {
+                          if (e.target.files) addMfFiles(Array.from(e.target.files));
+                        }} style={{ display: 'none' }} />
+                      </div>
+
+                      {/* Coverage summary when valid files exist */}
+                      {hasMf && !hasErrors && !hasOverlaps && (() => {
+                        const valid = currentDraft.mfFiles.filter(e => e.dateFrom);
+                        if (valid.length === 0) return null;
+                        const allDates = valid.flatMap(e => [e.dateFrom, e.dateTo]).sort();
+                        const totalTrades = valid.reduce((s, e) => s + e.tradeCount, 0);
+                        return (
+                          <div style={{ marginTop: 10, padding: '10px 14px', borderRadius: 10, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)', display: 'flex', gap: 16 }}>
+                            <div style={{ textAlign: 'center' }}>
+                              <p style={{ margin: 0, fontSize: '0.68rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Coverage</p>
+                              <p style={{ margin: '2px 0 0', fontSize: '0.875rem', fontWeight: 700, color: '#10b981' }}>{allDates[0]} → {allDates[allDates.length - 1]}</p>
+                            </div>
+                            <div style={{ width: 1, background: 'rgba(255,255,255,0.08)' }} />
+                            <div style={{ textAlign: 'center' }}>
+                              <p style={{ margin: 0, fontSize: '0.68rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Total Trades</p>
+                              <p style={{ margin: '2px 0 0', fontSize: '0.875rem', fontWeight: 700, color: '#10b981' }}>{totalTrades}</p>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  );
+                })()}
+
+                {(() => {
+                  const hasErrors = currentDraft.mfFiles.some(e => e.error);
+                  const canGo = hasMf && !hasErrors && !mfParsing;
+                  return (
+                    <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                      <button onClick={() => setStep('trade-type')} style={{ ...btnSecondary, flex: 1, padding: '12px', fontSize: '0.9rem' }}>← Back</button>
+                      <button
+                        onClick={() => {
+                          const flowSteps = getFlowSteps(currentDraft);
+                          const nextIdx = flowSteps.indexOf('upload-mf') + 1;
+                          setStep(flowSteps[nextIdx] as Step);
+                        }}
+                        disabled={!canGo}
+                        style={{ ...btnPrimary, flex: 2, padding: '12px', fontSize: '0.9rem', opacity: canGo ? 1 : 0.4, cursor: canGo ? 'pointer' : 'not-allowed' }}
+                      >
+                        {mfParsing ? 'Reading files…' : hasErrors ? 'Fix errors to continue' : 'Continue →'}
+                      </button>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── SCREEN 4: STOCK LEDGER UPLOAD ── */}
+        {step === 'upload-ledger' && (() => {
+          const flowSteps = getFlowSteps(currentDraft);
+          const currentIdx = flowSteps.indexOf('upload-ledger');
+          const broker = currentDraft.broker;
+          const brokerColor = broker === 'zerodha' ? '#f6461a' : broker === 'groww' ? '#22c55e' : '#818cf8';
+          const hasLedger = currentDraft.ledgerFiles.length > 0;
+          const isGroww = broker === 'groww';
+          const growwPanValid = isGroww ? currentDraft.panValidStatus === 'valid' : true;
+          const canContinue = hasLedger && (!isGroww || (currentDraft.pan?.length === 10 && growwPanValid));
+
+          const brokerMeta = {
+            zerodha: { accept: '.xlsx,.csv', label: 'Zerodha Ledger (XLSX or CSV)', hint: 'Console → Funds → Statement → All Segments → XLSX', link: 'https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb' },
+            groww:   { accept: '.pdf',       label: 'Groww Balance Statement (PDF)', hint: 'Groww app → Reports → Balance Statement → PDF', link: 'https://groww.in/user/profile/report' },
+            fyers:   { accept: '.csv',       label: 'Fyers Ledger (CSV)', hint: 'Fyers One → Reports → Ledger → Download CSV', link: 'https://fyers.in/web/reports/ledger' },
+          }[broker];
+
+          return (
+            <div style={{ maxWidth: 480, margin: '0 auto', animation: 'fadeSlideIn 0.3s ease' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginBottom: 24 }}>
+                {flowSteps.map((s, i) => (
+                  <div key={s} style={{ height: 6, width: i === currentIdx ? 28 : 6, borderRadius: 3, background: i < currentIdx ? '#10b981' : i === currentIdx ? GOLD : 'rgba(255,255,255,0.15)', transition: 'all 0.3s' }} />
+                ))}
+              </div>
+
+              <div style={{ ...card, padding: '36px 28px' }}>
+                <span style={{ display: 'inline-flex', gap: 6, padding: '3px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700, background: `${brokerColor}22`, color: brokerColor, border: `1px solid ${brokerColor}44`, marginBottom: 14 }}>
+                  {broker.charAt(0).toUpperCase() + broker.slice(1)} · Stocks
+                </span>
+                <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', lineHeight: 1.2 }}>Upload your ledger</h2>
+                <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 20px' }}>{brokerMeta.label}</p>
+
+                {/* Instructions */}
+                <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 18, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <span style={{ fontSize: '0.85rem', marginTop: 2 }}>📥</span>
+                    <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', lineHeight: 1.6 }}>{brokerMeta.hint}</p>
+                  </div>
+                  <a href={brokerMeta.link} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0, fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: `${brokerColor}22`, color: brokerColor, textDecoration: 'none', whiteSpace: 'nowrap' }}>Open ↗</a>
+                </div>
+
+                {/* Drop zone */}
+                <div
+                  onDragOver={e => { e.preventDefault(); setDraftLedgerDragging(true); }}
+                  onDragLeave={() => setDraftLedgerDragging(false)}
+                  onDrop={async e => {
+                    e.preventDefault(); setDraftLedgerDragging(false);
+                    const fl = Array.from(e.dataTransfer.files);
+                    for (const f of fl) await addLedgerFileToDraft(f);
+                  }}
+                  onClick={() => ledgerInputRef.current?.click()}
+                  style={{
+                    border: `2px dashed ${draftLedgerDragging ? GOLD : hasLedger ? '#10b981' : `${brokerColor}55`}`,
+                    borderRadius: 14, padding: hasLedger ? '20px' : '36px 20px', textAlign: 'center',
+                    background: draftLedgerDragging ? 'rgba(245,158,11,0.04)' : 'rgba(255,255,255,0.02)',
+                    cursor: 'pointer', transition: 'all 0.2s',
+                  }}
+                >
+                  {hasLedger ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {currentDraft.ledgerFiles.map((uf, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', ...innerCard }}>
+                          <div style={{ width: 30, height: 30, borderRadius: 7, background: `${brokerColor}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 700, color: brokerColor, flexShrink: 0 }}>
+                            {uf.file.name.endsWith('.pdf') ? 'PDF' : uf.file.name.endsWith('.xlsx') ? 'XLS' : 'CSV'}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                            <p style={{ margin: 0, fontWeight: 600, fontSize: '0.845rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{uf.file.name}</p>
+                            <p style={{ margin: 0, fontSize: '0.72rem', color: '#475569' }}>{(uf.file.size / 1024).toFixed(0)} KB{uf.formatError ? ` · ⚠ ${uf.formatError}` : ''}</p>
+                          </div>
+                          <button onClick={e => { e.stopPropagation(); setCurrentDraft(prev => ({ ...prev, ledgerFiles: prev.ledgerFiles.filter((_, j) => j !== i) })); }} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '1.1rem', padding: '2px 6px' }}>×</button>
+                        </div>
+                      ))}
+                      <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#475569' }}>+ Drop more files or click to add</p>
+                    </div>
+                  ) : (
+                    <>
+                      <svg width="38" height="38" fill="none" stroke={draftLedgerDragging ? GOLD : '#475569'} viewBox="0 0 24 24" style={{ margin: '0 auto 10px', display: 'block' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <p style={{ fontWeight: 600, color: draftLedgerDragging ? GOLD : '#94a3b8', margin: '0 0 8px', fontSize: '0.95rem' }}>Drop your file here, or click to browse</p>
+                      <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, fontFamily: 'monospace', background: `${brokerColor}22`, color: brokerColor }}>{brokerMeta.accept}</span>
+                    </>
+                  )}
+                  <input ref={ledgerInputRef} type="file" multiple accept={brokerMeta.accept} onChange={async e => { if (e.target.files) for (const f of Array.from(e.target.files)) await addLedgerFileToDraft(f); }} style={{ display: 'none' }} />
+                </div>
+
+                {/* Groww PAN input — shown inline after PDF drop */}
+                {isGroww && hasLedger && (
+                  <div style={{ marginTop: 16, padding: '16px 18px', ...innerCard, border: '1px solid rgba(34,197,94,0.2)' }}>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#22c55e', display: 'block', marginBottom: 8 }}>
+                      Your PAN number (PDF password)
+                    </label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <input
+                        type="text"
+                        placeholder="e.g. ABCDE1234F"
+                        maxLength={10}
+                        value={currentDraft.pan ?? ''}
+                        onChange={e => {
+                          const pan = e.target.value.toUpperCase();
+                          setCurrentDraft(prev => ({ ...prev, pan, panValidStatus: 'idle', panValidError: undefined }));
+                          if (pan.length === 10) validateDraftPan(pan);
+                        }}
+                        style={{
+                          ...inputBase, flex: 1, padding: '10px 12px', fontSize: '1rem', letterSpacing: 3, fontFamily: 'monospace',
+                          border: currentDraft.panValidStatus === 'valid' ? '1.5px solid #22c55e' : currentDraft.panValidStatus === 'invalid' ? '1.5px solid #ef4444' : '1.5px solid rgba(255,255,255,0.12)',
+                          background: currentDraft.panValidStatus === 'valid' ? 'rgba(34,197,94,0.08)' : currentDraft.panValidStatus === 'invalid' ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.06)',
+                        }}
+                      />
+                      {currentDraft.panValidStatus === 'validating' && <span style={{ color: GOLD }}>⏳</span>}
+                      {currentDraft.panValidStatus === 'valid'      && <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '1.1rem' }}>✓</span>}
+                      {currentDraft.panValidStatus === 'invalid'    && <span style={{ color: '#ef4444', fontWeight: 700 }}>✗</span>}
+                    </div>
+                    {currentDraft.panValidError && <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: '#ef4444' }}>{currentDraft.panValidError}</p>}
+                    <p style={{ margin: '6px 0 0', fontSize: '0.72rem', color: '#475569' }}>Your PAN is used only to unlock the PDF — never stored.</p>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                  <button onClick={() => setStep(currentDraft.tradeType === 'both' ? 'upload-mf' : 'trade-type')} style={{ ...btnSecondary, flex: 1, padding: '12px', fontSize: '0.9rem' }}>← Back</button>
+                  <button
+                    onClick={() => {
+                      const flowSteps = getFlowSteps(currentDraft);
+                      const nextIdx = flowSteps.indexOf('upload-ledger') + 1;
+                      setStep(flowSteps[nextIdx] as Step);
+                    }}
+                    disabled={!canContinue}
+                    style={{ ...btnPrimary, flex: 2, padding: '12px', fontSize: '0.9rem', opacity: canContinue ? 1 : 0.4, cursor: canContinue ? 'pointer' : 'not-allowed' }}
+                  >
+                    Continue →
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── SCREEN 5: DIVIDEND UPLOAD (optional, Zerodha only) ── */}
+        {step === 'upload-dividend' && (() => {
+          const flowSteps = getFlowSteps(currentDraft);
+          const currentIdx = flowSteps.indexOf('upload-dividend');
+          const hasDiv = currentDraft.dividendFiles.length > 0;
+
+          function advanceFromDiv() {
+            const nextIdx = flowSteps.indexOf('upload-dividend') + 1;
+            setStep(flowSteps[nextIdx] as Step);
+          }
+
+          return (
+            <div style={{ maxWidth: 480, margin: '0 auto', animation: 'fadeSlideIn 0.3s ease' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginBottom: 24 }}>
+                {flowSteps.map((s, i) => (
+                  <div key={s} style={{ height: 6, width: i === currentIdx ? 28 : 6, borderRadius: 3, background: i < currentIdx ? '#10b981' : i === currentIdx ? GOLD : 'rgba(255,255,255,0.15)', transition: 'all 0.3s' }} />
+                ))}
+              </div>
+
+              <div style={{ ...card, padding: '36px 28px' }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700, background: 'rgba(255,255,255,0.06)', color: '#64748b', border: '1px solid rgba(255,255,255,0.1)', marginBottom: 14 }}>
+                  Optional
+                </div>
+                <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', lineHeight: 1.2 }}>Add dividend data?</h2>
+                <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 6px' }}>
+                  Adds dividend income as inflows — improves XIRR accuracy
+                </p>
+                <p style={{ color: '#475569', fontSize: '0.78rem', margin: '0 0 22px' }}>
+                  Console → Reports → Downloads → Dividend statement → Select FY → Download XLSX
+                </p>
+
+                {/* Drop zone */}
+                <div
+                  onDragOver={e => { e.preventDefault(); setDraftDivDragging(true); }}
+                  onDragLeave={() => setDraftDivDragging(false)}
+                  onDrop={e => {
+                    e.preventDefault(); setDraftDivDragging(false);
+                    const fl = Array.from(e.dataTransfer.files).filter(f => f.name.toLowerCase().endsWith('.xlsx'));
+                    if (fl.length) setCurrentDraft(prev => ({ ...prev, dividendFiles: [...prev.dividendFiles, ...fl] }));
+                  }}
+                  onClick={() => divInputRef.current?.click()}
+                  style={{
+                    border: `2px dashed ${draftDivDragging ? GOLD : hasDiv ? 'rgba(245,158,11,0.5)' : 'rgba(255,255,255,0.12)'}`,
+                    borderRadius: 14, padding: hasDiv ? '16px' : '28px 20px', textAlign: 'center',
+                    background: draftDivDragging ? 'rgba(245,158,11,0.04)' : 'rgba(255,255,255,0.02)',
+                    cursor: 'pointer', transition: 'all 0.2s',
+                  }}
+                >
+                  {hasDiv ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {currentDraft.dividendFiles.map((f, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', ...innerCard, border: '1px solid rgba(245,158,11,0.2)' }}>
+                          <div style={{ width: 30, height: 30, borderRadius: 7, background: 'rgba(245,158,11,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 700, color: GOLD, flexShrink: 0 }}>XLS</div>
+                          <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                            <p style={{ margin: 0, fontWeight: 600, fontSize: '0.845rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</p>
+                            <p style={{ margin: 0, fontSize: '0.72rem', color: '#475569' }}>{(f.size / 1024).toFixed(0)} KB</p>
+                          </div>
+                          <button onClick={e => { e.stopPropagation(); setCurrentDraft(prev => ({ ...prev, dividendFiles: prev.dividendFiles.filter((_, j) => j !== i) })); }} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '1.1rem', padding: '2px 6px' }}>×</button>
+                        </div>
+                      ))}
+                      <p style={{ margin: '4px 0 0', fontSize: '0.72rem', color: '#475569' }}>+ Add more FY files</p>
+                    </div>
+                  ) : (
+                    <>
+                      <svg width="34" height="34" fill="none" stroke={draftDivDragging ? GOLD : '#475569'} viewBox="0 0 24 24" style={{ margin: '0 auto 10px', display: 'block' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      <p style={{ fontWeight: 600, color: '#64748b', margin: '0 0 6px', fontSize: '0.9rem' }}>Drop dividend XLSX files here</p>
+                      <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, fontFamily: 'monospace', background: 'rgba(245,158,11,0.1)', color: GOLD }}>.xlsx · one per FY</span>
+                    </>
+                  )}
+                  <input ref={divInputRef} type="file" multiple accept=".xlsx" onChange={e => { if (e.target.files) { const fl = Array.from(e.target.files); setCurrentDraft(prev => ({ ...prev, dividendFiles: [...prev.dividendFiles, ...fl] })); } }} style={{ display: 'none' }} />
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+                  <button onClick={() => setStep('upload-ledger')} style={{ ...btnSecondary, flex: 1, padding: '12px', fontSize: '0.875rem' }}>← Back</button>
+                  <button onClick={advanceFromDiv} style={{ ...btnSecondary, flex: 1, padding: '12px', fontSize: '0.875rem', color: '#94a3b8' }}>Skip →</button>
+                  <button onClick={advanceFromDiv} disabled={!hasDiv} style={{ ...btnPrimary, flex: 2, padding: '12px', fontSize: '0.9rem', opacity: hasDiv ? 1 : 0.35, cursor: hasDiv ? 'pointer' : 'not-allowed' }}>
+                    Continue →
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── SCREEN 6: HOLDINGS ── */}
+        {step === 'holdings' && (() => {
+          const flowSteps = getFlowSteps(currentDraft);
+          const currentIdx = flowSteps.indexOf('holdings');
+          const canContinue = currentDraft.holdings.trim() !== '';
+          const isBoth = currentDraft.tradeType === 'both';
+
+          return (
+            <div style={{ maxWidth: 480, margin: '0 auto', animation: 'fadeSlideIn 0.3s ease' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginBottom: 24 }}>
+                {flowSteps.map((s, i) => (
+                  <div key={s} style={{ height: 6, width: i === currentIdx ? 28 : 6, borderRadius: 3, background: i < currentIdx ? '#10b981' : i === currentIdx ? GOLD : 'rgba(255,255,255,0.15)', transition: 'all 0.3s' }} />
+                ))}
+              </div>
+
+              <div style={{ ...card, padding: '36px 28px' }}>
+                <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', lineHeight: 1.2 }}>What&apos;s your portfolio worth today?</h2>
+                <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 28px' }}>
+                  Open your broker app and enter the <strong style={{ color: '#94a3b8' }}>current market value</strong> — not what you invested
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: 8 }}>
+                      {isBoth ? 'Total portfolio value — stocks + MF (₹) *' : 'Current portfolio value (₹) *'}
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: '1rem', fontWeight: 600 }}>₹</span>
+                      <input
+                        type="number"
+                        placeholder="e.g. 350000"
+                        min="0"
+                        value={currentDraft.holdings}
+                        onChange={e => setCurrentDraft(prev => ({ ...prev, holdings: e.target.value.replace('-', '') }))}
+                        style={{
+                          ...inputBase, width: '100%', padding: '14px 14px 14px 30px', fontSize: '1.1rem', boxSizing: 'border-box', fontWeight: 600,
+                          border: currentDraft.holdings ? `1.5px solid rgba(245,158,11,0.45)` : '1.5px solid rgba(255,255,255,0.1)',
+                          background: currentDraft.holdings ? 'rgba(245,158,11,0.06)' : 'rgba(255,255,255,0.04)',
+                        }}
+                      />
+                    </div>
+                    <p style={{ margin: '5px 0 0', fontSize: '0.72rem', color: '#475569' }}>
+                      {isBoth ? 'Add your stocks + MF holdings together' : 'Today\'s market value shown in your broker app'}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 8 }}>
+                      Available cash in broker (₹) <span style={{ fontWeight: 400, color: '#475569' }}>— optional</span>
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: '1rem', fontWeight: 600 }}>₹</span>
+                      <input
+                        type="number"
+                        placeholder="e.g. 12000"
+                        min="0"
+                        value={currentDraft.cash}
+                        onChange={e => setCurrentDraft(prev => ({ ...prev, cash: e.target.value.replace('-', '') }))}
+                        style={{ ...inputBase, width: '100%', padding: '14px 14px 14px 30px', fontSize: '1.1rem', boxSizing: 'border-box', fontWeight: 600 }}
+                      />
+                    </div>
+                    <p style={{ margin: '5px 0 0', fontSize: '0.72rem', color: '#475569' }}>Uninvested cash sitting in your account</p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+                  <button onClick={() => {
+                    const prevStepIdx = flowSteps.indexOf('holdings') - 1;
+                    setStep(flowSteps[prevStepIdx] as Step);
+                  }} style={{ ...btnSecondary, flex: 1, padding: '12px', fontSize: '0.9rem' }}>← Back</button>
+                  <button
+                    onClick={() => setStep('account-done')}
+                    disabled={!canContinue}
+                    style={{ ...btnPrimary, flex: 2, padding: '12px', fontSize: '0.9rem', opacity: canContinue ? 1 : 0.4, cursor: canContinue ? 'pointer' : 'not-allowed' }}
+                  >
+                    Continue →
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── SCREEN 7: ACCOUNT DONE — Calculate or Add More ── */}
+        {step === 'account-done' && (() => {
+          const broker = currentDraft.broker;
+          const brokerColor = broker === 'zerodha' ? '#f6461a' : broker === 'groww' ? '#22c55e' : '#818cf8';
+          const allDrafts = [...completedAccounts, currentDraft];
+          const totalFiles = allDrafts.reduce((n, d) => n + d.ledgerFiles.length + d.mfFiles.length + d.dividendFiles.length, 0);
+          const totalHoldings = allDrafts.reduce((sum, d) => sum + (parseFloat(d.holdings) || 0) + (parseFloat(d.cash) || 0), 0);
+
+          return (
+            <div style={{ maxWidth: 480, margin: '0 auto', animation: 'fadeSlideIn 0.3s ease' }}>
+              {/* Mini progress — all filled */}
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginBottom: 24 }}>
+                {getFlowSteps(currentDraft).map((s) => (
+                  <div key={s} style={{ height: 6, width: 6, borderRadius: 3, background: '#10b981', transition: 'all 0.3s' }} />
+                ))}
+              </div>
+
+              <div style={{ ...card, padding: '36px 28px' }}>
+                {/* Completion icon */}
+                <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(16,185,129,0.12)', border: '1.5px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '1.4rem' }}>✓</div>
+
+                <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', lineHeight: 1.2, textAlign: 'center' }}>Account added!</h2>
+                <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 24px', textAlign: 'center' }}>
+                  Ready to calculate — or add another account
+                </p>
+
+                {/* Summary cards for all accounts */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+                  {allDrafts.map((d, i) => {
+                    const c = d.broker === 'zerodha' ? '#f6461a' : d.broker === 'groww' ? '#22c55e' : '#818cf8';
+                    const fileCount = d.ledgerFiles.length + d.mfFiles.length + d.dividendFiles.length;
+                    return (
+                      <div key={d.id} style={{ ...innerCard, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: `${c}22`, border: `1px solid ${c}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: c, flexShrink: 0 }}>
+                          {d.broker[0].toUpperCase()}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: '#e2e8f0' }}>
+                            {d.broker.charAt(0).toUpperCase() + d.broker.slice(1)} #{i + 1}
+                          </p>
+                          <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#64748b' }}>
+                            {d.tradeType} · {fileCount} file{fileCount !== 1 ? 's' : ''} · ₹{parseInt(d.holdings || '0').toLocaleString('en-IN')} portfolio
+                          </p>
+                        </div>
+                        <span style={{ padding: '3px 8px', borderRadius: 20, fontSize: '0.68rem', fontWeight: 700, background: '#10b98122', color: '#10b981' }}>✓</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Summary stats */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24 }}>
+                  <div style={{ ...innerCard, padding: '12px 14px', textAlign: 'center' }}>
+                    <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.5 }}>Accounts</p>
+                    <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#e2e8f0' }}>{allDrafts.length}</p>
+                  </div>
+                  <div style={{ ...innerCard, padding: '12px 14px', textAlign: 'center' }}>
+                    <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.5 }}>Total Files</p>
+                    <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#e2e8f0' }}>{totalFiles}</p>
+                  </div>
+                </div>
+
+                {/* Primary CTA: Calculate */}
+                <button
+                  onClick={handleDraftCalculate}
+                  style={{ ...btnPrimary, width: '100%', padding: '15px', fontSize: '1rem', fontWeight: 800, marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                >
+                  <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                  Calculate My XIRR
+                </button>
+
+                {/* Secondary: Add another account */}
+                <button
+                  onClick={() => {
+                    setCompletedAccounts(prev => [...prev, currentDraft]);
+                    setCurrentDraft(emptyDraft());
+                    setStep('broker');
+                  }}
+                  style={{ ...btnSecondary, width: '100%', padding: '13px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                >
+                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                  Add Another Account
+                </button>
+
+                <button onClick={() => setStep('holdings')} style={{ background: 'none', border: 'none', color: '#475569', fontSize: '0.78rem', cursor: 'pointer', width: '100%', marginTop: 12, textDecoration: 'underline' }}>
+                  ← Edit holdings
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── STEP 2: UPLOAD (old flow — kept for fallback) ── */}
         {step === 'upload' && (
           <div style={{ maxWidth: 560, margin: '0 auto' }}>
             <div style={{ ...card, padding: 32 }}>
@@ -1851,14 +2934,7 @@ export default function CalculatorPage() {
                   </svg>
                   Edit Holdings
                 </button>
-                <button onClick={() => {
-                  setFiles([]); setFilePans({}); setSamePanForAll(false); setSharedPan('');
-                  setAccounts([]); setManualEntries([]); setResults(null);
-                  setProcessingSteps(PROCESSING_STEPS.map(s => ({ ...s, status: 'pending' as const })));
-                  setUploadedSession(null); setFileValidationStatus({}); setFileValidationErrors({});
-                  setProcessingError(''); setDividendFiles([]); setDividendKeyMap({});
-                  setStep('upload');
-                }} style={{ ...btnSecondary, flex: 1, padding: 14, fontSize: '0.9rem' }}>
+                <button onClick={resetForNewCalculation} style={{ ...btnSecondary, flex: 1, padding: 14, fontSize: '0.9rem' }}>
                   New Calculation
                 </button>
               </div>
