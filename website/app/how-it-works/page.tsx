@@ -139,18 +139,17 @@ export default function HowItWorks() {
                 <div>
                   <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>Zerodha</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
-                    <FaFileCsv size={13} color='#64748b' />
-                    <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>CSV Format</p>
+                    <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>XLSX Format</p>
                   </div>
                 </div>
               </div>
 
-              {[
+              {([
                 <><a href="https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 700 }}>Open Zerodha Statement →</a> (logs in automatically if you&apos;re signed in)</>,
                 <>Select <strong style={{ color: '#e2e8f0' }}>All Segments</strong> as category</>,
                 <>Set date range — <strong style={{ color: '#e2e8f0' }}>from your first investment till today</strong></>,
-                <>Click the <strong style={{ color: '#e2e8f0' }}>blue arrow →</strong> then click the <strong style={{ color: '#e2e8f0' }}>CSV</strong> link</>,
-              ].map((item, i) => (
+                <>Click the <strong style={{ color: '#e2e8f0' }}>blue arrow →</strong> then click <strong style={{ color: '#e2e8f0' }}>XLSX</strong> to download</>,
+              ] as React.ReactNode[]).map((item, i) => (
                 <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 3 ? '14px' : 0 }}>
                   <span style={{
                     background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)',
@@ -164,7 +163,7 @@ export default function HowItWorks() {
 
               <div style={{ marginTop: '20px', paddingTop: '18px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
                 <p style={{ fontSize: '0.82rem', color: '#475569', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FaCheckCircle size={13} color='#10b981' /> File type: CSV
+                  <FaCheckCircle size={13} color='#10b981' /> File type: XLSX
                 </p>
                 <p style={{ fontSize: '0.82rem', color: '#475569', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <FaCheckCircle size={13} color='#10b981' /> Password: Not required
