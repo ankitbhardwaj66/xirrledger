@@ -78,6 +78,31 @@ aws --profile ankit lambda update-function-code \
 - When the user says "push" without specifying a branch, push the **current branch** only.
 - **Never commit directly to `main`** — no exceptions. If changes accidentally land on `main`, cherry-pick them back to `dev` to keep branches in sync.
 
+## DB Migrations
+
+Schema changes are managed as numbered SQL files in `db/migrations/`.
+
+### Creating a migration
+Create `db/migrations/NNNN_description.sql` (e.g. `0004_add_foo_column.sql`).
+Use `IF NOT EXISTS` / `IF EXISTS` to keep files idempotent.
+
+### Running migrations (always dev first)
+```bash
+ssh -p 65002 u889244618@46.28.45.163
+
+# Check status
+php db/migrate.php dev  --status
+php db/migrate.php prod --status
+
+# Apply
+php db/migrate.php dev
+# confirm it works, then:
+php db/migrate.php prod
+```
+
+Applied migrations are tracked in the `schema_migrations` table in each DB.
+**Never apply prod before dev is confirmed working.**
+
 ## Databases
 
 Dev and prod use **separate MySQL databases** on Hostinger. Never assume they share data.
