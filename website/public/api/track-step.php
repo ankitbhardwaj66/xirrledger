@@ -56,8 +56,9 @@ if (!in_array($step, $valid_steps, true)) {
 }
 
 $session_id = substr($body['session_id'], 0, 64);
-$name       = substr($body['name']  ?? '', 0, 100);
-$email      = substr($body['email'] ?? '', 0, 100);
+$name       = substr($body['name']   ?? '', 0, 100);
+$email      = substr($body['email']  ?? '', 0, 100);
+$broker     = substr($body['broker'] ?? '', 0, 100);
 
 try {
     $pdo = new PDO(
@@ -72,7 +73,7 @@ try {
     // we keep the existing value.
     $stmt = $pdo->prepare("
         INSERT INTO xirr_sessions (session_id, name, email, broker, status, last_step)
-        VALUES (:sid, :name, :email, '', 'pending', :step)
+        VALUES (:sid, :name, :email, :broker, 'pending', :step)
         ON DUPLICATE KEY UPDATE
             last_step = CASE
                 WHEN FIELD(VALUES(last_step),
@@ -84,14 +85,16 @@ try {
                 THEN VALUES(last_step)
                 ELSE last_step
             END,
-            name  = CASE WHEN VALUES(name)  != '' THEN VALUES(name)  ELSE name  END,
-            email = CASE WHEN VALUES(email) != '' THEN VALUES(email) ELSE email END
+            name   = CASE WHEN VALUES(name)   != '' THEN VALUES(name)   ELSE name   END,
+            email  = CASE WHEN VALUES(email)  != '' THEN VALUES(email)  ELSE email  END,
+            broker = CASE WHEN VALUES(broker) != '' AND (broker = '' OR broker IS NULL) THEN VALUES(broker) ELSE broker END
     ");
     $stmt->execute([
-        ':sid'   => $session_id,
-        ':name'  => $name,
-        ':email' => $email,
-        ':step'  => $step,
+        ':sid'    => $session_id,
+        ':name'   => $name,
+        ':email'  => $email,
+        ':broker' => $broker,
+        ':step'   => $step,
     ]);
 
     echo json_encode(['ok' => true]);

@@ -502,6 +502,7 @@ export default function CalculatorPage() {
         step: s,
         name: currentUser?.name ?? '',
         email: currentUser?.email ?? '',
+        broker: currentDraft.broker || '',
       }),
     }).catch(() => {});
   }

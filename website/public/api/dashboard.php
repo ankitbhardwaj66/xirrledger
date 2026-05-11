@@ -44,13 +44,16 @@ try {
         [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
 
-    // Funnel counts
+    // Funnel counts — includes both old-flow steps and new wizard steps
     $funnel = $pdo->query("
         SELECT
             COUNT(*) AS total,
-            SUM(CASE WHEN last_step IN ('details','processing','results') OR status = 'done' THEN 1 ELSE 0 END) AS to_details,
-            SUM(CASE WHEN last_step IN ('processing','results') OR status = 'done' THEN 1 ELSE 0 END) AS to_processing,
-            SUM(CASE WHEN last_step = 'results' OR status = 'done' THEN 1 ELSE 0 END) AS completed
+            SUM(CASE WHEN last_step IN (
+                    'upload-ledger','upload-mf','upload-dividend','holdings','account-done',
+                    'upload','details','processing','results','edit-holdings'
+                ) OR status = 'done' THEN 1 ELSE 0 END) AS to_details,
+            SUM(CASE WHEN last_step IN ('processing','results','edit-holdings') OR status = 'done' THEN 1 ELSE 0 END) AS to_processing,
+            SUM(CASE WHEN last_step IN ('results','edit-holdings') OR status = 'done' THEN 1 ELSE 0 END) AS completed
         FROM xirr_sessions
         $where_clause
     ")->fetch(PDO::FETCH_ASSOC);
@@ -108,20 +111,39 @@ function pct($n, $d) {
 }
 function step_badge($step) {
     $colors = [
-        'upload'     => '#3b82f6',
-        'details'    => '#a78bfa',
-        'processing' => '#f59e0b',
-        'results'    => '#10b981',
+        // Wizard steps
+        'broker'           => '#3b82f6',
+        'trade-type'       => '#6366f1',
+        'upload-mf'        => '#8b5cf6',
+        'upload-ledger'    => '#8b5cf6',
+        'upload-dividend'  => '#8b5cf6',
+        'holdings'         => '#a78bfa',
+        'account-done'     => '#ec4899',
+        'edit-holdings'    => '#10b981',
+        // Old-flow steps
+        'upload'           => '#3b82f6',
+        'details'          => '#a78bfa',
+        // Shared
+        'processing'       => '#f59e0b',
+        'results'          => '#10b981',
     ];
     $labels = [
-        'upload'     => 'Upload',
-        'details'    => 'Details',
-        'processing' => 'Processing',
-        'results'    => 'Results',
+        'broker'           => 'Broker',
+        'trade-type'       => 'Trade type',
+        'upload-mf'        => 'Upload MF',
+        'upload-ledger'    => 'Upload ledger',
+        'upload-dividend'  => 'Upload div.',
+        'holdings'         => 'Holdings',
+        'account-done'     => 'Ready',
+        'edit-holdings'    => 'Edit holdings',
+        'upload'           => 'Upload',
+        'details'          => 'Details',
+        'processing'       => 'Processing',
+        'results'          => 'Results',
     ];
     $c = $colors[$step] ?? '#64748b';
     $l = $labels[$step] ?? ($step ?: '—');
-    return "<span style='background:{$c}22;color:{$c};border:1px solid {$c}44;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:600'>{$l}</span>";
+    return "<span style='background:{$c}22;color:{$c};border:1px solid {$c}44;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:600;white-space:nowrap'>{$l}</span>";
 }
 function status_badge($status, $last_step) {
     if ($status === 'done') return "<span style='background:#10b98122;color:#10b981;border:1px solid #10b98144;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:600'>Done</span>";
@@ -341,7 +363,12 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
         <thead><tr><th>Step</th><th>Users</th><th>% of total</th></tr></thead>
         <tbody>
         <?php
-        $step_order = ['upload', 'details', 'processing', 'results'];
+        $step_order = [
+            'broker','trade-type','upload-mf','upload-ledger','upload-dividend',
+            'holdings','account-done',
+            'upload','details',
+            'processing','results','edit-holdings',
+        ];
         foreach ($step_order as $s):
           $cnt = $step_counts[$s] ?? 0;
         ?>
@@ -375,8 +402,8 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
 
   <!-- Recent sessions -->
   <div class="section-title">Recent sessions (last 100 in period)</div>
-  <div class="table-wrap">
-    <table>
+  <div class="table-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+    <table style="min-width:900px">
       <thead>
         <tr>
           <th>Time</th>
