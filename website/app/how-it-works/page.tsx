@@ -178,8 +178,9 @@ export default function HowItWorks() {
                   width: '48px', height: '48px', borderRadius: '12px',
                   background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.2rem', fontWeight: 800, color: INDIGO,
-                }}>F</div>
+                }}>
+                  <img src="/fyers-logo.webp" alt="Fyers" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+                </div>
                 <div>
                   <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>Fyers</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>

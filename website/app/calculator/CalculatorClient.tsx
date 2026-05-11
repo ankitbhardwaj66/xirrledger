@@ -2294,7 +2294,7 @@ export default function CalculatorPage() {
                 {([
                   { id: 'zerodha', label: 'Zerodha', letter: 'Z', color: '#10b981', bg: 'rgba(16,185,129,0.08)', shadow: 'rgba(16,185,129,0.12)', iconBg: 'rgba(16,185,129,0.12)', fileType: '.xlsx' },
                   { id: 'groww',   label: 'Groww',   letter: 'G', color: GOLD,      bg: 'rgba(245,158,11,0.08)',  shadow: 'rgba(245,158,11,0.12)',  iconBg: 'rgba(245,158,11,0.12)',  fileType: '.xlsx' },
-                  { id: 'fyers',   label: 'Fyers',   letter: 'F', color: '#818cf8', bg: 'rgba(129,140,248,0.08)', shadow: 'rgba(129,140,248,0.12)', iconBg: 'rgba(129,140,248,0.12)', fileType: '.csv'  },
+                  { id: 'fyers',   label: 'Fyers',   letter: 'F', logo: '/fyers-logo.webp', color: '#818cf8', bg: 'rgba(129,140,248,0.08)', shadow: 'rgba(129,140,248,0.12)', iconBg: 'rgba(129,140,248,0.12)', fileType: '.csv'  },
                 ] as const).map(b => {
                   const isActive = guideBrokers.includes(b.id);
                   return (
@@ -2315,7 +2315,7 @@ export default function CalculatorPage() {
                         background: isActive ? b.iconBg : 'rgba(255,255,255,0.05)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: '0.75rem', fontWeight: 800, color: isActive ? b.color : '#475569', transition: 'all 0.18s',
-                      }}>{b.letter}</div>
+                      }}>{(b as {logo?: string}).logo ? <img src={(b as {logo?: string}).logo} alt={b.label} style={{ width: 22, height: 22, objectFit: 'contain', opacity: isActive ? 1 : 0.5 }} /> : b.letter}</div>
                       <p style={{ margin: 0, fontSize: '0.82rem', fontWeight: 700, color: isActive ? '#ffffff' : '#94a3b8' }}>{b.label}</p>
                       <p style={{ margin: '2px 0 0', fontSize: '0.68rem', color: isActive ? b.color : '#334155', fontFamily: 'monospace' }}>{b.fileType}</p>
                     </button>
