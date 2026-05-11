@@ -33,7 +33,21 @@ if (!$body || empty($body['session_id']) || empty($body['step'])) {
     exit;
 }
 
-$valid_steps = ['upload', 'details', 'processing', 'results'];
+// Full funnel order — new wizard steps + legacy old-flow steps
+$valid_steps = [
+    'broker',           // wizard: selected broker
+    'trade-type',       // wizard: selected what they trade
+    'upload-mf',        // wizard: uploading MF tradebook
+    'upload-ledger',    // wizard: uploading ledger / order history
+    'upload-dividend',  // wizard: uploading dividend file
+    'holdings',         // wizard: entering portfolio value
+    'account-done',     // wizard: ready to calculate (all accounts set)
+    'upload',           // old flow: uploaded files
+    'details',          // old flow: entering holdings details
+    'processing',       // calculating XIRR
+    'results',          // results shown
+    'edit-holdings',    // editing holdings after results
+];
 $step = $body['step'];
 if (!in_array($step, $valid_steps, true)) {
     http_response_code(400);
@@ -61,8 +75,12 @@ try {
         VALUES (:sid, :name, :email, '', 'pending', :step)
         ON DUPLICATE KEY UPDATE
             last_step = CASE
-                WHEN FIELD(VALUES(last_step), 'upload','details','processing','results')
-                   > FIELD(last_step,         'upload','details','processing','results')
+                WHEN FIELD(VALUES(last_step),
+                        'broker','trade-type','upload-mf','upload-ledger','upload-dividend',
+                        'holdings','account-done','upload','details','processing','results','edit-holdings')
+                   > FIELD(last_step,
+                        'broker','trade-type','upload-mf','upload-ledger','upload-dividend',
+                        'holdings','account-done','upload','details','processing','results','edit-holdings')
                 THEN VALUES(last_step)
                 ELSE last_step
             END,

@@ -128,7 +128,7 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             logger.warning("PHP bridge notification failed: %s", e)
 
     try:
-        update_status({"status": "parsing", "message": "Downloading and parsing ledger files..."})
+        update_status({"status": "parsing", "message": "Downloading and parsing transaction files..."})
 
         all_outflows = []
         all_inflows  = []
@@ -147,6 +147,7 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             account_inflows   = []
             fyers_client_id   = None
             zerodha_client_id = None
+            groww_client_code = None
 
             for file_idx, s3_key in enumerate(file_keys):
                 logger.info("Downloading s3://%s/%s", uploads_bucket, s3_key)
@@ -163,6 +164,11 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                                 fyers_client_id = parts[1].strip()
                                 break
                     out, inf = parse_fyers_csv(file_bytes)
+                elif broker == "groww" and file_name.endswith(".xlsx"):
+                    out, inf = parse_groww_stock_order_history_xlsx(file_bytes)
+                    _m = re.match(r'stocks_order_history_(\d+)[_\-]', file_name, re.IGNORECASE)
+                    if _m and not groww_client_code:
+                        groww_client_code = _m.group(1)
                 elif file_name.endswith(".pdf"):
                     out, inf = parse_groww_pdf(file_bytes, password=pan_password)
                 elif broker == "zerodha" and file_name.endswith(".xlsx"):
@@ -204,15 +210,20 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             mf_outflows_all, mf_inflows_all = [], []
             for mk in mf_file_keys:
                 try:
-                    obj      = s3_client.get_object(Bucket=uploads_bucket, Key=mk)
-                    mf_o, mf_i = parse_zerodha_mf_tradebook(obj["Body"].read())
+                    obj        = s3_client.get_object(Bucket=uploads_bucket, Key=mk)
+                    file_bytes = obj["Body"].read()
+                    if broker == "groww":
+                        mf_o, mf_i = parse_groww_mf_order_history(file_bytes)
+                        logger.info("Parsed Groww MF order history %s — %d purchases, %d redemptions", mk, len(mf_o), len(mf_i))
+                    else:
+                        mf_o, mf_i = parse_zerodha_mf_tradebook(file_bytes)
+                        logger.info("Parsed MF tradebook %s — %d buys, %d sells", mk, len(mf_o), len(mf_i))
                     if not mf_o.empty:
                         mf_outflows_all.append(mf_o)
                     if not mf_i.empty:
                         mf_inflows_all.append(mf_i)
-                    logger.info("Parsed MF tradebook %s — %d buys, %d sells", mk, len(mf_o), len(mf_i))
                 except Exception as e:
-                    logger.warning("Failed to parse MF tradebook %s: %s", mk, e)
+                    logger.warning("Failed to parse MF file %s: %s", mk, e)
 
             mf_out_df = pd.concat(mf_outflows_all, ignore_index=True) if mf_outflows_all else pd.DataFrame(columns=["date", "amount", "trade_id"])
             mf_inf_df = pd.concat(mf_inflows_all,  ignore_index=True) if mf_inflows_all  else pd.DataFrame(columns=["date", "amount", "trade_id"])
@@ -286,6 +297,8 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                 acct_name = f"Fyers ({fyers_client_id})" if fyers_client_id else "Fyers"
             elif pan:
                 acct_name = f"Groww ({pan})"
+            elif groww_client_code:
+                acct_name = f"Groww ({groww_client_code})"
             elif zerodha_acct:
                 acct_name = f"Zerodha ({zerodha_acct})"
             else:
@@ -296,8 +309,8 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             # identifiers that match exactly what the frontend stores as acc.id.
             if broker == "fyers" and fyers_client_id:
                 _derived_id = fyers_client_id
-            elif broker == "groww" and pan:
-                _derived_id = pan
+            elif broker == "groww" and (pan or groww_client_code):
+                _derived_id = pan or groww_client_code
             elif file_keys:
                 _derived_id = file_keys[0].split("/")[-1]   # filename, e.g. ledger-NBN208.csv
             else:
@@ -358,7 +371,7 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
         if combined_outflows.empty:
             raise ValueError(
                 "No fund transfer transactions were found in the uploaded files. "
-                "Please check you downloaded the correct statement (ledger/funds history), not a trade or holdings report."
+                "Please check you uploaded the correct file — for Zerodha/Fyers upload the ledger, for Groww upload the Stocks Order History XLSX."
             )
 
         # ── Fetch Nifty 50 data from S3 cache ────────────────
@@ -758,6 +771,82 @@ def parse_zerodha_mf_tradebook(file_bytes: bytes):
     return outflows, inflows
 
 
+def parse_groww_mf_order_history(file_bytes: bytes):
+    """
+    Parse a Groww 'Mutual Funds - Order history' XLSX.
+    Sheet: Transactions
+    Header row: contains 'Scheme Name', 'Transaction Type', 'Units', 'NAV', 'Amount', 'Date'
+    Transaction Type: PURCHASE → outflow, REDEEM → inflow
+    Amount: string with commas e.g. '4,999'
+    Date: string e.g. '18 Apr 2022'
+    Returns (outflows_df, inflows_df) with trade_id = scheme+date+amount for dedup.
+    """
+    from io import BytesIO
+    import openpyxl
+    from datetime import datetime as _dt
+
+    wb = openpyxl.load_workbook(BytesIO(file_bytes), data_only=True)
+    if 'Transactions' not in wb.sheetnames:
+        raise ValueError("Sheet 'Transactions' not found — please upload the Groww Mutual Funds Order History XLSX.")
+    ws = wb['Transactions']
+    rows = list(ws.iter_rows(values_only=True))
+
+    # Find header row
+    header_idx = type_col = amount_col = date_col = None
+    for i, row in enumerate(rows[:15]):
+        norm = [str(c).lower().strip() if c is not None else "" for c in row]
+        if 'transaction type' in norm:
+            header_idx = i
+            type_col   = norm.index('transaction type')
+            amount_col = norm.index('amount') if 'amount' in norm else None
+            date_col   = norm.index('date')   if 'date'   in norm else None
+            scheme_col = norm.index('scheme name') if 'scheme name' in norm else 0
+            break
+
+    if header_idx is None:
+        raise ValueError("Could not find header row in Groww MF Order History file.")
+
+    MONTH = {'jan':'01','feb':'02','mar':'03','apr':'04','may':'05','jun':'06',
+             'jul':'07','aug':'08','sep':'09','oct':'10','nov':'11','dec':'12'}
+
+    outflow_rows, inflow_rows = [], []
+
+    for row in rows[header_idx + 1:]:
+        if not any(row):
+            continue
+        try:
+            ttype  = str(row[type_col]).strip().upper() if type_col is not None and row[type_col] else ""
+            if ttype not in ("PURCHASE", "REDEEM"):
+                continue
+            amount_raw = str(row[amount_col]).replace(',', '').strip() if amount_col is not None and row[amount_col] else "0"
+            amount = float(amount_raw)
+            if amount <= 0:
+                continue
+            date_raw = str(row[date_col]).strip() if date_col is not None and row[date_col] else ""
+            # Parse "18 Apr 2022"
+            parts = date_raw.split()
+            if len(parts) == 3:
+                day, mon, yr = parts
+                date_str = f"{yr}-{MONTH.get(mon.lower(), '01')}-{day.zfill(2)}"
+            else:
+                continue
+            scheme = str(row[scheme_col]).strip() if row[scheme_col] else ""
+            trade_id = f"{scheme}|{date_str}|{amount_raw}|{ttype}"
+            entry = {"date": date_str, "amount": 0.0, "trade_id": trade_id}
+            if ttype == "PURCHASE":
+                entry["amount"] = -amount
+                outflow_rows.append(entry)
+            else:
+                entry["amount"] = amount
+                inflow_rows.append(entry)
+        except (ValueError, TypeError, IndexError):
+            continue
+
+    outflows = pd.DataFrame(outflow_rows) if outflow_rows else pd.DataFrame(columns=["date", "amount", "trade_id"])
+    inflows  = pd.DataFrame(inflow_rows)  if inflow_rows  else pd.DataFrame(columns=["date", "amount", "trade_id"])
+    return outflows, inflows
+
+
 def parse_groww_pdf(file_bytes, password=None):
     all_deposits    = []
     all_withdrawals = []
@@ -828,6 +917,102 @@ def parse_groww_pdf(file_bytes, password=None):
     outflows = pd.DataFrame(all_deposits) if all_deposits else pd.DataFrame(columns=["date", "amount"])
     inflows  = pd.DataFrame(all_withdrawals) if all_withdrawals else pd.DataFrame(columns=["date", "amount"])
     return outflows, inflows
+
+
+def parse_groww_stock_order_history_xlsx(file_bytes: bytes):
+    """
+    Parse Groww 'Stocks - Order history' XLSX.
+
+    Layout:
+      Row 1: Name, <name>
+      Row 2: Unique Client Code, <code>
+      Row 3: blank
+      Row 4: "Order history for stocks from ..."
+      Row 5: blank
+      Row 6: headers — Stock name, Symbol, ISIN, Type, Quantity, Value, Exchange,
+                        Exchange Order Id, Execution date and time, Order status
+      Rows 7+: data
+
+    BUY  → outflow  (Value negated — money spent buying)
+    SELL → inflow   (Value — money received from selling)
+    Only 'Executed' orders are processed.
+    Date format: "DD-MM-YYYY HH:MM AM/PM"  e.g. "20-04-2022 03:16 PM"
+
+    Note: Value = price × quantity with no brokerage/STT/charges included.
+    """
+    wb = openpyxl.load_workbook(io.BytesIO(file_bytes), data_only=True)
+    ws = wb.active
+
+    col_type = col_value = col_date = col_status = None
+    data_start_row = None
+
+    for idx, row in enumerate(ws.iter_rows(values_only=True), start=1):
+        cells = [str(c).strip() if c is not None else '' for c in row]
+        if 'Stock name' in cells and 'Type' in cells and 'Value' in cells:
+            try:
+                col_type   = cells.index('Type')
+                col_value  = cells.index('Value')
+                col_date   = cells.index('Execution date and time')
+                col_status = cells.index('Order status')
+                data_start_row = idx + 1
+            except ValueError as e:
+                raise ValueError(f"Groww Stock Order History missing column: {e}") from e
+            break
+
+    if col_type is None:
+        raise ValueError(
+            "Not a valid Groww Stock Order History XLSX — expected header with 'Stock name', 'Type', 'Value'. "
+            "Please upload the 'Stocks - Order history' file from Groww Reports."
+        )
+
+    outflows_list = []
+    inflows_list  = []
+
+    for row in ws.iter_rows(min_row=data_start_row, values_only=True):
+        if not any(c is not None for c in row):
+            continue
+
+        order_type = str(row[col_type] or '').strip().upper()
+        status     = str(row[col_status] or '').strip()
+        value_raw  = row[col_value]
+        date_raw   = str(row[col_date] or '').strip()
+
+        if status != 'Executed':
+            continue
+        if order_type not in ('BUY', 'SELL'):
+            continue
+
+        try:
+            value = float(value_raw)
+        except (TypeError, ValueError):
+            continue
+        if value <= 0:
+            continue
+
+        try:
+            date_obj = datetime.strptime(date_raw, "%d-%m-%Y %I:%M %p")
+            date_str = date_obj.strftime("%Y-%m-%d")
+        except Exception:
+            try:
+                date_obj = datetime.strptime(date_raw[:10], "%d-%m-%Y")
+                date_str = date_obj.strftime("%Y-%m-%d")
+            except Exception:
+                continue
+
+        if order_type == 'BUY':
+            outflows_list.append({"date": date_str, "amount": -value})
+        else:
+            inflows_list.append({"date": date_str, "amount": value})
+
+    if not outflows_list and not inflows_list:
+        raise ValueError(
+            "No executed buy/sell orders found in this file. "
+            "Please check you uploaded the correct Groww Stock Order History XLSX."
+        )
+
+    out_df = pd.DataFrame(outflows_list) if outflows_list else pd.DataFrame(columns=["date", "amount"])
+    inf_df = pd.DataFrame(inflows_list)  if inflows_list  else pd.DataFrame(columns=["date", "amount"])
+    return out_df, inf_df
 
 
 def parse_fyers_csv(file_bytes):
@@ -1091,15 +1276,15 @@ def _base_table_style(header_bg, num_cols=2):
     style = [
         # Header
         ("BACKGROUND",    (0, 0), (-1, 0), colors.HexColor(header_bg)),
-        ("TEXTCOLOR",     (0, 0), (-1, 0), colors.white),
+        ("TEXTCOLOR",     (0, 0), (-1, 0), colors.HexColor("#cbd5e1")),
         ("FONTNAME",      (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE",      (0, 0), (-1, 0), 9),
+        ("FONTSIZE",      (0, 0), (-1, 0), 8),
         ("BOTTOMPADDING", (0, 0), (-1, 0), 9),
         ("TOPPADDING",    (0, 0), (-1, 0), 9),
         # Body
         ("FONTNAME",      (0, 1), (-1, -1), "Helvetica"),
         ("FONTSIZE",      (0, 1), (-1, -1), 9),
-        ("ROWBACKGROUNDS",(0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
+        ("ROWBACKGROUNDS",(0, 1), (-1, -1), [colors.white, colors.HexColor("#f7f6f2")]),
         ("BOTTOMPADDING", (0, 1), (-1, -1), 7),
         ("TOPPADDING",    (0, 1), (-1, -1), 7),
         # Grid
@@ -1118,12 +1303,13 @@ def _base_table_style(header_bg, num_cols=2):
 
 def _kpi_cell(label, value, sublabel, bg, value_color="#f59e0b", label_color="#94a3b8"):
     """Single KPI banner cell with stacked label / big value / sublabel."""
+    spaced = "  ".join(label)   # letter-spaced small-caps label feel
     return Paragraph(
-        f'<font name="Helvetica" size="8" color="{label_color}">{label}</font><br/>'
-        f'<font name="Helvetica-Bold" size="20" color="{value_color}">{value}</font><br/>'
-        f'<font name="Helvetica" size="8" color="{label_color}">{sublabel}</font>',
-        ParagraphStyle("KPI", alignment=TA_CENTER, leading=22,
-                       backColor=colors.HexColor(bg), borderPadding=(14, 8, 14, 8))
+        f'<font name="Helvetica" size="7" color="{label_color}">{spaced}</font><br/>'
+        f'<font name="Helvetica-Bold" size="30" color="{value_color}">{value}</font><br/>'
+        f'<font name="Helvetica" size="7.5" color="{label_color}">{sublabel}</font>',
+        ParagraphStyle("KPI", alignment=TA_CENTER, leading=28,
+                       backColor=colors.HexColor(bg), borderPadding=(18, 8, 18, 8))
     )
 
 
@@ -1132,8 +1318,8 @@ class _WatermarkCanvas(rl_canvas.Canvas):
     def showPage(self):
         self.saveState()
         w, h = A4
-        self.setFont("Helvetica-Bold", 52)
-        self.setFillColor(colors.HexColor("#0f172a"), alpha=0.06)
+        self.setFont("Helvetica-Bold", 72)
+        self.setFillColor(colors.HexColor("#0f172a"), alpha=0.045)
         self.translate(w / 2, h / 2)
         self.rotate(40)
         self.drawCentredString(0, 0, "xirrledger.com")
@@ -1158,18 +1344,21 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
     sub_s   = ParagraphStyle("S", fontSize=9,  fontName="Helvetica",
                               textColor=colors.HexColor("#64748b"),
                               alignment=TA_CENTER, spaceAfter=8)
-    h2_s    = ParagraphStyle("H2", fontSize=12, fontName="Helvetica-Bold",
+    h2_s    = ParagraphStyle("H2", fontSize=13, fontName="Helvetica-Bold",
                               textColor=colors.HexColor("#f59e0b"),
-                              spaceBefore=14, spaceAfter=6)
-    note_s  = ParagraphStyle("N", fontSize=7.5, fontName="Helvetica",
+                              spaceBefore=16, spaceAfter=6)
+    note_s  = ParagraphStyle("N", fontSize=8, fontName="Helvetica",
                               textColor=colors.HexColor("#64748b"),
-                              spaceBefore=4, spaceAfter=2)
+                              spaceBefore=4, spaceAfter=2, leading=11)
     acct_h_s = ParagraphStyle("AH", fontSize=10, fontName="Helvetica-Bold",
                                textColor=colors.HexColor("#f59e0b"),
-                               spaceBefore=12, spaceAfter=4)
+                               spaceBefore=16, spaceAfter=4)
     footer_s = ParagraphStyle("F", fontSize=7.5, fontName="Helvetica",
                                textColor=colors.HexColor("#64748b"),
                                alignment=TA_CENTER, spaceBefore=18)
+    method_s = ParagraphStyle("M", fontSize=8, fontName="Helvetica",
+                               textColor=colors.HexColor("#64748b"),
+                               spaceBefore=14, spaceAfter=4, leading=12)
 
     elements = []
     cs = combined_stats
@@ -1201,24 +1390,29 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         beat_lbl = "Nifty data unavailable" if not has_nifty else "XIRR unavailable"
         kpi3_bg  = "#37474f"
 
+    kpi3_accent = "#10b981" if (has_xirr and has_nifty and diff > 0) else ("#ef4444" if (has_xirr and has_nifty) else "#64748b")
     kpi_row = [[
         _kpi_cell("YOUR XIRR",     xirr_v,  "annualised return", "#0f172a"),
-        _kpi_cell("NIFTY 50 XIRR", nifty_v, "benchmark return",  "#1e293b"),
-        _kpi_cell("PERFORMANCE",   beat_v,  beat_lbl,             kpi3_bg,  value_color="#ffffff", label_color="#ffffff"),
+        _kpi_cell("NIFTY 50 XIRR", nifty_v, "benchmark return",  "#243347"),
+        _kpi_cell("PERFORMANCE",   beat_v,  beat_lbl,             kpi3_bg,  value_color="#ffffff", label_color="#a7f3d0" if kpi3_accent == "#10b981" else "#fca5a5" if kpi3_accent == "#ef4444" else "#94a3b8"),
     ]]
     cw = page_w / 3
     kpi_t = Table(kpi_row, colWidths=[cw, cw, cw], spaceBefore=0,
                   style=TableStyle([
                       ("BACKGROUND",    (0, 0), (0, 0), colors.HexColor("#0f172a")),
-                      ("BACKGROUND",    (1, 0), (1, 0), colors.HexColor("#1e293b")),
+                      ("BACKGROUND",    (1, 0), (1, 0), colors.HexColor("#243347")),
                       ("BACKGROUND",    (2, 0), (2, 0), colors.HexColor(kpi3_bg)),
                       ("ALIGN",         (0, 0), (-1, -1), "CENTER"),
                       ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
-                      ("TOPPADDING",    (0, 0), (-1, -1), 16),
-                      ("BOTTOMPADDING", (0, 0), (-1, -1), 16),
+                      ("TOPPADDING",    (0, 0), (-1, -1), 0),
+                      ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
                       ("LEFTPADDING",   (0, 0), (-1, -1), 6),
                       ("RIGHTPADDING",  (0, 0), (-1, -1), 6),
-                      ("LINEAFTER",     (0, 0), (1, 0), 2, colors.HexColor("#f59e0b")),
+                      ("LINEAFTER",     (0, 0), (1, 0),  2,   colors.HexColor("#f59e0b")),
+                      # Colored accent bar at the bottom of each KPI column
+                      ("LINEBELOW",     (0, 0), (0, 0),  4,   colors.HexColor("#f59e0b")),
+                      ("LINEBELOW",     (1, 0), (1, 0),  4,   colors.HexColor("#475569")),
+                      ("LINEBELOW",     (2, 0), (2, 0),  4,   colors.HexColor(kpi3_accent)),
                   ]))
     elements.append(kpi_t)
     elements.append(Spacer(1, 14))
@@ -1232,10 +1426,11 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
     txn_str = (f"{cs.get('n_investments', 0)} investments,  "
                f"{cs.get('n_withdrawals', 0)} withdrawals")
 
-    gain_bg = colors.HexColor("#d1fae5") if (cs.get("net_gain") or 0) >= 0 else colors.HexColor("#fee2e2")
+    gain_bg = colors.HexColor("#e8f5ee") if (cs.get("net_gain") or 0) >= 0 else colors.HexColor("#fee2e2")
+    gain_accent = "#10b981" if (cs.get("net_gain") or 0) >= 0 else "#ef4444"
 
     summary_rows = [
-        ["Metric",                  "Value"],
+        ["METRIC",                  "VALUE"],
         ["First Investment Date",   cs.get("first_investment_date") or "N/A"],
         ["Investment Period",        period_str],
         ["Total Transactions",       txn_str],
@@ -1248,11 +1443,14 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
     st = Table(summary_rows, colWidths=[page_w * 0.56, page_w * 0.44])
     st.setStyle(_base_table_style("#0f172a"))
     st.setStyle(TableStyle([
-        ("BACKGROUND",  (0, 7), (-1, 7), gain_bg),          # Net Gain row (index 7)
-        ("FONTNAME",    (1, 7), (1, 7),  "Helvetica-Bold"),  # bold value
-        ("FONTNAME",    (1, 8), (1, 8),  "Helvetica-Bold"),  # bold XIRR value
+        ("BACKGROUND",  (0, 7), (-1, 7), gain_bg),
+        ("FONTNAME",    (1, 7), (1, 7),  "Helvetica-Bold"),
+        ("FONTNAME",    (1, 8), (1, 8),  "Helvetica-Bold"),
         ("FONTSIZE",    (1, 8), (1, 8),  10),
         ("TEXTCOLOR",   (1, 8), (1, 8),  colors.HexColor("#f59e0b")),
+        # Left-border accent bars
+        ("LINEBEFORE",  (0, 7), (0, 7),  3.5, colors.HexColor(gain_accent)),
+        ("LINEBEFORE",  (0, 8), (0, 8),  3.5, colors.HexColor("#f59e0b")),
     ]))
     elements.append(st)
 
@@ -1262,11 +1460,11 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         if valid_entries:
             total_manual = sum(float(me["amount"]) for me in valid_entries)
             lines = "  ".join(
-                f"{me.get('label', 'Investment')} — ₹{float(me['amount']):,.0f} on {me['date']}"
+                f"{me.get('label', 'Investment')} — Rs.{float(me['amount']):,.0f} on {me['date']}"
                 for me in valid_entries
             )
             elements.append(Paragraph(
-                f"Includes {len(valid_entries)} outside investment(s) totalling ₹{total_manual:,.0f} "
+                f"Includes {len(valid_entries)} outside investment(s) totalling Rs.{total_manual:,.0f} "
                 f"not tracked by the broker:  {lines}",
                 note_s
             ))
@@ -1295,7 +1493,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
     col_c = page_w * 0.31
 
     nifty_rows = [
-        ["Metric",                 "Your Portfolio",       "Nifty 50"],
+        ["METRIC",                 "YOUR PORTFOLIO",       "NIFTY 50"],
         ["Current Value",          _fmt_inr(cs["current_value"]), nifty_val_str],
         ["XIRR (Annualised)",      xirr_v,                 nifty_xirr_str],
         ["Performance vs Nifty 50", perf_str,              ""],
@@ -1316,7 +1514,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
     ]))
     elements.append(nt)
     elements.append(Paragraph(
-        "Note: Nifty 50 comparison simulates investing the same amounts on the same dates "
+        "<b>Note:</b> Nifty 50 comparison simulates investing the same amounts on the same dates "
         "in the Nifty 50 index. Withdrawals are proportionally accounted for.",
         note_s
     ))
@@ -1360,23 +1558,28 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
 
         tag_s   = ParagraphStyle("ITAG", fontSize=7,   fontName="Helvetica-Bold",
                                   textColor=colors.HexColor(tag_color),
-                                  spaceBefore=0, spaceAfter=3)
-        title_i = ParagraphStyle("ITIT", fontSize=10,  fontName="Helvetica-Bold",
-                                  textColor=colors.HexColor(tag_color),
                                   spaceBefore=0, spaceAfter=4)
+        title_i = ParagraphStyle("ITIT", fontSize=13,  fontName="Helvetica-Bold",
+                                  textColor=colors.HexColor(tag_color),
+                                  spaceBefore=0, spaceAfter=5)
         body_i  = ParagraphStyle("IBOD", fontSize=8.5, fontName="Helvetica",
                                   textColor=colors.HexColor(body_color),
-                                  spaceBefore=0, spaceAfter=0, leading=12)
+                                  spaceBefore=0, spaceAfter=0, leading=13)
+        # Two-column: narrow left accent bar + text content
         card_t = Table([[
+            "",  # accent bar column
             [Paragraph(tag, tag_s), Paragraph(insight_title, title_i), Paragraph(insight_body, body_i)]
-        ]], colWidths=[page_w])
+        ]], colWidths=[6, page_w - 6])
         card_t.setStyle(TableStyle([
-            ("BACKGROUND",    (0, 0), (-1, -1), colors.HexColor(card_bg)),
-            ("BOX",           (0, 0), (-1, -1), 1.5, colors.HexColor(card_border)),
-            ("LEFTPADDING",   (0, 0), (-1, -1), 14),
-            ("RIGHTPADDING",  (0, 0), (-1, -1), 14),
+            ("BACKGROUND",    (0, 0), (0, 0),  colors.HexColor(card_border)),  # accent bar
+            ("BACKGROUND",    (1, 0), (1, 0),  colors.HexColor(card_bg)),
+            ("BOX",           (0, 0), (-1, -1), 1, colors.HexColor(card_border)),
+            ("LEFTPADDING",   (1, 0), (1, 0),  14),
+            ("RIGHTPADDING",  (1, 0), (1, 0),  14),
             ("TOPPADDING",    (0, 0), (-1, -1), 12),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+            ("LEFTPADDING",   (0, 0), (0, 0),  0),
+            ("RIGHTPADDING",  (0, 0), (0, 0),  0),
             ("VALIGN",        (0, 0), (-1, -1), "TOP"),
         ]))
         elements.append(Spacer(1, 10))
@@ -1424,18 +1627,25 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                 pc.slices[i].fillColor = colors.HexColor(col)
             pie_d.add(pc)
 
-            # Legend to the right of the pie
-            lx    = pie_cx + pie_r + 24
-            ly    = pie_cy + (n * 18) / 2   # vertically centred
+            # Legend to the right of the pie — rounded rect dots + name + pct
+            from reportlab.graphics.shapes import Circle
+            lx    = pie_cx + pie_r + 28
+            ly    = pie_cy + (n * 22) / 2
             for i, (name, pct) in enumerate(zip(pie_names, pie_pcts)):
                 col   = SLICE_COLORS[i % len(SLICE_COLORS)]
-                y_pos = ly - i * 20
-                pie_d.add(Rect(lx, y_pos - 6, 10, 10,
-                               fillColor=colors.HexColor(col), strokeColor=None))
-                pie_d.add(GStr(lx + 16, y_pos,
-                               f"{name}  {pct:.1f}%",
-                               fontName="Helvetica", fontSize=8,
-                               fillColor=colors.HexColor("#0f172a")))
+                y_pos = ly - i * 22
+                pie_d.add(Circle(lx + 5, y_pos - 2, 5,
+                                 fillColor=colors.HexColor(col), strokeColor=None))
+                short = name.split("(")[0].strip() if "(" in name else name
+                acct  = name.split("(")[1].rstrip(")") if "(" in name else ""
+                pie_d.add(GStr(lx + 16, y_pos + 2,
+                               f"{short}",
+                               fontName="Helvetica-Bold", fontSize=8.5,
+                               fillColor=colors.HexColor("#1e293b")))
+                pie_d.add(GStr(lx + 16, y_pos - 8,
+                               f"{acct}  {pct:.1f}%",
+                               fontName="Helvetica", fontSize=7.5,
+                               fillColor=colors.HexColor("#64748b")))
 
             elements.append(pie_d)
             elements.append(Spacer(1, 4))
@@ -1466,15 +1676,17 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                 sign = "+" if l > 0 else ""
                 return f"{sign}{l:.1f}L"
 
-            bc.valueAxis.valueMin         = y_min
-            bc.valueAxis.valueMax         = y_max
-            bc.valueAxis.valueSteps       = None
-            bc.valueAxis.labelTextFormat  = _lakh_fmt
-            bc.valueAxis.labels.fontSize  = 7
-            bc.valueAxis.labels.fontName  = "Helvetica"
-            bc.valueAxis.labels.fillColor = colors.HexColor("#64748b")
-            bc.valueAxis.strokeColor      = colors.HexColor("#cbd5e1")
-            bc.valueAxis.gridStrokeColor  = colors.HexColor("#e2e8f0")
+            bc.valueAxis.valueMin              = y_min
+            bc.valueAxis.valueMax              = y_max
+            bc.valueAxis.valueSteps            = None
+            bc.valueAxis.labelTextFormat       = _lakh_fmt
+            bc.valueAxis.labels.fontSize       = 7
+            bc.valueAxis.labels.fontName       = "Helvetica"
+            bc.valueAxis.labels.fillColor      = colors.HexColor("#94a3b8")
+            bc.valueAxis.strokeColor           = colors.HexColor("#e2e8f0")
+            bc.valueAxis.gridStrokeColor       = colors.HexColor("#f1f5f9")
+            bc.valueAxis.gridStrokeDashArray   = [2, 2]  # dashed grid
+            bc.valueAxis.gridStrokeWidth       = 0.5
 
             short_names = []
             for s in individual_stats:
@@ -1483,8 +1695,8 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
             bc.categoryAxis.categoryNames    = short_names
             bc.categoryAxis.labels.fontSize  = 8
             bc.categoryAxis.labels.fontName  = "Helvetica"
-            bc.categoryAxis.labels.fillColor = colors.HexColor("#0f172a")
-            bc.categoryAxis.strokeColor      = colors.HexColor("#cbd5e1")
+            bc.categoryAxis.labels.fillColor = colors.HexColor("#475569")
+            bc.categoryAxis.strokeColor      = colors.HexColor("#e2e8f0")
 
             bc.groupSpacing     = 16
             bc.barSpacing       = 2
@@ -1493,11 +1705,26 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                 bc.bars[0, i].fillColor = colors.HexColor(col)
 
             bar_d.add(bc)
+
+            # Value labels above each bar
+            bar_w      = (bc.width - bc.groupSpacing * (n - 1)) / n
+            bar_x_base = bc.x + bc.groupSpacing / 2
+            y_range    = y_max - y_min
+            for i, val in enumerate(gain_vals):
+                bx     = bar_x_base + i * (bar_w + bc.groupSpacing)
+                by_raw = bc.y + ((val - y_min) / y_range) * bc.height
+                by     = min(by_raw + 4, bc.y + bc.height - 10)
+                lbl    = _lakh_fmt(val)
+                bar_d.add(GStr(bx + bar_w / 2, by,
+                               lbl, fontName="Helvetica-Bold", fontSize=7,
+                               textAnchor="middle",
+                               fillColor=colors.HexColor(SLICE_COLORS[i % len(SLICE_COLORS)])))
+
             elements.append(bar_d)
             elements.append(Spacer(1, 8))
 
         # ── Per-account tables (always, even for single account) ──
-        for stats in individual_stats:
+        for acc_i, stats in enumerate(individual_stats):
             acc_xirr   = f"{stats['xirr_percentage']:.2f}%" if stats.get("xirr_percentage") is not None else "N/A"
             acc_period = "N/A"
             if stats.get("investment_period_days") and stats.get("investment_period_years"):
@@ -1505,8 +1732,9 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                               f"({stats['investment_period_years']:.2f} years)")
             acc_txn = (f"{stats.get('n_investments', 0)} investments,  "
                        f"{stats.get('n_withdrawals', 0)} withdrawals")
-            acc_gain_bg = colors.HexColor("#d1fae5") if (stats.get("net_gain") or 0) >= 0 \
-                          else colors.HexColor("#fee2e2")
+            acc_gain_bg     = colors.HexColor("#e8f5ee") if (stats.get("net_gain") or 0) >= 0 \
+                              else colors.HexColor("#fee2e2")
+            acc_gain_accent = "#10b981" if (stats.get("net_gain") or 0) >= 0 else "#ef4444"
 
             # MF / stocks breakdown
             mf_invested  = stats.get("mf_invested", 0.0)
@@ -1539,9 +1767,13 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
             # Row layout (0-indexed):
             # 0  header
             # Build rows dynamically — row indices computed at runtime for styling
+            if acc_i > 0:
+                elements.append(HRFlowable(width="100%", thickness=0.4,
+                                           color=colors.HexColor("#e2e8f0"),
+                                           spaceBefore=8, spaceAfter=2))
             elements.append(Paragraph(stats.get("account_name", "Account"), acct_h_s))
             rows = [
-                ["Metric",            "Value"],
+                ["METRIC",            "VALUE"],
                 ["Investment Period",  acc_period],
                 ["Total Transactions", acc_txn],
                 ["Total Invested",     _fmt_inr(stats["total_invested"])],
@@ -1550,22 +1782,22 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
 
             # MF + Stocks invested sub-rows (net position, only when tradebook uploaded)
             if has_mf_split:
-                rows.append(["└ Stocks", _fmt_inr(stocks_invested)])
+                rows.append(["· Stocks", _fmt_inr(stocks_invested)])
                 sub_style_rows.append((len(rows) - 1, "#475569", "#f1f5f9"))
-                rows.append(["└ Mutual Funds", _fmt_inr(mf_invested)])
+                rows.append(["· Mutual Funds", _fmt_inr(mf_invested)])
                 sub_style_rows.append((len(rows) - 1, "#475569", "#f1f5f9"))
             # Outside investment sub-rows
             if linked_manual:
-                rows.append(["└ Broker transactions", _fmt_inr(broker_invested)])
+                rows.append(["· Broker transactions", _fmt_inr(broker_invested)])
                 sub_style_rows.append((len(rows) - 1, "#64748b", "#eef2f7"))
-                rows.append(["└ Outside investments", _fmt_inr(manual_total)])
+                rows.append(["· Outside investments", _fmt_inr(manual_total)])
                 sub_style_rows.append((len(rows) - 1, "#64748b", "#eef2f7"))
 
             rows.append(["Total Withdrawn",    _fmt_inr(stats["total_withdrawn"])])
             if has_mf_split:
-                rows.append(["└ Stocks withdrawn", _fmt_inr(stocks_withdrawn)])
+                rows.append(["· Stocks withdrawn", _fmt_inr(stocks_withdrawn)])
                 sub_style_rows.append((len(rows) - 1, "#475569", "#f1f5f9"))
-                rows.append(["└ MF Redeemed",      _fmt_inr(mf_redeemed)])
+                rows.append(["· MF Redeemed",      _fmt_inr(mf_redeemed)])
                 sub_style_rows.append((len(rows) - 1, "#475569", "#f1f5f9"))
 
             rows.append(["Current Value",      _fmt_inr(stats["current_value"])])
@@ -1587,6 +1819,9 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                 ("FONTNAME",   (1, xirr_idx), (1, xirr_idx),  "Helvetica-Bold"),
                 ("FONTSIZE",   (1, xirr_idx), (1, xirr_idx),  10),
                 ("TEXTCOLOR",  (1, xirr_idx), (1, xirr_idx),  colors.HexColor("#f59e0b")),
+                # Left-border accents
+                ("LINEBEFORE", (0, gain_idx), (0, gain_idx), 3.5, colors.HexColor(acc_gain_accent)),
+                ("LINEBEFORE", (0, xirr_idx), (0, xirr_idx), 3.5, colors.HexColor("#f59e0b")),
             ]
             if div_row_idx is not None:
                 style_cmds.extend([
@@ -1597,32 +1832,33 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                 style_cmds.extend([
                     ("BACKGROUND",  (0, r_idx), (-1, r_idx), colors.HexColor(bg_hex)),
                     ("FONTSIZE",    (0, r_idx), (-1, r_idx), 8),
+                    ("FONTNAME",    (0, r_idx), (-1, r_idx), "Helvetica-Oblique"),
                     ("TEXTCOLOR",   (0, r_idx), (0,  r_idx), colors.HexColor(lbl_hex)),
                     ("TEXTCOLOR",   (1, r_idx), (1,  r_idx), colors.HexColor(lbl_hex)),
-                    ("LEFTPADDING", (0, r_idx), (0,  r_idx), 26),
+                    ("LEFTPADDING", (0, r_idx), (0,  r_idx), 22),
                 ])
             at.setStyle(TableStyle(style_cmds))
             elements.append(at)
 
             if has_mf_split:
                 elements.append(Paragraph(
-                    f"MF activity (gross): ₹{mf_invested:,.2f} invested across all trades,  "
-                    f"₹{mf_redeemed:,.2f} redeemed.  Net MF position = ₹{mf_net:,.2f}.",
+                    f"<b>MF activity (gross):</b>  {_fmt_inr(mf_invested)} invested,  "
+                    f"{_fmt_inr(mf_redeemed)} redeemed.  Net MF position = {_fmt_inr(mf_net)}",
                     note_s
                 ))
 
             if linked_manual:
                 entries_note = "  \u2022  ".join(
-                    f"{me.get('label', 'Investment')} \u2014 \u20b9{float(me['amount']):,.0f} on {me['date']}"
+                    f"{me.get('label', 'Investment')} \u2014 Rs.{float(me['amount']):,.0f} on {me['date']}"
                     for me in linked_manual
                 )
                 elements.append(Paragraph(
-                    f"Outside investments linked to this account:  {entries_note}",
+                    f"<b>Outside investments:</b>  {entries_note}",
                     note_s
                 ))
             if total_div > 0:
                 elements.append(Paragraph(
-                    "Dividend income is included in Net Gain / Loss and in the XIRR calculation.",
+                    "<b>Note:</b> Dividend income is included in Net Gain / Loss and in the XIRR calculation.",
                     note_s
                 ))
 
@@ -1631,7 +1867,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         # ── Account Comparison (multi-account only) ────────────
         if len(individual_stats) > 1:
             elements.append(Paragraph("Account Comparison", h2_s))
-            cmp_rows = [["Account", "Invested", "Withdrawn", "Current Value", "Gain / Loss"]]
+            cmp_rows = [["ACCOUNT", "INVESTED", "WITHDRAWN", "CURRENT VALUE", "GAIN / LOSS"]]
             for stats in individual_stats:
                 cmp_rows.append([
                     stats.get("account_name", "Account"),
@@ -1658,10 +1894,34 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                 ("LINEABOVE",  (0, last), (-1, last), 1.5, colors.HexColor("#f59e0b")),
             ]))
             elements.append(cmt)
+            # ── Methodology note (fills last-page white space) ──
+            elements.append(HRFlowable(width="100%", thickness=0.4,
+                                       color=colors.HexColor("#e2e8f0"),
+                                       spaceBefore=18, spaceAfter=10))
+            elements.append(Paragraph(
+                "<b>About XIRR</b>  "
+                "XIRR (Extended Internal Rate of Return) measures the annualised return of your "
+                "investments, accounting for the exact timing and size of each cash flow. "
+                "Unlike simple returns, XIRR correctly handles irregular investments and "
+                "partial withdrawals — making it the most accurate way to compare "
+                "performance across different portfolios and time horizons.",
+                method_s
+            ))
+            elements.append(Paragraph(
+                "<b>Nifty 50 Benchmark</b>  "
+                "The benchmark simulation invests the same rupee amounts on the same dates in "
+                "the Nifty 50 index. Withdrawals are proportionally accounted for by redeeming "
+                "units at the prevailing price. This lets you see whether active stock-picking "
+                "or SIPs beat a simple index fund strategy over your investment period.",
+                method_s
+            ))
 
     # ── Footer ────────────────────────────────────────────────
+    elements.append(HRFlowable(width="100%", thickness=0.4,
+                                color=colors.HexColor("#e2e8f0"),
+                                spaceBefore=14, spaceAfter=6))
     elements.append(Paragraph(
-        "Generated by XIRR Ledger — https://xirrledger.com  |  All monetary values in INR",
+        "<b>XIRR Ledger</b>   https://xirrledger.com   ·   All monetary values in INR",
         footer_s
     ))
 

@@ -7,7 +7,7 @@ const GOOGLE_CLIENT_ID = '1030081614603-onnmmupafevkn0hojoj4qk023tuohius.apps.go
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 const JOBS_BASE_URL = process.env.NEXT_PUBLIC_JOBS_BASE_URL || 'https://xirrledger-jobs.s3.ap-south-1.amazonaws.com';
 
-type Step = 'auth' | 'otp' | 'broker' | 'trade-type' | 'upload-mf' | 'upload-ledger' | 'upload-dividend' | 'holdings' | 'account-done' | 'upload' | 'details' | 'processing' | 'results';
+type Step = 'auth' | 'otp' | 'broker' | 'trade-type' | 'upload-mf' | 'upload-ledger' | 'upload-dividend' | 'holdings' | 'account-done' | 'upload' | 'details' | 'processing' | 'results' | 'edit-holdings';
 
 interface User {
   name: string;
@@ -137,7 +137,7 @@ declare global {
 
 const PROCESSING_STEPS = [
   { key: 'uploading', label: 'Uploading your files securely...' },
-  { key: 'parsing',   label: 'Reading your ledger files...' },
+  { key: 'parsing',   label: 'Reading your transaction files...' },
   { key: 'fetching',  label: 'Fetching Nifty 50 historical data...' },
   { key: 'computing', label: 'Calculating your XIRR...' },
   { key: 'report',    label: 'Generating your PDF report...' },
@@ -164,7 +164,7 @@ async function detectBrokerFromContent(file: File): Promise<Pick<UploadedFile, '
       const allBytes = await file.arrayBuffer();
       const content = new TextDecoder('latin1').decode(new Uint8Array(allBytes));
       if (!content.startsWith('%PDF')) {
-        return { broker: 'unknown', formatError: 'Not a valid PDF. Please upload your Groww Balance Statement PDF.' };
+        return { broker: 'unknown', formatError: 'Not a valid PDF. Please upload the Groww Stock Order History XLSX instead.' };
       }
       // Groww PDFs are always PAN-encrypted. /Encrypt only exists in encrypted PDFs.
       if (!content.includes('/Encrypt')) {
@@ -197,9 +197,13 @@ async function detectBrokerFromContent(file: File): Promise<Pick<UploadedFile, '
     try {
       const header = new Uint8Array(await file.slice(0, 4).arrayBuffer());
       if (header[0] !== 0x50 || header[1] !== 0x4B) {
-        return { broker: 'unknown', formatError: 'Not a valid XLSX file. Please upload the Zerodha ledger XLSX.' };
+        return { broker: 'unknown', formatError: 'Not a valid XLSX file. Please upload the correct statement.' };
       }
     } catch { /* fall through */ }
+    // Groww Stock Order History filename: Stocks_Order_History_<id>_*.xlsx
+    if (name.startsWith('stocks_order_history_')) {
+      return { broker: 'groww' };
+    }
     return { broker: 'zerodha' };
   }
 
@@ -279,14 +283,44 @@ function emptyDraft(): AccountDraft {
   return { id: crypto.randomUUID(), broker: 'zerodha', tradeType: 'stocks', ledgerFiles: [], mfFiles: [], dividendFiles: [], holdings: '', cash: '' };
 }
 
-async function parseMfTradebook(file: File): Promise<{ dateFrom: string; dateTo: string; tradeCount: number; error?: string }> {
+async function parseMfTradebook(file: File, broker?: string): Promise<{ dateFrom: string; dateTo: string; tradeCount: number; error?: string }> {
   try {
+    // Detect wrong file: stock order history uploaded in MF step
+    if (file.name.toLowerCase().startsWith('stocks_order_history_')) {
+      return { dateFrom: '', dateTo: '', tradeCount: 0, error: 'This is the Stocks Order History file — please upload the Mutual Funds - Order history XLSX instead.' };
+    }
+
     const XLSX = await import('xlsx');
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, { type: 'array', cellDates: true });
 
+    // Groww MF Order History (sheet "Transactions")
+    if (wb.SheetNames.includes('Transactions')) {
+      const ws = wb.Sheets['Transactions'];
+      const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: false }) as unknown[][];
+      let headerIdx = -1, typeCol = -1, dateCol = -1;
+      for (let i = 0; i < Math.min(rows.length, 15); i++) {
+        const row = rows[i] as string[];
+        const ti = row.findIndex(c => typeof c === 'string' && c.toLowerCase().includes('transaction type'));
+        if (ti !== -1) { headerIdx = i; typeCol = ti; dateCol = row.findIndex(c => typeof c === 'string' && c.toLowerCase() === 'date'); break; }
+      }
+      if (headerIdx === -1) return { dateFrom: '', dateTo: '', tradeCount: 0, error: 'Could not parse Groww MF Order History — unexpected format.' };
+      const MONTHS: Record<string,string> = { Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12' };
+      const dates: string[] = [];
+      for (let i = headerIdx + 1; i < rows.length; i++) {
+        const row = rows[i] as string[];
+        const ttype = String(row[typeCol] ?? '').trim().toUpperCase();
+        if (ttype !== 'PURCHASE' && ttype !== 'REDEEM') continue;
+        const m = String(row[dateCol] ?? '').trim().match(/(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})/);
+        if (m) dates.push(`${m[3]}-${MONTHS[m[2]] ?? '01'}-${m[1].padStart(2,'0')}`);
+      }
+      if (dates.length === 0) return { dateFrom: '', dateTo: '', tradeCount: 0, error: 'No transactions found in this file.' };
+      dates.sort();
+      return { dateFrom: dates[0], dateTo: dates[dates.length - 1], tradeCount: dates.length };
+    }
+
     const sheet = wb.Sheets['Mutual Funds'];
-    if (!sheet) return { dateFrom: '', dateTo: '', tradeCount: 0, error: 'Sheet "Mutual Funds" not found — please upload the Zerodha MF Tradebook XLSX.' };
+    if (!sheet) return { dateFrom: '', dateTo: '', tradeCount: 0, error: broker === 'groww' ? 'Sheet "Transactions" not found — please upload the Groww Mutual Funds - Order history XLSX.' : 'Sheet "Mutual Funds" not found — please upload the Zerodha MF Tradebook XLSX.' };
 
     const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
 
@@ -315,7 +349,7 @@ async function parseMfTradebook(file: File): Promise<{ dateFrom: string; dateTo:
     dates.sort();
     return { dateFrom: dates[0], dateTo: dates[dates.length - 1], tradeCount: dates.length };
   } catch {
-    return { dateFrom: '', dateTo: '', tradeCount: 0, error: 'Could not read this file — make sure it is the Zerodha MF Tradebook XLSX.' };
+    return { dateFrom: '', dateTo: '', tradeCount: 0, error: broker === 'groww' ? 'Could not read this file — make sure it is the Groww Mutual Funds - Order history XLSX.' : 'Could not read this file — make sure it is the Zerodha MF Tradebook XLSX.' };
   }
 }
 
@@ -398,6 +432,8 @@ export default function CalculatorPage() {
   const [manualEntries, setManualEntries] = useState<ManualEntry[]>([]);
   const [processingError, setProcessingError] = useState('');
   const [uploadedSession, setUploadedSession] = useState<{ sessionId: string; keyMap: Record<string, string> } | null>(null);
+  const [wizardSession, setWizardSession] = useState<{ sessionId: string; keyMap: Record<string, string> } | null>(null);
+  const [holdingsEdits, setHoldingsEdits] = useState<Record<string, { holdings: string; cash: string }>>({});
   const [fileValidationStatus, setFileValidationStatus] = useState<Record<string, 'validating' | 'valid' | 'invalid'>>({});
   const [fileValidationErrors, setFileValidationErrors] = useState<Record<string, string>>({});
   const [isUploading, setIsUploading] = useState(false);
@@ -418,23 +454,25 @@ export default function CalculatorPage() {
   const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   const growwFiles = useMemo(() => files.filter(f => f.broker === 'groww'), [files]);
+  // Only PDF Groww files need PAN; XLSX order history files do not
+  const growwPdfFiles = useMemo(() => growwFiles.filter(f => f.file.name.toLowerCase().endsWith('.pdf')), [growwFiles]);
 
   const effectivePans = useMemo(() => {
-    if (samePanForAll) return Object.fromEntries(growwFiles.map(f => [f.file.name, sharedPan.toUpperCase()]));
+    if (samePanForAll) return Object.fromEntries(growwPdfFiles.map(f => [f.file.name, sharedPan.toUpperCase()]));
     return filePans;
-  }, [samePanForAll, sharedPan, filePans, growwFiles]);
+  }, [samePanForAll, sharedPan, filePans, growwPdfFiles]);
 
-  const allGrowwPansEntered = growwFiles.length === 0 || (
+  const allGrowwPansEntered = growwPdfFiles.length === 0 || (
     samePanForAll
       ? sharedPan.trim().length === 10
-      : growwFiles.every(f => (filePans[f.file.name] ?? '').trim().length === 10)
+      : growwPdfFiles.every(f => (filePans[f.file.name] ?? '').trim().length === 10)
   );
 
-  const allGrowwPansValid = growwFiles.length === 0 || (
+  const allGrowwPansValid = growwPdfFiles.length === 0 || (
     allGrowwPansEntered && (
       samePanForAll
         ? panValidationStatus['__shared__'] === 'valid'
-        : growwFiles.every(f => panValidationStatus[f.file.name] === 'valid')
+        : growwPdfFiles.every(f => panValidationStatus[f.file.name] === 'valid')
     )
   );
 
@@ -924,7 +962,7 @@ export default function CalculatorPage() {
     }
   }
 
-  function pollStatus(sid: string, t0: number) {
+  function pollStatus(sid: string, t0: number, errorStep: Step = 'details') {
     const statusUrl = `${JOBS_BASE_URL}/jobs/${sid}/status.json`;
     let lastStatus = '';
     pollingRef.current = setInterval(async () => {
@@ -956,7 +994,7 @@ export default function CalculatorPage() {
           clearInterval(pollingRef.current!);
           devLog(`[XIRR] Error after ${elapsed}s — ${data.message}`);
           setProcessingError(data.message || 'Something went wrong. Please try again.');
-          setStep('details');
+          setStep(errorStep);
         }
       } catch {}
     }, 2000);
@@ -966,13 +1004,17 @@ export default function CalculatorPage() {
     return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
   }, []);
 
-  async function handleDraftCalculate() {
-    const allDrafts = [...completedAccounts, currentDraft];
+  async function handleDraftCalculate(
+    overrideCurrentDraft?: AccountDraft,
+    overrideCompletedAccounts?: AccountDraft[]
+  ) {
+    const allDrafts = [...(overrideCompletedAccounts ?? completedAccounts), (overrideCurrentDraft ?? currentDraft)];
     const xlsxMime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
-    setIsUploading(true);
-    setUploadPhase('uploading');
     setProcessingError('');
+    // Go straight to the processing screen — it already shows "Uploading your files securely..."
+    setStep('processing');
+    setProcessingSteps(prev => prev.map((s, i) => ({ ...s, status: i === 0 ? 'active' : 'pending' })));
 
     try {
       // Collect all unique files across drafts
@@ -1001,52 +1043,63 @@ export default function CalculatorPage() {
         }
       }
 
-      // Create session
-      const sessionRes = await fetch(`${API_BASE}/session`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ files: allFileEntries.map(f => ({ name: f.name, type: f.type })) }),
-      });
-      if (!sessionRes.ok) throw new Error('Upload failed — please try again.');
-      const { session_id, upload_urls } = await sessionRes.json();
+      // Re-use cached session if files were already uploaded (e.g. Edit Holdings re-submit)
+      let session_id: string;
+      let keyMap: Record<string, string>;
 
-      // Upload all files
-      const keyMap: Record<string, string> = {};
-      await Promise.all(
-        (upload_urls as { name: string; url: string; key: string }[]).map(async ({ name, url, key }) => {
-          const entry = allFileEntries.find(f => f.name === name);
-          if (!entry) return;
-          const putRes = await fetch(url, { method: 'PUT', body: entry.fileObj, headers: { 'Content-Type': entry.type } });
-          if (!putRes.ok) throw new Error(`Failed to upload ${name}`);
-          keyMap[name] = key;
-        })
-      );
+      if (wizardSession) {
+        session_id = wizardSession.sessionId;
+        keyMap = wizardSession.keyMap;
+      } else {
+        // Create session
+        const sessionRes = await fetch(`${API_BASE}/session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ files: allFileEntries.map(f => ({ name: f.name, type: f.type })) }),
+        });
+        if (!sessionRes.ok) throw new Error('Upload failed — please try again.');
+        const res = await sessionRes.json();
+        session_id = res.session_id;
 
-      setUploadPhase('validating');
+        // Upload all files
+        keyMap = {};
+        await Promise.all(
+          (res.upload_urls as { name: string; url: string; key: string }[]).map(async ({ name, url, key }) => {
+            const entry = allFileEntries.find(f => f.name === name);
+            if (!entry) return;
+            const putRes = await fetch(url, { method: 'PUT', body: entry.fileObj, headers: { 'Content-Type': entry.type } });
+            if (!putRes.ok) throw new Error(`Failed to upload ${name}`);
+            keyMap[name] = key;
+          })
+        );
 
-      // Validate non-Groww ledger files
-      for (const draft of allDrafts) {
-        if (draft.broker === 'groww') continue;
-        for (const uf of draft.ledgerFiles) {
-          const fileKey = keyMap[uf.file.name];
-          if (!fileKey) continue;
-          try {
-            await fetch(`${API_BASE}/validate`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ session_id, file_key: fileKey, broker: uf.broker }),
-            });
-          } catch { /* continue on network error */ }
+        // Cache for re-submissions (Edit Holdings)
+        setWizardSession({ sessionId: session_id, keyMap });
+
+        // Validate non-Groww ledger files
+        for (const draft of allDrafts) {
+          if (draft.broker === 'groww') continue;
+          for (const uf of draft.ledgerFiles) {
+            const fileKey = keyMap[uf.file.name];
+            if (!fileKey) continue;
+            try {
+              await fetch(`${API_BASE}/validate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id, file_key: fileKey, broker: uf.broker }),
+              });
+            } catch { /* continue on network error */ }
+          }
         }
-      }
 
-      // Save user to DB
-      const brokerList = [...new Set(allDrafts.map(d => d.broker))].join(',');
-      fetch('/api/save-user.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id, name: user?.name, email: user?.email, broker: brokerList, google_token: user?.googleToken }),
-      }).catch(() => {});
+        // Save user to DB
+        const brokerList = [...new Set(allDrafts.map(d => d.broker))].join(',');
+        fetch('/api/save-user.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id, name: user?.name, email: user?.email, broker: brokerList, google_token: user?.googleToken }),
+        }).catch(() => {});
+      }
 
       // Build accounts payload for Lambda
       const accountsPayload = allDrafts.map(draft => ({
@@ -1073,10 +1126,6 @@ export default function CalculatorPage() {
       }));
       setAccounts(syntheticAccounts);
 
-      setIsUploading(false);
-      setStep('processing');
-      setProcessingSteps(prev => prev.map((s, i) => ({ ...s, status: i === 0 ? 'active' : 'pending' })));
-
       const tProcess = performance.now();
       const processRes = await fetch(`${API_BASE}/process`, {
         method: 'POST',
@@ -1085,10 +1134,10 @@ export default function CalculatorPage() {
       });
       if (!processRes.ok) throw new Error('Failed to start processing — please try again.');
       trackStep('processing', null, session_id);
-      pollStatus(session_id, tProcess);
+      pollStatus(session_id, tProcess, 'account-done');
 
     } catch (err) {
-      setIsUploading(false);
+      setStep('account-done');
       setProcessingError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
     }
   }
@@ -1100,7 +1149,7 @@ export default function CalculatorPage() {
       // Parse each new file
       const parsed: MfFileEntry[] = await Promise.all(
         incoming.map(async file => {
-          const [hash, meta] = await Promise.all([hashFile(file), parseMfTradebook(file)]);
+          const [hash, meta] = await Promise.all([hashFile(file), parseMfTradebook(file, currentDraft.broker)]);
           return { file, hash, dateFrom: meta.dateFrom, dateTo: meta.dateTo, tradeCount: meta.tradeCount, error: meta.error, overlapsWith: [] };
         })
       );
@@ -1196,6 +1245,7 @@ export default function CalculatorPage() {
     setResults(null);
     setProcessingSteps(PROCESSING_STEPS.map(s => ({ ...s, status: 'pending' as const })));
     setUploadedSession(null);
+    setWizardSession(null);
     setFileValidationStatus({});
     setFileValidationErrors({});
     setProcessingError('');
@@ -1205,7 +1255,7 @@ export default function CalculatorPage() {
   }
 
   const STEPS_LABELS = ['Sign In', 'Upload', 'Details'];
-  const stepIndex: Record<Step, number> = { auth: 0, otp: 0, broker: 1, 'trade-type': 1, 'upload-mf': 1, 'upload-ledger': 1, 'upload-dividend': 1, holdings: 1, 'account-done': 1, upload: 1, details: 2, processing: 3, results: 4 };
+  const stepIndex: Record<Step, number> = { auth: 0, otp: 0, broker: 1, 'trade-type': 1, 'upload-mf': 1, 'upload-ledger': 1, 'upload-dividend': 1, holdings: 1, 'account-done': 1, upload: 1, details: 2, processing: 3, results: 4, 'edit-holdings': 4 };
   const isNewFlowStep = ['broker', 'trade-type', 'upload-mf', 'upload-ledger', 'upload-dividend', 'holdings', 'account-done'].includes(step);
   const NEW_FLOW_STEPS: Step[] = ['broker', 'trade-type', 'upload-mf', 'upload-ledger', 'upload-dividend', 'holdings', 'account-done'];
 
@@ -1404,7 +1454,7 @@ export default function CalculatorPage() {
               {completedAccounts.length > 0 && (
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14, justifyContent: 'center' }}>
                   {completedAccounts.map((a, i) => {
-                    const c = a.broker === 'zerodha' ? '#f6461a' : a.broker === 'groww' ? '#22c55e' : '#818cf8';
+                    const c = a.broker === 'zerodha' ? '#f6461a' : a.broker === 'groww' ? '#00d4b4' : '#818cf8';
                     return (
                       <span key={a.id} style={{ padding: '4px 12px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700, background: `${c}22`, color: c, border: `1px solid ${c}44` }}>
                         ✓ {a.broker.charAt(0).toUpperCase() + a.broker.slice(1)} #{i + 1} · {a.tradeType}
@@ -1425,8 +1475,8 @@ export default function CalculatorPage() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {([
-                    { id: 'zerodha' as const, label: 'Zerodha', desc: 'Upload your ledger XLSX or CSV', color: '#f6461a', bg: 'rgba(246,70,26,0.08)', border: 'rgba(246,70,26,0.3)' },
-                    { id: 'groww'   as const, label: 'Groww',   desc: 'Upload your P&L PDF',            color: '#22c55e', bg: 'rgba(34,197,94,0.08)',  border: 'rgba(34,197,94,0.3)'  },
+                    { id: 'zerodha' as const, label: 'Zerodha', desc: 'Upload your ledger XLSX or CSV',       color: '#f6461a', bg: 'rgba(246,70,26,0.08)', border: 'rgba(246,70,26,0.3)' },
+                    { id: 'groww'   as const, label: 'Groww',   desc: 'Upload your stock order history XLSX', color: '#00d4b4', bg: 'rgba(0,212,180,0.08)',  border: 'rgba(0,212,180,0.3)'  },
                     { id: 'fyers'   as const, label: 'Fyers',   desc: 'Upload your ledger CSV',          color: '#818cf8', bg: 'rgba(129,140,248,0.08)', border: 'rgba(129,140,248,0.3)' },
                   ]).map(b => (
                     <button
@@ -1455,6 +1505,8 @@ export default function CalculatorPage() {
                       <div style={{ width: 44, height: 44, borderRadius: 12, background: b.bg, border: `1px solid ${b.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1rem', fontWeight: 800, color: b.color }}>
                         {b.id === 'zerodha'
                           ? <img src="/kite-logo.svg" alt="Zerodha Kite" style={{ width: 26, height: 18 }} />
+                          : b.id === 'groww'
+                          ? <img src="/groww-logo.webp" alt="Groww" style={{ width: 28, height: 28, borderRadius: '50%' }} />
                           : b.id[0].toUpperCase()
                         }
                       </div>
@@ -1482,13 +1534,13 @@ export default function CalculatorPage() {
           const flowSteps = getFlowSteps(currentDraft);
           const currentIdx = 1;
           const brokerLabel = currentDraft.broker.charAt(0).toUpperCase() + currentDraft.broker.slice(1);
-          const brokerColor = currentDraft.broker === 'zerodha' ? '#f6461a' : currentDraft.broker === 'groww' ? '#22c55e' : '#818cf8';
+          const brokerColor = currentDraft.broker === 'zerodha' ? '#f6461a' : currentDraft.broker === 'groww' ? '#00d4b4' : '#818cf8';
 
           return (
             <div style={{ maxWidth: 480, margin: '0 auto', animation: 'fadeSlideIn 0.3s ease' }}>
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginBottom: 24 }}>
                 {flowSteps.map((s, i) => (
-                  <div key={s} style={{ height: 6, width: i === currentIdx ? 28 : 6, borderRadius: 3, background: i < currentIdx ? '#10b981' : i === currentIdx ? GOLD : 'rgba(255,255,255,0.15)', transition: 'all 0.3s' }} />
+                  <div key={s} style={{ height: 6, width: i === currentIdx ? 28 : 6, borderRadius: 3, background: i < currentIdx ? '#10b981' : i === currentIdx ? brokerColor : 'rgba(255,255,255,0.15)', transition: 'all 0.3s' }} />
                 ))}
               </div>
 
@@ -1529,9 +1581,9 @@ export default function CalculatorPage() {
                         color: '#94a3b8',
                       }}
                       onMouseEnter={e => {
-                        (e.currentTarget as HTMLButtonElement).style.borderColor = `rgba(245,158,11,0.5)`;
-                        (e.currentTarget as HTMLButtonElement).style.background = 'rgba(245,158,11,0.06)';
-                        (e.currentTarget as HTMLButtonElement).style.color = GOLD;
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = `${brokerColor}88`;
+                        (e.currentTarget as HTMLButtonElement).style.background = `${brokerColor}10`;
+                        (e.currentTarget as HTMLButtonElement).style.color = brokerColor;
                       }}
                       onMouseLeave={e => {
                         (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)';
@@ -1563,17 +1615,18 @@ export default function CalculatorPage() {
           const currentIdx = flowSteps.indexOf('upload-mf');
           const hasMf = currentDraft.mfFiles.length > 0;
           const brokerLabel = currentDraft.broker.charAt(0).toUpperCase() + currentDraft.broker.slice(1);
+          const brokerColor = currentDraft.broker === 'zerodha' ? '#f6461a' : currentDraft.broker === 'groww' ? '#00d4b4' : '#818cf8';
 
           return (
             <div style={{ maxWidth: 480, margin: '0 auto', animation: 'fadeSlideIn 0.3s ease' }}>
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginBottom: 24 }}>
                 {flowSteps.map((s, i) => (
-                  <div key={s} style={{ height: 6, width: i === currentIdx ? 28 : 6, borderRadius: 3, background: i < currentIdx ? '#10b981' : i === currentIdx ? GOLD : 'rgba(255,255,255,0.15)', transition: 'all 0.3s' }} />
+                  <div key={s} style={{ height: 6, width: i === currentIdx ? 28 : 6, borderRadius: 3, background: i < currentIdx ? '#10b981' : i === currentIdx ? brokerColor : 'rgba(255,255,255,0.15)', transition: 'all 0.3s' }} />
                 ))}
               </div>
 
               <div style={{ ...card, padding: '36px 28px' }}>
-                <span style={{ display: 'inline-flex', gap: 6, padding: '3px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700, background: 'rgba(245,158,11,0.1)', color: GOLD, border: `1px solid rgba(245,158,11,0.3)`, marginBottom: 14 }}>
+                <span style={{ display: 'inline-flex', gap: 6, padding: '3px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700, background: `${brokerColor}1a`, color: brokerColor, border: `1px solid ${brokerColor}4d`, marginBottom: 14 }}>
                   {brokerLabel} · Mutual Funds
                 </span>
                 <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', lineHeight: 1.2 }}>Upload your MF Tradebook</h2>
@@ -1581,28 +1634,52 @@ export default function CalculatorPage() {
                   We&apos;ll read each SIP and trade to calculate your exact XIRR
                 </p>
 
-                {/* Instructions */}
-                <div style={{ borderRadius: 12, background: 'rgba(246,70,26,0.05)', border: '1px solid rgba(246,70,26,0.2)', marginBottom: 20, overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid rgba(246,70,26,0.15)' }}>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#f6461a', letterSpacing: '0.06em', textTransform: 'uppercase' }}>How to download</span>
-                    <a href="https://console.zerodha.com/reports/tradebook" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: 'rgba(246,70,26,0.15)', color: '#f6461a', textDecoration: 'none', whiteSpace: 'nowrap' }}>Open Tradebook ↗</a>
+                {/* Instructions — broker-specific */}
+                {currentDraft.broker === 'zerodha' ? (
+                  <div style={{ borderRadius: 12, background: 'rgba(246,70,26,0.05)', border: '1px solid rgba(246,70,26,0.2)', marginBottom: 20, overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid rgba(246,70,26,0.15)' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#f6461a', letterSpacing: '0.06em', textTransform: 'uppercase' }}>How to download</span>
+                      <a href="https://console.zerodha.com/reports/tradebook" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: 'rgba(246,70,26,0.15)', color: '#f6461a', textDecoration: 'none', whiteSpace: 'nowrap' }}>Open Tradebook ↗</a>
+                    </div>
+                    <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {([
+                        { n: 1, text: <>In the <strong style={{ color: '#e2e8f0' }}>Segment</strong> dropdown, select <strong style={{ color: '#e2e8f0' }}>Mutual funds</strong></> },
+                        { n: 2, text: <>Set <strong style={{ color: '#e2e8f0' }}>Date range</strong> to one financial year (max 365 days) — click <strong style={{ color: '#e2e8f0' }}>→</strong> then <strong style={{ color: '#e2e8f0' }}>Download XLSX</strong></> },
+                        { n: 3, text: <><strong style={{ color: '#e2e8f0' }}>Repeat for each year</strong> from your first MF purchase till today — upload all files together below</> },
+                      ] as {n:number,text:React.ReactNode}[]).map(({ n, text }) => (
+                        <div key={n} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                          <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(246,70,26,0.15)', color: '#f6461a', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{n}</span>
+                          <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.55 }}>{text}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ padding: '8px 14px 10px', borderTop: '1px solid rgba(246,70,26,0.12)', fontSize: '0.72rem', color: '#64748b' }}>
+                      ⚠ Zerodha limits tradebook downloads to <strong style={{ color: '#94a3b8' }}>365 days</strong> per export — one file per year
+                    </div>
                   </div>
-                  <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {([
-                      { n: 1, text: <>In the <strong style={{ color: '#e2e8f0' }}>Segment</strong> dropdown, select <strong style={{ color: '#e2e8f0' }}>Mutual funds</strong></> },
-                      { n: 2, text: <>Set <strong style={{ color: '#e2e8f0' }}>Date range</strong> to one financial year (max 365 days) — click <strong style={{ color: '#e2e8f0' }}>→</strong> then <strong style={{ color: '#e2e8f0' }}>Download XLSX</strong></> },
-                      { n: 3, text: <><strong style={{ color: '#e2e8f0' }}>Repeat for each year</strong> from your first MF purchase till today — upload all files together below</> },
-                    ]).map(({ n, text }) => (
-                      <div key={n} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                        <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(246,70,26,0.15)', color: '#f6461a', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{n}</span>
-                        <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.55 }}>{text}</p>
-                      </div>
-                    ))}
+                ) : (
+                  <div style={{ borderRadius: 12, background: 'rgba(0,212,180,0.05)', border: '1px solid rgba(0,212,180,0.2)', marginBottom: 20, overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid rgba(0,212,180,0.15)' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#00d4b4', letterSpacing: '0.06em', textTransform: 'uppercase' }}>How to download</span>
+                      <a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', borderRadius: 20, background: 'rgba(0,212,180,0.15)', color: '#00d4b4', textDecoration: 'none', whiteSpace: 'nowrap' }}>Open Reports ↗</a>
+                    </div>
+                    <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {([
+                        { n: 1, text: <>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions</strong> → click <strong style={{ color: '#e2e8f0' }}>Mutual Funds - Order history</strong></> },
+                        { n: 2, text: <>Select <strong style={{ color: '#e2e8f0' }}>Custom Date</strong>, set <strong style={{ color: '#e2e8f0' }}>From</strong> to your first ever MF purchase and <strong style={{ color: '#e2e8f0' }}>To</strong> today</> },
+                        { n: 3, text: <>Click <strong style={{ color: '#e2e8f0' }}>Download</strong> — one file covers your full history</> },
+                      ] as {n:number,text:React.ReactNode}[]).map(({ n, text }) => (
+                        <div key={n} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                          <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(0,212,180,0.15)', color: '#00d4b4', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{n}</span>
+                          <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.55 }}>{text}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ padding: '8px 14px 10px', borderTop: '1px solid rgba(0,212,180,0.12)', fontSize: '0.72rem', color: '#64748b' }}>
+                      ✓ One file covers your entire MF history — no need to download per year
+                    </div>
                   </div>
-                  <div style={{ padding: '8px 14px 10px', borderTop: '1px solid rgba(246,70,26,0.12)', fontSize: '0.72rem', color: '#64748b' }}>
-                    ⚠ Zerodha limits tradebook downloads to <strong style={{ color: '#94a3b8' }}>365 days</strong> per export — one file per year
-                  </div>
-                </div>
+                )}
 
                 {/* Multi-file drop zone */}
                 {(() => {
@@ -1683,9 +1760,13 @@ export default function CalculatorPage() {
                             <svg width="38" height="38" fill="none" stroke={draftMfDragging ? GOLD : '#475569'} viewBox="0 0 24 24" style={{ margin: '0 auto 12px', display: 'block' }}>
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                             </svg>
-                            <p style={{ fontWeight: 600, color: draftMfDragging ? GOLD : '#94a3b8', margin: '0 0 6px', fontSize: '0.95rem' }}>Drop all your yearly tradebooks here</p>
-                            <p style={{ margin: '0 0 10px', fontSize: '0.78rem', color: '#475569' }}>One XLSX per financial year — upload all at once</p>
-                            <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, fontFamily: 'monospace', background: 'rgba(246,70,26,0.1)', color: '#f6461a' }}>.xlsx · multiple files ok</span>
+                            <p style={{ fontWeight: 600, color: draftMfDragging ? GOLD : '#94a3b8', margin: '0 0 6px', fontSize: '0.95rem' }}>{currentDraft.broker === 'zerodha' ? 'Drop all your yearly tradebooks here' : 'Drop your tradebook here'}</p>
+                            <p style={{ margin: '0 0 10px', fontSize: '0.78rem', color: '#475569' }}>
+                              {currentDraft.broker === 'zerodha' ? 'One XLSX per financial year — upload all at once' : 'One file covers your full MF history'}
+                            </p>
+                            <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, fontFamily: 'monospace', background: `${brokerColor}1a`, color: brokerColor }}>
+                              {currentDraft.broker === 'zerodha' ? '.xlsx · multiple files ok' : '.xlsx · single file'}
+                            </span>
                           </>
                         )}
                         <input ref={mfInputRef} type="file" accept=".xlsx" multiple onChange={e => {
@@ -1727,10 +1808,11 @@ export default function CalculatorPage() {
                         onClick={() => {
                           const flowSteps = getFlowSteps(currentDraft);
                           const nextIdx = flowSteps.indexOf('upload-mf') + 1;
-                          setStep(flowSteps[nextIdx] as Step);
+                          const ns = flowSteps[nextIdx] as Step;
+                          setStep(ns); trackStep(ns);
                         }}
                         disabled={!canGo}
-                        style={{ ...btnPrimary, flex: 2, padding: '12px', fontSize: '0.9rem', opacity: canGo ? 1 : 0.4, cursor: canGo ? 'pointer' : 'not-allowed' }}
+                        style={{ ...btnPrimary, background: brokerColor, color: brokerColor === "#f6461a" ? "#fff" : "#0a1020", flex: 2, padding: '12px', fontSize: '0.9rem', opacity: canGo ? 1 : 0.4, cursor: canGo ? 'pointer' : 'not-allowed' }}
                       >
                         {mfParsing ? 'Reading files…' : hasErrors ? 'Fix errors to continue' : 'Continue →'}
                       </button>
@@ -1747,23 +1829,22 @@ export default function CalculatorPage() {
           const flowSteps = getFlowSteps(currentDraft);
           const currentIdx = flowSteps.indexOf('upload-ledger');
           const broker = currentDraft.broker;
-          const brokerColor = broker === 'zerodha' ? '#f6461a' : broker === 'groww' ? '#22c55e' : '#818cf8';
+          const brokerColor = broker === 'zerodha' ? '#f6461a' : broker === 'groww' ? '#00d4b4' : '#818cf8';
           const hasLedger = currentDraft.ledgerFiles.length > 0;
           const isGroww = broker === 'groww';
-          const growwPanValid = isGroww ? currentDraft.panValidStatus === 'valid' : true;
-          const canContinue = hasLedger && (!isGroww || (currentDraft.pan?.length === 10 && growwPanValid));
+          const canContinue = hasLedger;
 
           const brokerMeta = {
             zerodha: { accept: '.xlsx', label: 'Zerodha Ledger (XLSX)', hint: 'Console → Funds → Statement → All Segments → XLSX', link: 'https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb' },
-            groww:   { accept: '.pdf',       label: 'Groww Balance Statement (PDF)', hint: 'Groww app → Reports → Balance Statement → PDF', link: 'https://groww.in/user/profile/report' },
-            fyers:   { accept: '.csv',       label: 'Fyers Ledger (CSV)', hint: 'Fyers One → Reports → Ledger → Download CSV', link: 'https://fyers.in/web/reports/ledger' },
+            groww:   { accept: '.xlsx', label: 'Groww Stock Order History (XLSX)', hint: 'Groww app → Reports → Stocks - Order history → Download', link: 'https://groww.in/user/profile/report' },
+            fyers:   { accept: '.csv',  label: 'Fyers Ledger (CSV)', hint: 'Fyers One → Reports → Ledger → Download CSV', link: 'https://fyers.in/web/reports/ledger' },
           }[broker];
 
           return (
             <div style={{ maxWidth: 480, margin: '0 auto', animation: 'fadeSlideIn 0.3s ease' }}>
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginBottom: 24 }}>
                 {flowSteps.map((s, i) => (
-                  <div key={s} style={{ height: 6, width: i === currentIdx ? 28 : 6, borderRadius: 3, background: i < currentIdx ? '#10b981' : i === currentIdx ? GOLD : 'rgba(255,255,255,0.15)', transition: 'all 0.3s' }} />
+                  <div key={s} style={{ height: 6, width: i === currentIdx ? 28 : 6, borderRadius: 3, background: i < currentIdx ? '#10b981' : i === currentIdx ? brokerColor : 'rgba(255,255,255,0.15)', transition: 'all 0.3s' }} />
                 ))}
               </div>
 
@@ -1771,7 +1852,7 @@ export default function CalculatorPage() {
                 <span style={{ display: 'inline-flex', gap: 6, padding: '3px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700, background: `${brokerColor}22`, color: brokerColor, border: `1px solid ${brokerColor}44`, marginBottom: 14 }}>
                   {broker.charAt(0).toUpperCase() + broker.slice(1)} · Stocks
                 </span>
-                <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', lineHeight: 1.2 }}>Upload your ledger</h2>
+                <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', lineHeight: 1.2 }}>{isGroww ? 'Upload your order history' : 'Upload your ledger'}</h2>
                 <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 20px' }}>{brokerMeta.label}</p>
 
                 {/* Instructions — per broker */}
@@ -1792,9 +1873,9 @@ export default function CalculatorPage() {
                       </div>
                     ))}
                     {broker === 'groww' && ([
-                      { n: 1, text: <>Go to <strong style={{ color: '#e2e8f0' }}>Reports</strong> → scroll to <strong style={{ color: '#e2e8f0' }}>Groww Balance Statement</strong></> },
-                      { n: 2, text: <>Select format <strong style={{ color: '#e2e8f0' }}>PDF</strong>, set date range from first investment to today → <strong style={{ color: '#e2e8f0' }}>Download</strong></> },
-                      { n: 3, text: <>PDF password = your <strong style={{ color: '#e2e8f0' }}>PAN number</strong> (e.g. ABCDE1234F)</> },
+                      { n: 1, text: <>Go to <strong style={{ color: '#e2e8f0' }}>Reports</strong> → scroll to <strong style={{ color: '#e2e8f0' }}>Transactions</strong> section → click <strong style={{ color: '#e2e8f0' }}>Stocks - Order history</strong></> },
+                      { n: 2, text: <>Set date range from <strong style={{ color: '#e2e8f0' }}>before your first stock purchase</strong> to today → click <strong style={{ color: '#e2e8f0' }}>Download</strong></> },
+                      { n: 3, text: <>Upload the <strong style={{ color: '#e2e8f0' }}>XLSX file</strong> — no password needed. Note: charges (STT, brokerage) are excluded from this report.</> },
                     ] as {n:number, text:React.ReactNode}[]).map(({ n, text }) => (
                       <div key={n} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                         <span style={{ width: 20, height: 20, borderRadius: '50%', background: `${brokerColor}22`, color: brokerColor, fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{n}</span>
@@ -1859,37 +1940,6 @@ export default function CalculatorPage() {
                   <input ref={ledgerInputRef} type="file" multiple accept={brokerMeta.accept} onChange={async e => { if (e.target.files) for (const f of Array.from(e.target.files)) await addLedgerFileToDraft(f); }} style={{ display: 'none' }} />
                 </div>
 
-                {/* Groww PAN input — shown inline after PDF drop */}
-                {isGroww && hasLedger && (
-                  <div style={{ marginTop: 16, padding: '16px 18px', ...innerCard, border: '1px solid rgba(34,197,94,0.2)' }}>
-                    <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#22c55e', display: 'block', marginBottom: 8 }}>
-                      Your PAN number (PDF password)
-                    </label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <input
-                        type="text"
-                        placeholder="e.g. ABCDE1234F"
-                        maxLength={10}
-                        value={currentDraft.pan ?? ''}
-                        onChange={e => {
-                          const pan = e.target.value.toUpperCase();
-                          setCurrentDraft(prev => ({ ...prev, pan, panValidStatus: 'idle', panValidError: undefined }));
-                          if (pan.length === 10) validateDraftPan(pan);
-                        }}
-                        style={{
-                          ...inputBase, flex: 1, padding: '10px 12px', fontSize: '1rem', letterSpacing: 3, fontFamily: 'monospace',
-                          border: currentDraft.panValidStatus === 'valid' ? '1.5px solid #22c55e' : currentDraft.panValidStatus === 'invalid' ? '1.5px solid #ef4444' : '1.5px solid rgba(255,255,255,0.12)',
-                          background: currentDraft.panValidStatus === 'valid' ? 'rgba(34,197,94,0.08)' : currentDraft.panValidStatus === 'invalid' ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.06)',
-                        }}
-                      />
-                      {currentDraft.panValidStatus === 'validating' && <span style={{ color: GOLD }}>⏳</span>}
-                      {currentDraft.panValidStatus === 'valid'      && <span style={{ color: '#22c55e', fontWeight: 700, fontSize: '1.1rem' }}>✓</span>}
-                      {currentDraft.panValidStatus === 'invalid'    && <span style={{ color: '#ef4444', fontWeight: 700 }}>✗</span>}
-                    </div>
-                    {currentDraft.panValidError && <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: '#ef4444' }}>{currentDraft.panValidError}</p>}
-                    <p style={{ margin: '6px 0 0', fontSize: '0.72rem', color: '#475569' }}>Your PAN is used only to unlock the PDF — never stored.</p>
-                  </div>
-                )}
 
                 <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
                   <button onClick={() => setStep(currentDraft.tradeType === 'both' ? 'upload-mf' : 'trade-type')} style={{ ...btnSecondary, flex: 1, padding: '12px', fontSize: '0.9rem' }}>← Back</button>
@@ -1897,10 +1947,11 @@ export default function CalculatorPage() {
                     onClick={() => {
                       const flowSteps = getFlowSteps(currentDraft);
                       const nextIdx = flowSteps.indexOf('upload-ledger') + 1;
-                      setStep(flowSteps[nextIdx] as Step);
+                      const ns = flowSteps[nextIdx] as Step;
+                      setStep(ns); trackStep(ns);
                     }}
                     disabled={!canContinue}
-                    style={{ ...btnPrimary, flex: 2, padding: '12px', fontSize: '0.9rem', opacity: canContinue ? 1 : 0.4, cursor: canContinue ? 'pointer' : 'not-allowed' }}
+                    style={{ ...btnPrimary, background: brokerColor, color: brokerColor === "#f6461a" ? "#fff" : "#0a1020", flex: 2, padding: '12px', fontSize: '0.9rem', opacity: canContinue ? 1 : 0.4, cursor: canContinue ? 'pointer' : 'not-allowed' }}
                   >
                     Continue →
                   </button>
@@ -1915,17 +1966,20 @@ export default function CalculatorPage() {
           const flowSteps = getFlowSteps(currentDraft);
           const currentIdx = flowSteps.indexOf('upload-dividend');
           const hasDiv = currentDraft.dividendFiles.length > 0;
+          const brokerColor = currentDraft.broker === 'zerodha' ? '#f6461a' : currentDraft.broker === 'groww' ? '#00d4b4' : '#818cf8';
 
           function advanceFromDiv() {
             const nextIdx = flowSteps.indexOf('upload-dividend') + 1;
-            setStep(flowSteps[nextIdx] as Step);
+            const nextStep = flowSteps[nextIdx] as Step;
+            setStep(nextStep);
+            trackStep(nextStep);
           }
 
           return (
             <div style={{ maxWidth: 480, margin: '0 auto', animation: 'fadeSlideIn 0.3s ease' }}>
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginBottom: 24 }}>
                 {flowSteps.map((s, i) => (
-                  <div key={s} style={{ height: 6, width: i === currentIdx ? 28 : 6, borderRadius: 3, background: i < currentIdx ? '#10b981' : i === currentIdx ? GOLD : 'rgba(255,255,255,0.15)', transition: 'all 0.3s' }} />
+                  <div key={s} style={{ height: 6, width: i === currentIdx ? 28 : 6, borderRadius: 3, background: i < currentIdx ? '#10b981' : i === currentIdx ? brokerColor : 'rgba(255,255,255,0.15)', transition: 'all 0.3s' }} />
                 ))}
               </div>
 
@@ -2004,7 +2058,7 @@ export default function CalculatorPage() {
                 <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
                   <button onClick={() => setStep('upload-ledger')} style={{ ...btnSecondary, flex: 1, padding: '12px', fontSize: '0.875rem' }}>← Back</button>
                   <button onClick={advanceFromDiv} style={{ ...btnSecondary, flex: 1, padding: '12px', fontSize: '0.875rem', color: '#94a3b8' }}>Skip →</button>
-                  <button onClick={advanceFromDiv} disabled={!hasDiv} style={{ ...btnPrimary, flex: 2, padding: '12px', fontSize: '0.9rem', opacity: hasDiv ? 1 : 0.35, cursor: hasDiv ? 'pointer' : 'not-allowed' }}>
+                  <button onClick={advanceFromDiv} disabled={!hasDiv} style={{ ...btnPrimary, background: brokerColor, color: brokerColor === "#f6461a" ? "#fff" : "#0a1020", flex: 2, padding: '12px', fontSize: '0.9rem', opacity: hasDiv ? 1 : 0.35, cursor: hasDiv ? 'pointer' : 'not-allowed' }}>
                     Continue →
                   </button>
                 </div>
@@ -2019,12 +2073,13 @@ export default function CalculatorPage() {
           const currentIdx = flowSteps.indexOf('holdings');
           const canContinue = currentDraft.holdings.trim() !== '';
           const isBoth = currentDraft.tradeType === 'both';
+          const brokerColor = currentDraft.broker === 'zerodha' ? '#f6461a' : currentDraft.broker === 'groww' ? '#00d4b4' : '#818cf8';
 
           return (
             <div style={{ maxWidth: 480, margin: '0 auto', animation: 'fadeSlideIn 0.3s ease' }}>
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginBottom: 24 }}>
                 {flowSteps.map((s, i) => (
-                  <div key={s} style={{ height: 6, width: i === currentIdx ? 28 : 6, borderRadius: 3, background: i < currentIdx ? '#10b981' : i === currentIdx ? GOLD : 'rgba(255,255,255,0.15)', transition: 'all 0.3s' }} />
+                  <div key={s} style={{ height: 6, width: i === currentIdx ? 28 : 6, borderRadius: 3, background: i < currentIdx ? '#10b981' : i === currentIdx ? brokerColor : 'rgba(255,255,255,0.15)', transition: 'all 0.3s' }} />
                 ))}
               </div>
 
@@ -2084,9 +2139,9 @@ export default function CalculatorPage() {
                     setStep(flowSteps[prevStepIdx] as Step);
                   }} style={{ ...btnSecondary, flex: 1, padding: '12px', fontSize: '0.9rem' }}>← Back</button>
                   <button
-                    onClick={() => setStep('account-done')}
+                    onClick={() => { setStep('account-done'); trackStep('account-done'); }}
                     disabled={!canContinue}
-                    style={{ ...btnPrimary, flex: 2, padding: '12px', fontSize: '0.9rem', opacity: canContinue ? 1 : 0.4, cursor: canContinue ? 'pointer' : 'not-allowed' }}
+                    style={{ ...btnPrimary, background: brokerColor, color: brokerColor === "#f6461a" ? "#fff" : "#0a1020", flex: 2, padding: '12px', fontSize: '0.9rem', opacity: canContinue ? 1 : 0.4, cursor: canContinue ? 'pointer' : 'not-allowed' }}
                   >
                     Continue →
                   </button>
@@ -2099,7 +2154,7 @@ export default function CalculatorPage() {
         {/* ── SCREEN 7: ACCOUNT DONE — Calculate or Add More ── */}
         {step === 'account-done' && (() => {
           const broker = currentDraft.broker;
-          const brokerColor = broker === 'zerodha' ? '#f6461a' : broker === 'groww' ? '#22c55e' : '#818cf8';
+          const brokerColor = broker === 'zerodha' ? '#f6461a' : broker === 'groww' ? '#00d4b4' : '#818cf8';
           const allDrafts = [...completedAccounts, currentDraft];
           const totalFiles = allDrafts.reduce((n, d) => n + d.ledgerFiles.length + d.mfFiles.length + d.dividendFiles.length, 0);
           const totalHoldings = allDrafts.reduce((sum, d) => sum + (parseFloat(d.holdings) || 0) + (parseFloat(d.cash) || 0), 0);
@@ -2125,7 +2180,7 @@ export default function CalculatorPage() {
                 {/* Summary cards for all accounts */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
                   {allDrafts.map((d, i) => {
-                    const c = d.broker === 'zerodha' ? '#f6461a' : d.broker === 'groww' ? '#22c55e' : '#818cf8';
+                    const c = d.broker === 'zerodha' ? '#f6461a' : d.broker === 'groww' ? '#00d4b4' : '#818cf8';
                     const fileCount = d.ledgerFiles.length + d.mfFiles.length + d.dividendFiles.length;
                     return (
                       <div key={d.id} style={{ ...innerCard, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -2160,7 +2215,7 @@ export default function CalculatorPage() {
 
                 {/* Primary CTA: Calculate */}
                 <button
-                  onClick={handleDraftCalculate}
+                  onClick={() => handleDraftCalculate()}
                   style={{ ...btnPrimary, width: '100%', padding: '15px', fontSize: '1rem', fontWeight: 800, marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 >
                   <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
@@ -2172,6 +2227,7 @@ export default function CalculatorPage() {
                   onClick={() => {
                     setCompletedAccounts(prev => [...prev, currentDraft]);
                     setCurrentDraft(emptyDraft());
+                    setWizardSession(null);
                     setStep('broker');
                   }}
                   style={{ ...btnSecondary, width: '100%', padding: '13px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
@@ -2213,7 +2269,7 @@ export default function CalculatorPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 20 }}>
                 {([
                   { id: 'zerodha', label: 'Zerodha', letter: 'Z', color: '#10b981', bg: 'rgba(16,185,129,0.08)', shadow: 'rgba(16,185,129,0.12)', iconBg: 'rgba(16,185,129,0.12)', fileType: '.xlsx' },
-                  { id: 'groww',   label: 'Groww',   letter: 'G', color: GOLD,      bg: 'rgba(245,158,11,0.08)',  shadow: 'rgba(245,158,11,0.12)',  iconBg: 'rgba(245,158,11,0.12)',  fileType: '.pdf'  },
+                  { id: 'groww',   label: 'Groww',   letter: 'G', color: GOLD,      bg: 'rgba(245,158,11,0.08)',  shadow: 'rgba(245,158,11,0.12)',  iconBg: 'rgba(245,158,11,0.12)',  fileType: '.xlsx' },
                   { id: 'fyers',   label: 'Fyers',   letter: 'F', color: '#818cf8', bg: 'rgba(129,140,248,0.08)', shadow: 'rgba(129,140,248,0.12)', iconBg: 'rgba(129,140,248,0.12)', fileType: '.csv'  },
                 ] as const).map(b => {
                   const isActive = guideBrokers.includes(b.id);
@@ -2294,53 +2350,24 @@ export default function CalculatorPage() {
                       Open Groww ↗
                     </a>
                   </div>
-                  {/* Method 1 */}
-                  <div style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: 10, padding: 14, marginBottom: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#10b981' }}>Method 1</span>
-                      <span style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', fontSize: '0.6rem', fontWeight: 700, padding: '1px 7px', borderRadius: 100, border: '1px solid rgba(16,185,129,0.25)' }}>RECOMMENDED</span>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>— Balance Statement</span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-                      {(isMobile ? [
-                        <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700 }}>Open Groww Reports →</a></>,
-                        <>Tap <strong style={{ color: '#e2e8f0' }}>Groww Balance Statement</strong></>,
-                        <>Set date range from first investment to today → tap <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
-                      ] : [
-                        <>Use this link to go directly to the Groww Reports page: <a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700 }}>Open Groww Reports →</a></>,
-                        <>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions → Groww Balance Statement</strong></>,
-                        <>Select format <strong style={{ color: '#e2e8f0' }}>PDF</strong> (not Excel), set date range → <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
-                      ] as React.ReactNode[]).map((s, i) => (
-                        <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                          <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(16,185,129,0.1)', color: '#10b981', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
-                          <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.55 }}>{s}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <p style={{ margin: '10px 0 0', fontSize: '0.72rem', color: '#92400e' }}>⚠ Only available from Apr 2023 in-app. For earlier history, contact Groww support.</p>
-                  </div>
-                  {/* Method 2 */}
-                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: 14 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b' }}>Method 2</span>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>— Annual Statements (one PDF per year)</span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-                      {([
-                        <><a href="https://groww.in/user/balance/inr" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 700 }}>Open Groww Balance →</a></>,
-                        <>Click <strong style={{ color: '#e2e8f0' }}>All Transactions</strong> → <strong style={{ color: '#e2e8f0' }}>Download statement</strong></>,
-                        <>Select date range (max 1 year) → <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
-                        <><strong style={{ color: '#e2e8f0' }}>Repeat for each year</strong> from first investment till today</>,
-                      ] as React.ReactNode[]).map((s, i) => (
-                        <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                          <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', color: '#64748b', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
-                          <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.55 }}>{s}</p>
-                        </div>
-                      ))}
-                    </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                    {(isMobile ? [
+                      <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 700 }}>Open Groww Reports →</a></>,
+                      <>Tap <strong style={{ color: '#e2e8f0' }}>Stocks - Order history</strong> under Transactions</>,
+                      <>Set date range from first investment to today → tap <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
+                    ] : [
+                      <>Use this link to go directly to Groww Reports: <a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: GOLD, fontWeight: 700 }}>Open Groww Reports →</a></>,
+                      <>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions</strong> → click <strong style={{ color: '#e2e8f0' }}>Stocks - Order history</strong></>,
+                      <>Set date range from before your first purchase to today → click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
+                    ] as React.ReactNode[]).map((s, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                        <span style={{ width: 20, height: 20, borderRadius: '50%', background: `rgba(245,158,11,0.12)`, color: GOLD, fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
+                        <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8', lineHeight: 1.55 }}>{s}</p>
+                      </div>
+                    ))}
                   </div>
                   <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 7, background: 'rgba(0,0,0,0.2)', fontSize: '0.74rem', color: '#64748b', lineHeight: 1.5 }}>
-                    🔑 PDF password = your <strong style={{ color: '#e2e8f0' }}>PAN number</strong> (e.g. ABCDE1234F) &nbsp;·&nbsp; Upload one PDF per FY
+                    ✓ One XLSX covers all years &nbsp;·&nbsp; No password required &nbsp;·&nbsp; Note: charges (STT, brokerage) not included
                   </div>
                 </div>
               )}
@@ -2414,7 +2441,7 @@ export default function CalculatorPage() {
                     </p>
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
                       {guideBrokers.includes('zerodha') && <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, fontFamily: 'monospace', background: 'rgba(16,185,129,0.1)', color: '#10b981' }}>Zerodha · .xlsx</span>}
-                      {guideBrokers.includes('groww')   && <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, fontFamily: 'monospace', background: 'rgba(245,158,11,0.1)', color: GOLD }}>Groww · .pdf</span>}
+                      {guideBrokers.includes('groww')   && <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, fontFamily: 'monospace', background: 'rgba(245,158,11,0.1)', color: GOLD }}>Groww · .xlsx</span>}
                       {guideBrokers.includes('fyers')   && <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, fontFamily: 'monospace', background: 'rgba(129,140,248,0.1)', color: '#818cf8' }}>Fyers · .csv</span>}
                     </div>
                     <input ref={fileInputRef} type="file" multiple accept=".csv,.pdf,.xlsx"
@@ -2539,8 +2566,8 @@ export default function CalculatorPage() {
         {step === 'details' && (
           <div style={{ maxWidth: 560, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-            {/* Section A: Groww PANs */}
-            {growwFiles.length > 0 && (
+            {/* Section A: Groww PANs (only for PDF files) */}
+            {growwPdfFiles.length > 0 && (
               <div style={{ ...card, padding: 28 }}>
                 <h2 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 4, color: '#ffffff' }}>
                   Identify Your Groww Accounts
@@ -2549,7 +2576,7 @@ export default function CalculatorPage() {
                   Enter the PAN for each Groww PDF. Files with the same PAN will be merged into one account.
                 </p>
 
-                {growwFiles.length > 1 && (
+                {growwPdfFiles.length > 1 && (
                   <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 16, userSelect: 'none' }}>
                     <input
                       type="checkbox" checked={samePanForAll}
@@ -2563,7 +2590,7 @@ export default function CalculatorPage() {
                 {samePanForAll ? (
                   <div style={{ ...innerCard, padding: '14px 16px' }}>
                     <p style={{ margin: '0 0 10px', fontSize: '0.78rem', color: '#475569' }}>
-                      Applies to all {growwFiles.length} Groww file{growwFiles.length > 1 ? 's' : ''}
+                      Applies to all {growwPdfFiles.length} Groww file{growwPdfFiles.length > 1 ? 's' : ''}
                     </p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b', flexShrink: 0 }}>PAN:</label>
@@ -2572,7 +2599,7 @@ export default function CalculatorPage() {
                         onChange={e => {
                           const pan = e.target.value.toUpperCase();
                           setSharedPan(pan);
-                          if (pan.length === 10) validateSinglePan('__shared__', pan, growwFiles);
+                          if (pan.length === 10) validateSinglePan('__shared__', pan, growwPdfFiles);
                           else {
                             setPanValidationStatus(prev => ({ ...prev, '__shared__': 'idle' }));
                             setPanValidationErrors({});
@@ -2590,7 +2617,7 @@ export default function CalculatorPage() {
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {growwFiles.map(f => {
+                    {growwPdfFiles.map(f => {
                       const hasError = panValidationStatus[f.file.name] === 'invalid';
                       return (
                         <div key={f.file.name} style={{
@@ -2656,7 +2683,7 @@ export default function CalculatorPage() {
                 Enter the current market value and available cash for each account
               </p>
 
-              {growwFiles.length > 0 && !allGrowwPansEntered ? (
+              {growwPdfFiles.length > 0 && !allGrowwPansEntered ? (
                 <div style={{ padding: '20px', ...innerCard, textAlign: 'center', border: '1px dashed rgba(255,255,255,0.08)' }}>
                   <p style={{ margin: 0, color: '#334155', fontSize: '0.845rem' }}>
                     Enter PAN numbers above to detect your accounts
@@ -2858,7 +2885,8 @@ export default function CalculatorPage() {
               <button onClick={() => {
                 if (pollingRef.current) clearInterval(pollingRef.current);
                 setProcessingSteps(PROCESSING_STEPS.map(s => ({ ...s, status: 'pending' as const })));
-                setStep('details');
+                // Wizard flow: go back to account-done; old flow: go back to details
+                setStep(currentDraft.ledgerFiles.length > 0 || currentDraft.mfFiles.length > 0 || completedAccounts.length > 0 ? 'account-done' : 'details');
               }} style={{ ...btnSecondary, width: '100%', padding: '11px', marginTop: 24, fontSize: '0.85rem' }}>
                 ← Stop &amp; Edit Holdings
               </button>
@@ -2966,9 +2994,13 @@ export default function CalculatorPage() {
               </a>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button onClick={() => {
-                  setProcessingSteps(PROCESSING_STEPS.map(s => ({ ...s, status: 'pending' as const })));
-                  setResults(null);
-                  setStep('details');
+                  // Build initial edits map from all drafts
+                  const allDrafts = [...completedAccounts, currentDraft];
+                  const initial: Record<string, { holdings: string; cash: string }> = {};
+                  for (const d of allDrafts) initial[d.id] = { holdings: d.holdings, cash: d.cash };
+                  setHoldingsEdits(initial);
+                  setStep('edit-holdings');
+                  trackStep('edit-holdings');
                 }} style={{ ...btnSecondary, flex: 1, padding: 14, fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                   <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -3088,6 +3120,107 @@ export default function CalculatorPage() {
           </div>
         </div>
       )}
+
+      {/* ── EDIT HOLDINGS ── */}
+      {step === 'edit-holdings' && (() => {
+        const allDrafts = [...completedAccounts, currentDraft];
+        const canRecalculate = allDrafts.every(d => (holdingsEdits[d.id]?.holdings ?? d.holdings).trim() !== '');
+
+        const getBrokerColor = (b: string) => b === 'zerodha' ? '#f6461a' : b === 'groww' ? '#00d4b4' : '#818cf8';
+        const getLabel = (d: AccountDraft) => {
+          const matched = accounts.find(a => a.id === d.id);
+          if (matched?.name) return matched.name.replace(/\s*—\s*(stocks|mf|both)$/i, '');
+          const hint = (d.ledgerFiles[0]?.file.name || d.mfFiles[0]?.file.name || '').match(/[_-]([A-Z0-9]+)\./i)?.[1]?.toUpperCase();
+          return hint ? `${d.broker.charAt(0).toUpperCase() + d.broker.slice(1)} (${hint})` : d.broker.charAt(0).toUpperCase() + d.broker.slice(1);
+        };
+
+        return (
+          <div style={{ maxWidth: 480, margin: '0 auto', animation: 'fadeSlideIn 0.3s ease' }}>
+            <div style={{ textAlign: 'center', marginBottom: 28 }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', margin: '0 0 6px' }}>Update Holdings</h2>
+              <p style={{ color: '#64748b', fontSize: '0.875rem', margin: 0 }}>
+                Enter the current market value for each account, then recalculate.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
+              {allDrafts.map(draft => {
+                const bc = getBrokerColor(draft.broker);
+                const label = getLabel(draft);
+                const isBoth = draft.tradeType === 'both';
+                const h = holdingsEdits[draft.id]?.holdings ?? draft.holdings;
+                const c = holdingsEdits[draft.id]?.cash ?? draft.cash;
+
+                return (
+                  <div key={draft.id} style={{ ...card, padding: '20px 22px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                      <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700, background: `${bc}22`, color: bc, border: `1px solid ${bc}44` }}>
+                        {label}
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: '#475569' }}>
+                        {draft.tradeType === 'mf' ? 'Mutual Funds' : draft.tradeType === 'both' ? 'Stocks + MF' : 'Stocks'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      <div>
+                        <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 6 }}>
+                          {isBoth ? 'Stocks + MF value (₹) *' : 'Portfolio value (₹) *'}
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: '0.95rem', fontWeight: 600 }}>₹</span>
+                          <input
+                            type="number" min="0" placeholder="e.g. 350000"
+                            value={h}
+                            onChange={e => setHoldingsEdits(prev => ({ ...prev, [draft.id]: { holdings: e.target.value.replace('-',''), cash: prev[draft.id]?.cash ?? draft.cash } }))}
+                            style={{ ...inputBase, width: '100%', padding: '11px 11px 11px 26px', fontSize: '0.95rem', boxSizing: 'border-box', fontWeight: 600,
+                              border: h ? `1.5px solid ${bc}55` : '1.5px solid rgba(255,255,255,0.1)',
+                              background: h ? `${bc}08` : 'rgba(255,255,255,0.04)' }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.74rem', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 6 }}>
+                          Available cash (₹)
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: '0.95rem', fontWeight: 600 }}>₹</span>
+                          <input
+                            type="number" min="0" placeholder="e.g. 12000"
+                            value={c}
+                            onChange={e => setHoldingsEdits(prev => ({ ...prev, [draft.id]: { holdings: prev[draft.id]?.holdings ?? draft.holdings, cash: e.target.value.replace('-','') } }))}
+                            style={{ ...inputBase, width: '100%', padding: '11px 11px 11px 26px', fontSize: '0.95rem', boxSizing: 'border-box' }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                disabled={!canRecalculate}
+                onClick={() => {
+                  const updatedCurrent = { ...currentDraft, holdings: holdingsEdits[currentDraft.id]?.holdings ?? currentDraft.holdings, cash: holdingsEdits[currentDraft.id]?.cash ?? currentDraft.cash };
+                  const updatedCompleted = completedAccounts.map(d => ({ ...d, holdings: holdingsEdits[d.id]?.holdings ?? d.holdings, cash: holdingsEdits[d.id]?.cash ?? d.cash }));
+                  setCurrentDraft(updatedCurrent);
+                  setCompletedAccounts(updatedCompleted);
+                  handleDraftCalculate(updatedCurrent, updatedCompleted);
+                }}
+                style={{ ...btnPrimary, width: '100%', padding: '14px', fontSize: '1rem', fontWeight: 800, opacity: canRecalculate ? 1 : 0.4, cursor: canRecalculate ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              >
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                Recalculate XIRR →
+              </button>
+              <button onClick={() => setStep('results')} style={{ ...btnSecondary, width: '100%', padding: '12px', fontSize: '0.9rem' }}>
+                ← Back to Results
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Processing Error Modal ── */}
       {processingError && (
