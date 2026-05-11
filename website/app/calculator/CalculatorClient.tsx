@@ -358,7 +358,9 @@ function datesOverlap(aFrom: string, aTo: string, bFrom: string, bTo: string): b
 }
 
 function getFlowSteps(draft: AccountDraft): Step[] {
-  const steps: Step[] = ['broker', 'trade-type'];
+  const steps: Step[] = ['broker'];
+  // Fyers only supports stocks/F&O — skip trade-type selection
+  if (draft.broker !== 'fyers') steps.push('trade-type');
   if (draft.tradeType === 'mf' || draft.tradeType === 'both') steps.push('upload-mf');
   if (draft.tradeType === 'stocks' || draft.tradeType === 'both') steps.push('upload-ledger');
   if (draft.broker === 'zerodha' && (draft.tradeType === 'stocks' || draft.tradeType === 'both')) steps.push('upload-dividend');
@@ -1477,14 +1479,21 @@ export default function CalculatorPage() {
                   {([
                     { id: 'zerodha' as const, label: 'Zerodha', desc: 'Upload your ledger XLSX or CSV',       color: '#f6461a', bg: 'rgba(246,70,26,0.08)', border: 'rgba(246,70,26,0.3)' },
                     { id: 'groww'   as const, label: 'Groww',   desc: 'Upload your stock order history XLSX', color: '#00d4b4', bg: 'rgba(0,212,180,0.08)',  border: 'rgba(0,212,180,0.3)'  },
-                    { id: 'fyers'   as const, label: 'Fyers',   desc: 'Upload your ledger CSV',          color: '#818cf8', bg: 'rgba(129,140,248,0.08)', border: 'rgba(129,140,248,0.3)' },
+                    { id: 'fyers'   as const, label: 'Fyers',   desc: 'Stocks & F&O — upload your ledger CSV', color: '#818cf8', bg: 'rgba(129,140,248,0.08)', border: 'rgba(129,140,248,0.3)' },
                   ]).map(b => (
                     <button
                       key={b.id}
                       onClick={() => {
-                        setCurrentDraft(prev => ({ ...prev, broker: b.id }));
-                        setStep('trade-type');
-                        trackStep('trade-type');
+                        if (b.id === 'fyers') {
+                          // Fyers only supports stocks/F&O — skip trade-type
+                          setCurrentDraft(prev => ({ ...prev, broker: 'fyers', tradeType: 'stocks' }));
+                          setStep('upload-ledger');
+                          trackStep('upload-ledger');
+                        } else {
+                          setCurrentDraft(prev => ({ ...prev, broker: b.id }));
+                          setStep('trade-type');
+                          trackStep('trade-type');
+                        }
                       }}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 16, padding: '18px 20px',
@@ -1837,7 +1846,7 @@ export default function CalculatorPage() {
           const brokerMeta = {
             zerodha: { accept: '.xlsx', label: 'Zerodha Ledger (XLSX)', hint: 'Console → Funds → Statement → All Segments → XLSX', link: 'https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb' },
             groww:   { accept: '.xlsx', label: 'Groww Stock Order History (XLSX)', hint: 'Groww app → Reports → Stocks - Order history → Download', link: 'https://groww.in/user/profile/report' },
-            fyers:   { accept: '.csv',  label: 'Fyers Ledger (CSV)', hint: 'Fyers One → Reports → Ledger → Download CSV', link: 'https://fyers.in/web/reports/ledger' },
+            fyers:   { accept: '.csv',  label: 'Fyers Ledger (CSV) · one file per FY', hint: 'Fyers → Reports → Ledger → set date range → CSV', link: 'https://fyers.in/web/reports/ledger' },
           }[broker];
 
           return (
@@ -1883,9 +1892,9 @@ export default function CalculatorPage() {
                       </div>
                     ))}
                     {broker === 'fyers' && ([
-                      { n: 1, text: <>Go to <strong style={{ color: '#e2e8f0' }}>Reports → Ledger</strong>, select a <strong style={{ color: '#e2e8f0' }}>Financial Year</strong></> },
-                      { n: 2, text: <>Click <strong style={{ color: '#e2e8f0' }}>Generate</strong> then <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></> },
-                      { n: 3, text: <><strong style={{ color: '#e2e8f0' }}>Repeat for each year</strong> from your first investment to today — upload all CSVs together</> },
+                      { n: 1, text: <>Go to <strong style={{ color: '#e2e8f0' }}>Reports → Ledger</strong> — use the link above to open it directly</> },
+                      { n: 2, text: <>Set the date range to cover one <strong style={{ color: '#e2e8f0' }}>financial year</strong> (Apr–Mar), then click the <strong style={{ color: '#e2e8f0' }}>CSV</strong> button to download</> },
+                      { n: 3, text: <><strong style={{ color: '#e2e8f0' }}>Repeat for each FY</strong> from your first investment to today — upload all CSV files together here</> },
                     ] as {n:number, text:React.ReactNode}[]).map(({ n, text }) => (
                       <div key={n} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                         <span style={{ width: 20, height: 20, borderRadius: '50%', background: `${brokerColor}22`, color: brokerColor, fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{n}</span>
@@ -1942,7 +1951,10 @@ export default function CalculatorPage() {
 
 
                 <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-                  <button onClick={() => setStep(currentDraft.tradeType === 'both' ? 'upload-mf' : 'trade-type')} style={{ ...btnSecondary, flex: 1, padding: '12px', fontSize: '0.9rem' }}>← Back</button>
+                  <button onClick={() => {
+                    if (currentDraft.broker === 'fyers') setStep('broker');
+                    else setStep(currentDraft.tradeType === 'both' ? 'upload-mf' : 'trade-type');
+                  }} style={{ ...btnSecondary, flex: 1, padding: '12px', fontSize: '0.9rem' }}>← Back</button>
                   <button
                     onClick={() => {
                       const flowSteps = getFlowSteps(currentDraft);
@@ -2382,7 +2394,7 @@ export default function CalculatorPage() {
                     </a>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', padding: '8px 12px', background: 'rgba(0,0,0,0.2)', borderRadius: 8, marginBottom: 14, fontFamily: 'monospace' }}>
-                    {(['Fyers One', 'Reports', 'Ledger', 'Select FY', 'Download CSV'] as const).map((seg, i, arr) => (
+                    {(['Fyers', 'Reports', 'Ledger', 'Set Date Range', 'CSV'] as const).map((seg, i, arr) => (
                       <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: (i === 0 || i === arr.length - 1) ? 'rgba(129,140,248,0.15)' : 'transparent', color: (i === 0 || i === arr.length - 1) ? '#818cf8' : '#64748b' }}>{seg}</span>
                         {i < arr.length - 1 && <span style={{ color: '#334155', fontSize: '0.65rem' }}>›</span>}
@@ -2391,11 +2403,9 @@ export default function CalculatorPage() {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {([
-                      <>Use this link to go directly to the Fyers Ledger page: <a href="https://fyers.in/web/reports/ledger" target="_blank" rel="noopener noreferrer" style={{ color: '#818cf8', fontWeight: 700 }}>Open Fyers Ledger →</a></>,
-                      <>Select the <strong style={{ color: '#e2e8f0' }}>Financial Year</strong></>,
-                      <>Click <strong style={{ color: '#e2e8f0' }}>Generate</strong></>,
-                      <>Click <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></>,
-                      <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
+                      <>Open the Fyers Ledger: <a href="https://fyers.in/web/reports/ledger" target="_blank" rel="noopener noreferrer" style={{ color: '#818cf8', fontWeight: 700 }}>Open Fyers Ledger →</a></>,
+                      <>Set date range to cover one <strong style={{ color: '#e2e8f0' }}>financial year</strong> (Apr 1 – Mar 31), then click <strong style={{ color: '#e2e8f0' }}>CSV</strong> to download</>,
+                      <><strong style={{ color: '#e2e8f0' }}>Repeat for each FY</strong> from your first investment to today — upload all CSV files together</>,
                     ] as React.ReactNode[]).map((s, i) => (
                       <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                         <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(129,140,248,0.12)', color: '#818cf8', fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
