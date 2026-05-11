@@ -15,30 +15,33 @@ XIRR (Extended Internal Rate of Return) is the most accurate way to measure inve
 
 ## Supported Brokers & File Types
 
-| Broker | Stocks | Mutual Funds | Notes |
+| Broker | Stocks / F&O | Mutual Funds | How to download |
 |---|---|---|---|
-| Zerodha | XLSX ledger | MF Tradebook XLSX | Ledger: Console → Funds → Statement → All Segments → XLSX. MF: Console → Reports → Tradebook → Mutual Funds (one file per ≤365 days, multiple files supported) |
-| Groww | PDF ledger | — | Reports → Balance Statement → PDF (PAN as password) |
-| Fyers | CSV ledger | — | Reports → Ledger → Download CSV (one file per FY) |
+| Zerodha | XLSX ledger (all segments) | MF Tradebook XLSX | Ledger: Console → Funds → Statement → All Segments → XLSX. MF: Console → Reports → Tradebook → Mutual Funds (one file per ≤365 days, multiple files ok) |
+| Groww | Stock Order History XLSX | MF Order History XLSX | Stocks: Reports → Transactions → Stocks - Order history → Download. MF: Reports → Transactions → Mutual Funds - Order history |
+| Fyers | CSV ledger | — *(coming soon)* | Reports → Ledger → set date range → CSV (one file per FY, upload all together) |
 
-You can add multiple accounts (same or different brokers) in one session for a combined XIRR. For Zerodha users with both stocks and MF in the same account, the app handles them separately — MF purchases go directly bank → BSE STAR MF and are captured via the tradebook, not the ledger.
+You can add multiple accounts (same or different brokers) in one session for a combined XIRR.
 
-**Optional:** Zerodha dividend XLSX — Console → Reports → Downloads → Dividend statement (one file per FY). Adds dividend income as inflows to improve XIRR accuracy.
+**Note:** Groww stock XIRR excludes brokerage charges and STT (not included in the order history). Fyers ledger includes all charges automatically.
+
+**Optional (Zerodha):** Dividend XLSX — Console → Reports → Downloads → Dividend statement (one per FY). Adds dividend income as inflows to improve XIRR accuracy.
 
 ---
 
 ## How It Works
 
-The calculator uses a guided 7-step flow (one thing per screen):
+The calculator uses a guided step-by-step wizard (one screen at a time):
 
 1. **Sign in** with Google or email OTP
-2. **Select broker** — Zerodha, Groww, or Fyers (one at a time)
-3. **Choose trade type** — Stocks, Mutual Funds, or Both
-4. **Upload MF tradebook** *(if MF or Both)* — Zerodha tradebook XLSX, multiple yearly files supported; client-side dedup by Trade ID prevents double-counting
-5. **Upload stock ledger** *(if Stocks or Both)* — XLSX for Zerodha, PDF for Groww (PAN entry inline), CSV for Fyers
+2. **Select broker** — Zerodha, Groww, or Fyers *(Fyers goes directly to upload; Groww/Zerodha choose trade type next)*
+3. **Choose trade type** — Stocks/F&O, Mutual Funds, or Both *(Fyers: MF coming soon)*
+4. **Upload MF tradebook** *(if MF or Both)* — Zerodha or Groww XLSX; multiple yearly files; Trade ID dedup
+5. **Upload stock ledger / order history** *(if Stocks or Both)* — XLSX for Zerodha/Groww, CSV for Fyers
 6. **Upload dividend files** *(optional, Zerodha only)* — one XLSX per FY
 7. **Enter current portfolio value** and cash balance
 8. **Review & calculate** — or add another account and loop back to step 2
+9. **Edit Holdings** — after results, edit any account's value and recalculate without re-uploading files
 
 Results in ~30 seconds. PDF report emailed automatically.
 
@@ -117,6 +120,9 @@ xirrcalculator/
 │   ├── refresher.py            # Daily Nifty 50 S3 cache refresher
 │   ├── email/                  # SES email templates
 │   └── build_layer.sh          # Builds Lambda layer via Docker
+├── db/
+│   ├── migrate.php             # Migration runner (dev/prod, --status flag)
+│   └── migrations/             # Numbered SQL files (0001_initial_schema.sql, ...)
 ├── scripts/
 │   └── refresh_report_urls.py  # Refreshes expired S3 presigned URLs in DB
 ├── marketing/
@@ -158,7 +164,7 @@ The dashboard is blocked from Google indexing via `robots.txt` (`Disallow: /api/
 ## Security
 
 - **`config.php`** — gitignored; credentials managed on server only via SSH. Use `config.example.php` as setup template.
-- **AWS IAM** — `xirrledger-server` IAM user on server has `s3:GetObject` on `xirrledger-reports/*` only. Lambda uses an IAM role.
+- **AWS IAM** — `xirrledger-server` IAM user on server has `s3:GetObject` on `xirrledger-reports/*` and `xirrledger-reports-dev/*`. Lambda uses a separate IAM role.
 - **PHP bridge auth** — all Lambda→PHP callbacks verified with `X-API-Secret` header (shared secret matching `HOSTINGER_API_SECRET` in Terraform)
 - **`/api/` path** — blocked from Google (`Disallow: /api/` in `robots.txt`)
 - **Security headers** — HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy via `.htaccess`

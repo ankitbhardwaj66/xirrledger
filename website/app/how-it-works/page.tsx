@@ -33,26 +33,26 @@ const glass = {
 const steps = [
   {
     icon: <FaDownload size={22} color={GOLD} />,
-    title: 'Download Your Ledger',
-    description: 'Export your trading ledger from your broker\'s website. For Zerodha, use the direct link below — just set the date range and download CSV. For Groww, download PDF statements for each year. For Fyers, use the direct link below — select the financial year, generate and download CSV.',
+    title: 'Download Your Statement',
+    description: 'Export your statement from your broker. Zerodha: download the ledger XLSX (All Segments). Groww: download the Stocks - Order history XLSX and/or Mutual Funds - Order history XLSX. Fyers: download the ledger CSV for each financial year.',
     note: 'Tip: Select the full date range — from your first investment till today — for accurate results.',
   },
   {
     icon: <FaUpload size={22} color={GOLD} />,
     title: 'Upload Files',
-    description: 'Upload your ledger files to the calculator. You can upload multiple files at once — from the same broker or different brokers. Files from the same account (PAN) are automatically combined.',
-    note: 'Your files are processed securely on our servers.',
+    description: 'Follow the guided wizard — select your broker, choose what you trade (Stocks/F&O or Mutual Funds), and upload the right files. You can add multiple accounts from different brokers in one session for a combined XIRR.',
+    note: 'Your files are processed securely and never stored permanently.',
   },
   {
     icon: <FaWallet size={22} color={GOLD} />,
     title: 'Enter Current Values',
-    description: 'Enter the current market value of your holdings as of today — not what you originally invested. Also enter available cash in the account. Separate fields appear for each account.',
-    note: 'Find today\'s holdings value on your broker\'s app under Portfolio or Positions. Do not enter the amount you invested.',
+    description: 'Enter the current market value of your holdings as of today — not what you invested. Also enter any available cash in the account. Separate fields appear for each account.',
+    note: 'Find today\'s value on your broker\'s app under Portfolio or Positions. Do not enter the amount you invested.',
   },
   {
     icon: <FaChartLine size={22} color={GOLD} />,
     title: 'Get Your XIRR',
-    description: 'View detailed analysis with XIRR calculation, Nifty 50 benchmark comparison, and all key metrics. Download a professional PDF report for your records or tax filing.',
+    description: 'View your annualised XIRR, Nifty 50 benchmark comparison, and a full portfolio breakdown. Download a professional PDF report. You can edit your holdings value and recalculate instantly without re-uploading.',
     note: 'PDF reports are perfect for sharing with financial advisors or CAs.',
   },
 ];
@@ -221,7 +221,7 @@ export default function HowItWorks() {
               </div>
             </div>
 
-            {/* Groww — spans full width to fit 2 methods */}
+            {/* Groww — spans full width to fit 2 sections */}
             <div style={{ ...glass, padding: '28px', borderColor: 'rgba(16,185,129,0.18)' }} className="md:col-span-2">
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
                 <div style={{
@@ -233,28 +233,26 @@ export default function HowItWorks() {
                 <div>
                   <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>Groww</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
-                    <FaFilePdf size={13} color='#64748b' />
-                    <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>PDF Format · Password: your PAN (uppercase)</p>
+                    <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>XLSX Format · No password needed</p>
                   </div>
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
 
-                {/* Method 1 */}
+                {/* Stocks */}
                 <div style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '12px', padding: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981' }}>Method 1</span>
-                    <span style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: '100px', border: '1px solid rgba(16,185,129,0.3)' }}>RECOMMENDED</span>
-                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>— Groww Balance Statement</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981' }}>Stocks</span>
+                    <span style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: '100px', border: '1px solid rgba(16,185,129,0.3)' }}>XLSX</span>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>— Order History</span>
                   </div>
-                  {[
-                    <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700 }}>Open Groww Reports →</a> (logs in automatically if you&apos;re signed in)</>,
-                    <>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions → Groww Balance Statement</strong></>,
-                    <>Choose format: select <strong style={{ color: '#e2e8f0' }}>PDF</strong> (not Excel)</>,
-                    <>Set date range → click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
-                  ].map((item, i) => (
-                    <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 5 ? '14px' : 0 }}>
+                  {([
+                    <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700 }}>Open Groww Reports →</a></>,
+                    <>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions → Stocks - Order history</strong></>,
+                    <>Set date range from before your first purchase to today → click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
+                  ] as React.ReactNode[]).map((item, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 2 ? '14px' : 0 }}>
                       <span style={{
                         background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)',
                         color: '#10b981', width: '24px', height: '24px', borderRadius: '50%',
@@ -266,29 +264,27 @@ export default function HowItWorks() {
                   ))}
                   <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <p style={{ fontSize: '0.82rem', color: '#475569', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <FaCheckCircle size={13} color='#10b981' /> All transactions in one file
+                      <FaCheckCircle size={13} color='#10b981' /> One file covers your full history — no password needed
                     </p>
                     <p style={{ fontSize: '0.82rem', color: '#92400e', margin: 0, display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-                      <FaExclamationTriangle size={13} color={GOLD} style={{ marginTop: 2, flexShrink: 0 }} /> As of Feb 2026, only available from 1 Apr 2023 in-app. For earlier history, contact Groww support via chat or email.
+                      <FaExclamationTriangle size={13} color={GOLD} style={{ marginTop: 2, flexShrink: 0 }} /> Note: brokerage charges and STT are not included in this report. XIRR will be slightly optimistic.
                     </p>
                   </div>
                 </div>
 
-                {/* Method 2 */}
+                {/* Mutual Funds */}
                 <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b' }}>Method 2</span>
-                    <span style={{ background: 'rgba(255,255,255,0.06)', color: '#64748b', fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.1)' }}>ALTERNATIVE</span>
-                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>— Annual Statements</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b' }}>Mutual Funds</span>
+                    <span style={{ background: 'rgba(255,255,255,0.06)', color: '#64748b', fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.1)' }}>XLSX</span>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>— Order History</span>
                   </div>
-                  {[
-                    <><a href="https://groww.in/user/balance/inr" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700 }}>Open Groww Balance →</a> (logs in automatically if you&apos;re signed in)</>,
-                    <>Click <strong style={{ color: '#e2e8f0' }}>All Transactions</strong></>,
-                    <>Click <strong style={{ color: '#e2e8f0' }}>Download statement</strong> button (top right)</>,
-                    <>Select date range (max 1 year) → click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
-                    <><strong style={{ color: '#e2e8f0' }}>Repeat for all years</strong> from first investment till today</>,
-                  ].map((item, i) => (
-                    <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 4 ? '14px' : 0 }}>
+                  {([
+                    <><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700 }}>Open Groww Reports →</a></>,
+                    <>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions → Mutual Funds - Order history</strong></>,
+                    <>Select <strong style={{ color: '#e2e8f0' }}>Custom Date</strong>, set From to your first ever MF purchase, To today → click <strong style={{ color: '#e2e8f0' }}>Download</strong></>,
+                  ] as React.ReactNode[]).map((item, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', marginBottom: i < 2 ? '14px' : 0 }}>
                       <span style={{
                         background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
                         color: '#64748b', width: '24px', height: '24px', borderRadius: '50%',
@@ -299,8 +295,8 @@ export default function HowItWorks() {
                     </div>
                   ))}
                   <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-                    <p style={{ fontSize: '0.82rem', color: '#92400e', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <FaExclamationTriangle size={13} color={GOLD} /> Download one PDF per year — repeat for each year separately
+                    <p style={{ fontSize: '0.82rem', color: '#475569', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <FaCheckCircle size={13} color='#10b981' /> One file covers your full MF history
                     </p>
                   </div>
                 </div>

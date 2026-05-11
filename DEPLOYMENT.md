@@ -83,26 +83,30 @@
 - **Sample PDF** (`/sample_report.pdf`): replaced with real Lambda-generated report (realistic 2-account data, 19.6% XIRR vs 12.3% Nifty)
 - **Favicon**: `website/app/icon.svg` — navy bg, gold "XI/RR" two-line (Next.js App Router auto-detects)
 
-### Calculator (`/calculator`) — New guided 7-step flow (2026-05-10)
+### Calculator (`/calculator`) — Guided wizard (updated 2026-05-11)
 
-The old single-screen upload was replaced with a step-by-step wizard. Each screen does one thing.
+Step-by-step wizard — each screen does one thing.
 
 **Step flow:**
-1. `broker` — select Zerodha / Groww / Fyers (single select, large cards; Zerodha uses Kite logo + brand red `#f6461a`)
-2. `trade-type` — Stocks / Mutual Funds / Both
-3. `upload-mf` *(MF or Both)* — MF tradebook XLSX; multi-file drop zone with SheetJS client-side parsing (date range + trade count per file, hash dedup)
-4. `upload-ledger` *(Stocks or Both)* — XLSX for Zerodha only (CSV removed); PDF for Groww with inline PAN entry; CSV for Fyers
+1. `broker` — Zerodha / Groww / Fyers. Fyers → goes directly to `upload-ledger` (only stocks/F&O supported)
+2. `trade-type` — Stocks/F&O · Mutual Funds · Both. MF/Both disabled for Fyers (coming soon)
+3. `upload-mf` *(MF or Both)* — Zerodha or Groww MF Order History XLSX; hash dedup; overlap detection
+4. `upload-ledger` *(Stocks or Both)* — Zerodha: XLSX; Groww: **Stock Order History XLSX** (replaces PDF); Fyers: CSV per FY
 5. `upload-dividend` *(optional, Zerodha stocks only)* — one XLSX per FY
 6. `holdings` — current portfolio value (₹) + cash
-7. `account-done` — summary card; "Calculate My XIRR" or "Add Another Account" (loops back to step 1 to accumulate multiple accounts)
+7. `account-done` — "Calculate My XIRR" or "Add Another Account"
+8. `results` — XIRR, Nifty comparison, insight card, PDF download
+9. `edit-holdings` — edit any account's holdings value and recalculate without re-uploading
 
 **Key behaviours:**
-- `handleDraftCalculate()` — standalone upload+process function for new flow; uploads all files from all account drafts in one `/session` call, validates, then calls `/process`
-- Groww PAN entry is inline on the ledger upload screen (no deferred PAN step)
-- Progress dots at top of each screen reflect the actual path (5–7 dots depending on trade type)
-- `completedAccounts[]` — grows as user loops; shown as chips at top of broker screen
+- `handleDraftCalculate(override?, override?)` — uploads all drafts in one `/session` call; caches session+keys in `wizardSession` state; re-submit via Edit Holdings skips upload entirely
+- `wizardSession` cleared on "New Calculation" or "Add Another Account"
+- Fyers: trade-type shown with MF/Both disabled + "COMING SOON" badge
+- Groww: "Stocks" label (not F&O); order history has no charges (STT/brokerage excluded)
+- Progress dots reflect actual path per broker/trade-type combo
+- `completedAccounts[]` accumulates; shown as chips on broker screen
 
-**Legacy `upload` + `details` steps kept** — reachable from "Edit Holdings" on results page.
+**Legacy `upload` + `details` steps preserved** — still reachable via old multi-file flow.
 
 **MF tradebook (Zerodha, 2026-05-10):**
 - Format: `tradebook-NBN208-MF.xlsx` — sheet "Mutual Funds", header row ~14, Trade Date/Type/Qty/Price/Trade ID columns
@@ -143,12 +147,15 @@ The old single-screen upload was replaced with a step-by-step wizard. Each scree
   - `ValueError` → user-friendly message; `Exception` → "Something went wrong" (no raw Python in UI)
 - `processor.py` — full pipeline:
   - **Parsers:**
-    - `parse_zerodha_ledger_xlsx()` — XLSX ledger; extracts "Funds added" (outflows) + "Payout"/"quarterly settlement" (inflows); reads Client ID
+    - `parse_zerodha_ledger_xlsx()` — XLSX ledger; "Funds added" → outflows, "Payout"/"quarterly settlement" → inflows; reads Client ID
     - `parse_zerodha_csv()` — legacy CSV ledger (same logic)
-    - `parse_zerodha_mf_tradebook()` — **new (2026-05-10)**; reads Zerodha MF Tradebook XLSX (openpyxl normal mode — `read_only=True` returns empty rows for this format); buy→outflow, sell→inflow; returns `trade_id` column for cross-file dedup
-    - `parse_zerodha_dividends_xlsx()` — dividend XLSX; returns positive inflows + detail rows for PDF
-    - `parse_groww_pdf()` — pdfplumber, PAN password; two formats (annual UI + full-history support PDF)
-    - `parse_fyers_csv()` — CSV ledger
+    - `parse_zerodha_mf_tradebook()` — Zerodha MF Tradebook XLSX; buy→outflow, sell→inflow; `trade_id` for cross-file dedup
+    - `parse_zerodha_dividends_xlsx()` — dividend XLSX; positive inflows + detail rows for PDF
+    - `parse_groww_stock_order_history_xlsx()` — **new (2026-05-11)**; Groww Stock Order History XLSX; BUY→outflow, SELL→inflow; Executed orders only; filename-based client code extraction; no PAN needed
+    - `parse_groww_pdf()` — legacy Groww balance-statement PDF (pdfplumber, PAN password) — kept as fallback
+    - `parse_groww_mf_order_history()` — Groww MF Order History XLSX (sheet "Transactions")
+    - `parse_fyers_csv()` — Fyers ledger CSV; "Funds added" → outflows, "Funds withdrawn" → inflows
+  - **XIRR fallback (2026-05-11):** when solver fails with always-negative NPV (fully liquidated net-loss portfolio, current_value=0), falls back to simple annualised return: `(total_recovered/total_invested)^(1/years) - 1`. PDF marks with `*` and footnote.
   - **MF tradebook processing** (`mf_file_keys` per account):
     - All files parsed, concatenated, then Trade ID deduplicated post-concat (`_dedup_mf()`)
     - Tracks `mf_invested` (gross buys) + `mf_redeemed` (gross sells) for PDF breakdown
