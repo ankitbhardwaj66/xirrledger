@@ -1476,7 +1476,7 @@ export default function CalculatorPage() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {([
-                    { id: 'zerodha' as const, label: 'Zerodha', desc: 'Upload your ledger XLSX or CSV',       color: '#f6461a', bg: 'rgba(246,70,26,0.08)', border: 'rgba(246,70,26,0.3)' },
+                    { id: 'zerodha' as const, label: 'Zerodha', desc: 'Upload your ledger XLSX', color: '#f6461a', bg: 'rgba(246,70,26,0.08)', border: 'rgba(246,70,26,0.3)' },
                     { id: 'groww'   as const, label: 'Groww',   desc: 'Upload your stock order history XLSX', color: '#00d4b4', bg: 'rgba(0,212,180,0.08)',  border: 'rgba(0,212,180,0.3)'  },
                     { id: 'fyers'   as const, label: 'Fyers',   desc: 'Stocks & F&O — upload your ledger CSV', color: '#818cf8', bg: 'rgba(129,140,248,0.08)', border: 'rgba(129,140,248,0.3)' },
                   ]).map(b => (
