@@ -1562,13 +1562,13 @@ export default function CalculatorPage() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {([
-                    { id: 'stocks' as const, label: 'Stocks', sublabel: 'Equity trades — buy & sell', icon: (
+                    { id: 'stocks' as const, label: 'Stocks / F&O', sublabel: 'Equity, derivatives — upload your ledger', icon: (
                       <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/><polyline points="16 7 22 7 22 13" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
                     )},
                     { id: 'mf' as const, label: 'Mutual Funds', sublabel: 'SIPs and lump sum investments', icon: (
                       <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth={2}/><path d="M12 6v6l4 2" strokeWidth={2} strokeLinecap="round"/></svg>
                     )},
-                    { id: 'both' as const, label: 'Both', sublabel: 'I have stocks and mutual funds', icon: (
+                    { id: 'both' as const, label: 'Both', sublabel: 'Stocks / F&O and mutual funds', icon: (
                       <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" strokeWidth={2}/><path d="M8 21h8M12 17v4" strokeWidth={2} strokeLinecap="round"/></svg>
                     )},
                   ]).map(opt => (
@@ -1859,7 +1859,7 @@ export default function CalculatorPage() {
 
               <div style={{ ...card, padding: '36px 28px' }}>
                 <span style={{ display: 'inline-flex', gap: 6, padding: '3px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700, background: `${brokerColor}22`, color: brokerColor, border: `1px solid ${brokerColor}44`, marginBottom: 14 }}>
-                  {broker.charAt(0).toUpperCase() + broker.slice(1)} · Stocks
+                  {broker.charAt(0).toUpperCase() + broker.slice(1)} · {currentDraft.tradeType === 'mf' ? 'Mutual Funds' : currentDraft.tradeType === 'both' ? 'Stocks / F&O + MF' : 'Stocks / F&O'}
                 </span>
                 <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', lineHeight: 1.2 }}>{isGroww ? 'Upload your order history' : 'Upload your ledger'}</h2>
                 <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 20px' }}>{brokerMeta.label}</p>

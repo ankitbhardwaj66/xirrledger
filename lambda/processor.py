@@ -410,11 +410,11 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             individual_stats.append(stats)
 
         # ── Generate PDF ──────────────────────────────────────
-        if combined_stats.get("xirr_percentage") is None:
+        # xirr_percentage may be None for edge cases — PDF handles N/A gracefully
+        if combined_stats.get("xirr_percentage") is None and not combined_stats.get("total_invested"):
             raise ValueError(
-                "We couldn't calculate your XIRR — the solver didn't converge. "
-                "This can happen with very few transactions or an unusual cash flow pattern. "
-                "Please double-check that your holdings value and file are correct and try again."
+                "We couldn't calculate your XIRR — no valid transactions found. "
+                "Please double-check your uploaded files."
             )
 
         update_status({"status": "report", "message": "Generating PDF report..."})
@@ -531,6 +531,15 @@ def calculate_xirr(cash_flows, dates, guess=0.1):
                         return r
             except Exception:
                 continue
+
+    # NPV is always the same sign — net-loss portfolio with no remaining value.
+    # Fall back to simple annualized return: (total_recovered / total_invested)^(1/years) - 1
+    total_out = abs(sum(cf for cf in cash_flows if cf < 0))
+    total_in  = sum(cf for cf in cash_flows if cf > 0)
+    total_years = years[-1]   # years from first cashflow to last (terminal)
+    if total_out > 0 and total_in > 0 and total_years > 0:
+        recovery_ratio = total_in / total_out
+        return recovery_ratio ** (1.0 / total_years) - 1.0
 
     raise ValueError("Could not converge to an XIRR solution.")
 
@@ -1377,6 +1386,10 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
     # ── KPI Banner (3 boxes) ──────────────────────────────────
     xirr_v   = f"{cs['xirr_percentage']:.2f}%"       if cs.get("xirr_percentage")      is not None else "N/A"
     nifty_v  = f"{cs['nifty_xirr_percentage']:.2f}%" if cs.get("nifty_xirr_percentage") is not None else "N/A"
+    # When current value = 0 (fully liquidated at loss), XIRR is a simple-return approximation
+    xirr_is_approx = (cs.get("xirr_percentage") is not None and
+                      cs.get("current_value", 0) == 0 and
+                      (cs.get("net_gain", 0) or 0) < 0)
 
     has_xirr  = cs.get("xirr_percentage") is not None
     has_nifty = cs.get("nifty_xirr_percentage") is not None
@@ -1392,7 +1405,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
 
     kpi3_accent = "#10b981" if (has_xirr and has_nifty and diff > 0) else ("#ef4444" if (has_xirr and has_nifty) else "#64748b")
     kpi_row = [[
-        _kpi_cell("YOUR XIRR",     xirr_v,  "annualised return", "#0f172a"),
+        _kpi_cell("YOUR XIRR",     xirr_v,  "approx. (liquidated)" if xirr_is_approx else "annualised return", "#0f172a"),
         _kpi_cell("NIFTY 50 XIRR", nifty_v, "benchmark return",  "#243347"),
         _kpi_cell("PERFORMANCE",   beat_v,  beat_lbl,             kpi3_bg,  value_color="#ffffff", label_color="#a7f3d0" if kpi3_accent == "#10b981" else "#fca5a5" if kpi3_accent == "#ef4444" else "#94a3b8"),
     ]]
@@ -1438,7 +1451,7 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         ["Total Withdrawn",          _fmt_inr(cs["total_withdrawn"])],
         ["Current Portfolio Value",  _fmt_inr(cs["current_value"])],
         ["Net Gain / Loss",          _fmt_inr(cs["net_gain"])],     # row 7
-        ["XIRR (Annualised)",        xirr_v],                       # row 8
+        ["XIRR (Annualised)" + (" *" if xirr_is_approx else ""), xirr_v],   # row 8
     ]
     st = Table(summary_rows, colWidths=[page_w * 0.56, page_w * 0.44])
     st.setStyle(_base_table_style("#0f172a"))
@@ -1453,6 +1466,15 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
         ("LINEBEFORE",  (0, 8), (0, 8),  3.5, colors.HexColor("#f59e0b")),
     ]))
     elements.append(st)
+
+    # ── Approx XIRR note ──────────────────────────────────────
+    if xirr_is_approx:
+        elements.append(Paragraph(
+            "* Portfolio is fully liquidated with a net loss. "
+            "True XIRR has no mathematical solution — value shown is a "
+            "simple annualised return: (total recovered / total invested)^(1/years) - 1.",
+            note_s
+        ))
 
     # ── Manual entries note ───────────────────────────────────
     if manual_entries:
