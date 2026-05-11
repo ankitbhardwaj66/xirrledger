@@ -1508,7 +1508,7 @@ export default function CalculatorPage() {
                           ? <img src="/kite-logo.svg" alt="Zerodha Kite" style={{ width: 26, height: 18 }} />
                           : b.id === 'groww'
                           ? <img src="/groww-logo.webp" alt="Groww" style={{ width: 28, height: 28, borderRadius: '50%' }} />
-                          : b.id[0].toUpperCase()
+                          : <img src="/fyers-logo.webp" alt="Fyers" style={{ width: 26, height: 26, objectFit: 'contain' }} />
                         }
                       </div>
                       <div style={{ flex: 1 }}>
