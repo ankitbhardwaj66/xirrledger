@@ -83,39 +83,49 @@
 - **Sample PDF** (`/sample_report.pdf`): replaced with real Lambda-generated report (realistic 2-account data, 19.6% XIRR vs 12.3% Nifty)
 - **Favicon**: `website/app/icon.svg` — navy bg, gold "XI/RR" two-line (Next.js App Router auto-detects)
 
-### Calculator (`/calculator`)
-- Google Sign-In (GSI One Tap + button) + manual name/email fallback
-- Drag & drop file upload (CSV=Zerodha/Fyers, PDF=Groww), multi-file
-- SHA-256 content hashing — duplicate file detection across uploads
-- **2-layer file validation** — runs on "Continue →" (Step 2), before going to details:
-  - **Layer 1 (frontend, instant)**: `detectBrokerFromContent()` reads file bytes — checks CSV headers for Zerodha/Fyers structure, checks PDF magic bytes + `/Encrypt` entry (Groww PDFs are always password-protected); rejects invalid files immediately with a per-file error + **Remove** button
-  - **Layer 2 (Lambda, deep)**: `POST /validate` endpoint — downloads file from S3, runs actual parser, returns `{valid, transactions_found}` or `{valid: false, error}`; shown as per-file "checking…" → ✓ / error
-  - Files upload to S3 on "Continue →" click; `startProcessing()` reuses the already-uploaded session
-- Content-based broker detection (`detectBrokerFromContent`) — not filename-based
-- Groww PAN entry: "Same PAN for all" checkbox or per-file
-- Files with same PAN auto-grouped into one Groww account
-- **Real-time PAN validation** — pdfjs-dist attempts to decrypt PDF with entered PAN; shows ✓/✗ after 10 chars typed
-  - Worker: `public/pdf.worker.min.js` (must be `.js` not `.mjs` — Apache on Hostinger serves `.mjs` as `text/plain`)
-  - Calculate button locked until all PANs valid
-- Per-account holdings + cash inputs — labelled "Current holdings value (₹)" with hint "Today's market value of your holdings — not what you invested"
-- **Outside Investments (manual entries)** — optional card in Step 3 (commit `78c464b`)
-  - Add any number of investments not tracked by broker (govt bonds, gold bonds, FDs, etc.)
-  - Each entry: description (optional), amount (₹), date, **required account link**
-  - Account selection is mandatory — Calculate button blocked until all entries linked
-  - Sent to Lambda as `manual_entries` array with `account_id`; treated as additional cash outflows in XIRR calculation
-  - Current value of these investments should be included in broker holdings field
-  - **To revert if removed:** `git revert 78c464b` then redeploy Lambda
-- "How to download?" link opens a modal with tabbed guide: **Zerodha | Groww | Fyers** (each with step-by-step instructions)
-- Async processing with animated progress steps
-- **Processing error modal** — if Lambda returns an error, a fixed-position overlay shows the message + "← Go Back & Try Again" button (no raw Python ever shown)
-- Results: XIRR vs Nifty 50, portfolio stats (total invested, current value, net gain, investment period), contextual insight card
-- Results disclaimer: "This report assumes all investments were made exclusively through the provided account statements."
-- **Edit Holdings button** on results page — returns to Step 3 with all data preserved (files, PANs, values); user edits and recalculates
-- **Stop & Edit Holdings button** on processing page — cancels polling, returns to Step 3 with all data preserved
-- XIRR / Nifty figures shown to 2 decimal places (`.toFixed(2)`) matching email precision
-- FaTrophy icon replaces 🎉 emoji on "beat Nifty" line
-- PDF report opens in new tab (presigned S3 URL, **24-hour** expiry)
-- Step 1 subtitle: "We will email you the report too" (concise, no extra header bar)
+### Calculator (`/calculator`) — New guided 7-step flow (2026-05-10)
+
+The old single-screen upload was replaced with a step-by-step wizard. Each screen does one thing.
+
+**Step flow:**
+1. `broker` — select Zerodha / Groww / Fyers (single select, large cards; Zerodha uses Kite logo + brand red `#f6461a`)
+2. `trade-type` — Stocks / Mutual Funds / Both
+3. `upload-mf` *(MF or Both)* — MF tradebook XLSX; multi-file drop zone with SheetJS client-side parsing (date range + trade count per file, hash dedup)
+4. `upload-ledger` *(Stocks or Both)* — XLSX for Zerodha only (CSV removed); PDF for Groww with inline PAN entry; CSV for Fyers
+5. `upload-dividend` *(optional, Zerodha stocks only)* — one XLSX per FY
+6. `holdings` — current portfolio value (₹) + cash
+7. `account-done` — summary card; "Calculate My XIRR" or "Add Another Account" (loops back to step 1 to accumulate multiple accounts)
+
+**Key behaviours:**
+- `handleDraftCalculate()` — standalone upload+process function for new flow; uploads all files from all account drafts in one `/session` call, validates, then calls `/process`
+- Groww PAN entry is inline on the ledger upload screen (no deferred PAN step)
+- Progress dots at top of each screen reflect the actual path (5–7 dots depending on trade type)
+- `completedAccounts[]` — grows as user loops; shown as chips at top of broker screen
+
+**Legacy `upload` + `details` steps kept** — reachable from "Edit Holdings" on results page.
+
+**MF tradebook (Zerodha, 2026-05-10):**
+- Format: `tradebook-NBN208-MF.xlsx` — sheet "Mutual Funds", header row ~14, Trade Date/Type/Qty/Price/Trade ID columns
+- Zerodha limits downloads to ≤365 days per export; users upload one XLSX per year
+- Client-side: SheetJS reads date range + trade count per file; no overlap warnings (deduplicated server-side)
+- Server-side: `parse_zerodha_mf_tradebook()` in processor.py; Trade ID dedup across all files post-concat (handles identical or overlapping files)
+- MF cashflows merged into XIRR for both `'mf'` and `'both'` trade types — Zerodha Coin MF goes directly bank → BSE STAR MF (never hits the trading ledger), so tradebook flows must always be added on top of ledger flows
+- PDF: `has_mf_split = trade_type == 'both'` — shows `└ Stocks` and `└ Mutual Funds` sub-rows under Total Invested and Total Withdrawn, plus MF gross activity footnote
+
+**Auth — Email OTP:**
+- Manual sign-in sends a 6-digit OTP via SES before proceeding
+- Session persisted in `localStorage` (`xirrledger_session`, 7-day expiry)
+- Google Sign-In bypasses OTP
+
+**Outside investments (manual entries):**
+- Optional — add investments not tracked by broker (govt bonds, gold bonds, etc.)
+- Sent to Lambda as `manual_entries[]` with `account_id`; injected as additional outflows in XIRR
+
+**Processing:**
+- Async with animated progress steps
+- Error modal on Lambda failure (no raw Python shown)
+- Results: XIRR vs Nifty 50, portfolio stats, contextual insight card
+- "Edit Holdings" → old `details` step with preserved data; "New Calculation" → back to `broker` step
 
 ### Auth — Email OTP (2026-04-02)
 - Manual sign-in now sends a 6-digit OTP via SES before proceeding to upload
@@ -128,38 +138,33 @@
 - Logo image: `website/public/logo-email.png` hosted at `xirrledger.com/logo-email.png`
 
 ### Lambda
-- `handler.py` — routes: `POST /session` (presigned URLs), `POST /process` (async trigger), `POST /validate` (deep file parse), **`POST /send-otp`**, **`POST /verify-otp`**
-  - `handle_validate()`: downloads file from S3, runs actual parser, returns `{valid, transactions_found}` or `{valid: false, error}`
-  - `ValueError` → user-friendly message; generic `Exception` → "Something went wrong" (raw Python never reaches UI)
+- `handler.py` — routes: `POST /session`, `POST /process`, `POST /validate`, `POST /send-otp`, `POST /verify-otp`
+  - `handle_validate()`: deep file parse check; returns `{valid, transactions_found}` or `{valid: false, error}`
+  - `ValueError` → user-friendly message; `Exception` → "Something went wrong" (no raw Python in UI)
 - `processor.py` — full pipeline:
-  - Zerodha CSV parser (Funds added, Payouts, Quarterly settlements)
-  - Groww PDF parser (pdfplumber, PAN as password) — supports **two formats**:
-    1. Annual statement PDFs (downloaded via Groww UI — from April 2023 only)
-    2. "Statement of accounts of funds" PDF (full history — request from Groww support team)
-    - Deposit segment types matched: `RAZORPAY_DEPOSIT`, `DIRECT_NETBANKING`, `GROWW_MANDATE`, `GROWW_UPI`
-    - Withdrawal segment type: `GROWW_WITHDRAW`
-  - Cross-file duplicate detection for Groww (same date+amount across files = skip)
-  - Guard against empty `combined_outflows` before `min()` — raises `ValueError` with clear message if no transactions found
-  - **Manual entries** (`manual_entries` in event) — injected as additional cash outflows before XIRR (commit `78c464b`)
-    - Each entry has `account_id` to link to a specific broker account for per-account XIRR
-    - Per-account outflows: linked manual entries injected before per-account XIRR calculation
-    - `handle_process` forwards `manual_entries` in the async self-invocation payload (was missing — fixed 2026-02-25)
-  - XIRR calculation (Newton-Raphson + Brent fallback)
-  - Nifty 50 comparison (reads from S3 daily cache — no yfinance on user requests)
-  - PDF report generation (ReportLab) — fully rethemed Navy + Gold (2026-02-24):
-    - Title "XIRR Ledger Report" in gold; gold HR divider; navy table headers; gold section headings
-    - KPI banner: continuous block, gold separators, white text on coloured performance box
-    - Removed Simple Return row; insight card (OUTPERFORMING / KEEP GOING / UNDERPERFORMING)
-    - Page 2 charts (multi-account): stacked pie (Capital Distribution) + bar (Profit/Loss in Lakhs)
-    - Per-account table shows breakdown sub-rows under "Total Invested" when linked manual entries exist: └ Broker transactions / └ Outside investments
-    - PageBreak placed before insight card so card + account analysis share same page (no empty page 2)
-  - Status polling via S3 jobs bucket (public read)
-  - Email via SES on completion — full results in email (XIRR, Nifty, stats grid, insight card)
-  - PHP bridge notification on completion
-- `refresher.py` — downloads full `^NSEI` history from yfinance, saves to S3
-  - Triggered daily by EventBridge at 6:00 AM IST (00:30 UTC)
-  - 5x retry with exponential backoff
-  - Cache seeded locally (4,522 rows, 2007–2026)
+  - **Parsers:**
+    - `parse_zerodha_ledger_xlsx()` — XLSX ledger; extracts "Funds added" (outflows) + "Payout"/"quarterly settlement" (inflows); reads Client ID
+    - `parse_zerodha_csv()` — legacy CSV ledger (same logic)
+    - `parse_zerodha_mf_tradebook()` — **new (2026-05-10)**; reads Zerodha MF Tradebook XLSX (openpyxl normal mode — `read_only=True` returns empty rows for this format); buy→outflow, sell→inflow; returns `trade_id` column for cross-file dedup
+    - `parse_zerodha_dividends_xlsx()` — dividend XLSX; returns positive inflows + detail rows for PDF
+    - `parse_groww_pdf()` — pdfplumber, PAN password; two formats (annual UI + full-history support PDF)
+    - `parse_fyers_csv()` — CSV ledger
+  - **MF tradebook processing** (`mf_file_keys` per account):
+    - All files parsed, concatenated, then Trade ID deduplicated post-concat (`_dedup_mf()`)
+    - Tracks `mf_invested` (gross buys) + `mf_redeemed` (gross sells) for PDF breakdown
+    - MF cashflows merged into XIRR for both `'mf'` and `'both'` trade types
+    - `'both'`: ledger (stocks) + tradebook (MF) = total outflows; user enters combined current value
+    - `'mf'`-only: tradebook is the only cashflow source; `account_outflows` empty guard skipped
+  - **Manual entries** — injected as additional outflows; linked to specific account by `account_id`
+  - **XIRR calculation** — Newton-Raphson + Brent fallback
+  - **Nifty 50 comparison** — S3 daily cache (no yfinance on user requests)
+  - **PDF generation** (ReportLab) — Navy + Gold theme:
+    - Per-account table: `has_mf_split = trade_type == 'both'` → shows `└ Stocks` / `└ Mutual Funds` sub-rows under Total Invested and Total Withdrawn; MF gross activity footnote
+    - Outside investments sub-rows: `└ Broker transactions` / `└ Outside investments`
+    - Insight card (OUTPERFORMING / KEEP GOING / UNDERPERFORMING)
+    - Multi-account: pie + bar charts, comparison table
+  - **Status polling** via S3 jobs bucket; **email** via SES; **PHP bridge** notification on completion
+- `refresher.py` — daily Nifty 50 cache refresh via EventBridge (6:00 AM IST)
 
 ### Infrastructure (Terraform)
 - API Gateway HTTP API: `https://3cvw6sp1sf.execute-api.ap-south-1.amazonaws.com/`

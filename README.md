@@ -13,25 +13,34 @@ XIRR (Extended Internal Rate of Return) is the most accurate way to measure inve
 
 ---
 
-## Supported Brokers
+## Supported Brokers & File Types
 
-| Broker | File Format | Notes |
-|---|---|---|
-| Zerodha | XLSX ledger | Funds → View Statement → All Segments → date range → XLSX (one file, all years) |
-| Groww | PDF ledger | Funds → All Transactions → select year → Download (1 PDF per year, PAN as password) |
-| Fyers | CSV ledger | Reports → Ledger → Download CSV (one file per financial year) |
+| Broker | Stocks | Mutual Funds | Notes |
+|---|---|---|---|
+| Zerodha | XLSX ledger | MF Tradebook XLSX | Ledger: Console → Funds → Statement → All Segments → XLSX. MF: Console → Reports → Tradebook → Mutual Funds (one file per ≤365 days, multiple files supported) |
+| Groww | PDF ledger | — | Reports → Balance Statement → PDF (PAN as password) |
+| Fyers | CSV ledger | — | Reports → Ledger → Download CSV (one file per FY) |
 
-Upload files from multiple brokers in one session for a combined XIRR.
+You can add multiple accounts (same or different brokers) in one session for a combined XIRR. For Zerodha users with both stocks and MF in the same account, the app handles them separately — MF purchases go directly bank → BSE STAR MF and are captured via the tradebook, not the ledger.
+
+**Optional:** Zerodha dividend XLSX — Console → Reports → Downloads → Dividend statement (one file per FY). Adds dividend income as inflows to improve XIRR accuracy.
 
 ---
 
 ## How It Works
 
-1. **Sign in** with Google or enter your email (verified via OTP)
-2. **Upload** your broker ledger files — drag and drop, supports multiple brokers
-3. **Enter** current holdings value and available cash per account
-4. **Calculate** — results in ~30 seconds
-5. **Get** your XIRR, Nifty 50 benchmark, performance gap, and a PDF report emailed to you
+The calculator uses a guided 7-step flow (one thing per screen):
+
+1. **Sign in** with Google or email OTP
+2. **Select broker** — Zerodha, Groww, or Fyers (one at a time)
+3. **Choose trade type** — Stocks, Mutual Funds, or Both
+4. **Upload MF tradebook** *(if MF or Both)* — Zerodha tradebook XLSX, multiple yearly files supported; client-side dedup by Trade ID prevents double-counting
+5. **Upload stock ledger** *(if Stocks or Both)* — XLSX for Zerodha, PDF for Groww (PAN entry inline), CSV for Fyers
+6. **Upload dividend files** *(optional, Zerodha only)* — one XLSX per FY
+7. **Enter current portfolio value** and cash balance
+8. **Review & calculate** — or add another account and loop back to step 2
+
+Results in ~30 seconds. PDF report emailed automatically.
 
 ---
 
@@ -126,7 +135,9 @@ The PDF emailed after each calculation includes:
 
 1. **Portfolio Summary** — XIRR, first investment date, investment period, total invested/withdrawn, current value, dividend income, net gain/loss
 2. **Nifty 50 Benchmark Comparison** — your XIRR vs Nifty XIRR, performance gap, value difference
-3. **Individual Account Analysis** — capital distribution (pie chart), profit/loss per account (bar chart), detailed per-account breakdown with XIRR
+3. **Individual Account Analysis** — capital distribution (pie chart), profit/loss per account (bar chart), detailed per-account table including:
+   - When MF tradebook uploaded: sub-rows showing **Stocks** and **Mutual Funds** breakdown under Total Invested and Total Withdrawn
+   - MF gross activity footnote (total buys, total redemptions, net position)
 4. **Account Comparison Table** — all accounts side by side with combined total
 
 ---
