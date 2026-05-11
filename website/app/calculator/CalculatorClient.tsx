@@ -2292,8 +2292,8 @@ export default function CalculatorPage() {
               <p style={{ margin: '0 0 10px', fontSize: '0.74rem', color: '#334155' }}>Select all that apply — you can upload files from multiple brokers together.</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 20 }}>
                 {([
-                  { id: 'zerodha', label: 'Zerodha', letter: 'Z', color: '#10b981', bg: 'rgba(16,185,129,0.08)', shadow: 'rgba(16,185,129,0.12)', iconBg: 'rgba(16,185,129,0.12)', fileType: '.xlsx' },
-                  { id: 'groww',   label: 'Groww',   letter: 'G', color: GOLD,      bg: 'rgba(245,158,11,0.08)',  shadow: 'rgba(245,158,11,0.12)',  iconBg: 'rgba(245,158,11,0.12)',  fileType: '.xlsx' },
+                  { id: 'zerodha', label: 'Zerodha', letter: 'Z', logo: '/kite-logo.svg',   color: '#10b981', bg: 'rgba(16,185,129,0.08)', shadow: 'rgba(16,185,129,0.12)', iconBg: 'rgba(16,185,129,0.12)', fileType: '.xlsx' },
+                  { id: 'groww',   label: 'Groww',   letter: 'G', logo: '/groww-logo.webp', color: GOLD,      bg: 'rgba(245,158,11,0.08)',  shadow: 'rgba(245,158,11,0.12)',  iconBg: 'rgba(245,158,11,0.12)',  fileType: '.xlsx' },
                   { id: 'fyers',   label: 'Fyers',   letter: 'F', logo: '/fyers-logo.webp', color: '#818cf8', bg: 'rgba(129,140,248,0.08)', shadow: 'rgba(129,140,248,0.12)', iconBg: 'rgba(129,140,248,0.12)', fileType: '.csv'  },
                 ] as const).map(b => {
                   const isActive = guideBrokers.includes(b.id);

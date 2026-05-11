@@ -132,10 +132,11 @@ export default function HowItWorks() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px' }}>
                 <div style={{
                   width: '48px', height: '48px', borderRadius: '12px',
-                  background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)',
+                  background: 'rgba(246,70,26,0.12)', border: '1px solid rgba(246,70,26,0.25)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.2rem', fontWeight: 800, color: GOLD,
-                }}>Z</div>
+                }}>
+                  <img src="/kite-logo.svg" alt="Zerodha" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+                </div>
                 <div>
                   <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>Zerodha</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
@@ -228,8 +229,9 @@ export default function HowItWorks() {
                   width: '48px', height: '48px', borderRadius: '12px',
                   background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.2rem', fontWeight: 800, color: '#10b981',
-                }}>G</div>
+                }}>
+                  <img src="/groww-logo.webp" alt="Groww" style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 6 }} />
+                </div>
                 <div>
                   <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>Groww</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
