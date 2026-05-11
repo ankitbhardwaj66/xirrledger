@@ -1562,13 +1562,19 @@ export default function CalculatorPage() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {([
-                    { id: 'stocks' as const, label: 'Stocks / F&O', sublabel: 'Equity, derivatives — upload your ledger', icon: (
+                    { id: 'stocks' as const,
+                      label:    currentDraft.broker === 'groww' ? 'Stocks' : 'Stocks / F&O',
+                      sublabel: currentDraft.broker === 'groww' ? 'Equity trades — upload your order history' : 'Equity, derivatives — upload your ledger',
+                      icon: (
                       <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/><polyline points="16 7 22 7 22 13" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
                     )},
                     { id: 'mf' as const, label: 'Mutual Funds', sublabel: 'SIPs and lump sum investments', icon: (
                       <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth={2}/><path d="M12 6v6l4 2" strokeWidth={2} strokeLinecap="round"/></svg>
                     )},
-                    { id: 'both' as const, label: 'Both', sublabel: 'Stocks / F&O and mutual funds', icon: (
+                    { id: 'both' as const,
+                      label: 'Both',
+                      sublabel: currentDraft.broker === 'groww' ? 'Stocks and mutual funds' : 'Stocks / F&O and mutual funds',
+                      icon: (
                       <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" strokeWidth={2}/><path d="M8 21h8M12 17v4" strokeWidth={2} strokeLinecap="round"/></svg>
                     )},
                   ]).map(opt => (
