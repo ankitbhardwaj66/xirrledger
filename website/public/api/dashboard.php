@@ -416,7 +416,7 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
           <th class="hide-mobile">Nifty XIRR</th>
           <th class="hide-mobile">PDF</th>
           <th class="hide-mobile">Support Email</th>
-          <th class="hide-mobile">Error</th>
+          <th class="hide-mobile" style="width:36px;text-align:center">Err</th>
         </tr>
       </thead>
       <tbody>
@@ -454,7 +454,14 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
               echo '<span style="color:#475569">—</span>';
             }
           ?></td>
-          <td class="hide-mobile" style="max-width:220px;color:#ef4444;font-size:11px"><?= $s['error_message'] ? htmlspecialchars($s['error_message']) : '<span style="color:#475569">—</span>' ?></td>
+          <td class="hide-mobile" style="text-align:center;width:36px"><?php
+            if ($s['error_message']) {
+              $esc = htmlspecialchars($s['error_message'], ENT_QUOTES);
+              echo "<span class='err-icon' title='{$esc}' style='cursor:pointer;color:#ef4444;font-size:14px;position:relative;display:inline-block'>⚠</span>";
+            } else {
+              echo '<span style="color:#475569">—</span>';
+            }
+          ?></td>
         </tr>
       <?php endforeach; ?>
       <?php if (empty($sessions)): ?>
@@ -466,9 +473,45 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
 
 </div>
 
+<style>
+.err-tooltip {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  max-width: 320px;
+  background: #1e293b;
+  border: 1px solid rgba(239,68,68,0.4);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #fca5a5;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+</style>
+<div class="err-tooltip" id="errTooltip"></div>
 <script>
 // Auto-refresh every 60s
 setTimeout(() => location.reload(), 60000);
+
+// Error tooltips
+const tooltip = document.getElementById('errTooltip');
+document.querySelectorAll('.err-icon').forEach(el => {
+  el.addEventListener('mouseenter', e => {
+    tooltip.textContent = el.title;
+    tooltip.style.display = 'block';
+    positionTooltip(e);
+  });
+  el.addEventListener('mousemove', positionTooltip);
+  el.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+});
+function positionTooltip(e) {
+  const x = e.clientX + 14, y = e.clientY + 14;
+  const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+  tooltip.style.left = (x + tw > window.innerWidth  ? x - tw - 28 : x) + 'px';
+  tooltip.style.top  = (y + th > window.innerHeight ? y - th - 28 : y) + 'px';
+}
 </script>
 
 </body>
