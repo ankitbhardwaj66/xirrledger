@@ -47,20 +47,29 @@ try {
 // URL format: https://{bucket}.s3.{region}.amazonaws.com/{key}?...
 $parsed  = parse_url($row['report_url']);
 $host    = $parsed['host'] ?? '';
-// host = "xirrledger-reports.s3.ap-south-1.amazonaws.com"
+// Three supported URL formats:
+//   Virtual-hosted regional:  bucket.s3.region.amazonaws.com/key
+//   Virtual-hosted global:    bucket.s3.amazonaws.com/key
+//   Path-style regional:      s3.region.amazonaws.com/bucket/key  ← dev Lambda uses this
 if (preg_match('/^([^.]+)\.s3\.([^.]+)\.amazonaws\.com$/', $host, $m)) {
-    // Regional endpoint: bucket.s3.ap-south-1.amazonaws.com
     $bucket = $m[1];
     $region = $m[2];
+    $s3_key = ltrim($parsed['path'] ?? '', '/');
 } elseif (preg_match('/^([^.]+)\.s3\.amazonaws\.com$/', $host, $m)) {
-    // Global endpoint: bucket.s3.amazonaws.com — fall back to configured region
     $bucket = $m[1];
     $region = AWS_REGION;
+    $s3_key = ltrim($parsed['path'] ?? '', '/');
+} elseif (preg_match('/^s3\.([^.]+)\.amazonaws\.com$/', $host, $m)) {
+    // Path-style: first path segment is the bucket, rest is the key
+    $region   = $m[1];
+    $path     = ltrim($parsed['path'] ?? '', '/');
+    $slash    = strpos($path, '/');
+    $bucket   = ($slash !== false) ? substr($path, 0, $slash) : $path;
+    $s3_key   = ($slash !== false) ? substr($path, $slash + 1) : '';
 } else {
     http_response_code(500);
-    exit('Could not parse S3 URL');
+    exit('Could not parse S3 URL: ' . htmlspecialchars($host));
 }
-$s3_key = ltrim($parsed['path'] ?? '', '/');
 
 $url = s3_presign($bucket, $s3_key, $region, AWS_ACCESS_KEY, AWS_SECRET_KEY);
 
