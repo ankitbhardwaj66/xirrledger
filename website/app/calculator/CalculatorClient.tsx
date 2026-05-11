@@ -358,9 +358,7 @@ function datesOverlap(aFrom: string, aTo: string, bFrom: string, bTo: string): b
 }
 
 function getFlowSteps(draft: AccountDraft): Step[] {
-  const steps: Step[] = ['broker'];
-  // Fyers only supports stocks/F&O — skip trade-type selection
-  if (draft.broker !== 'fyers') steps.push('trade-type');
+  const steps: Step[] = ['broker', 'trade-type'];
   if (draft.tradeType === 'mf' || draft.tradeType === 'both') steps.push('upload-mf');
   if (draft.tradeType === 'stocks' || draft.tradeType === 'both') steps.push('upload-ledger');
   if (draft.broker === 'zerodha' && (draft.tradeType === 'stocks' || draft.tradeType === 'both')) steps.push('upload-dividend');
@@ -1484,16 +1482,9 @@ export default function CalculatorPage() {
                     <button
                       key={b.id}
                       onClick={() => {
-                        if (b.id === 'fyers') {
-                          // Fyers only supports stocks/F&O — skip trade-type
-                          setCurrentDraft(prev => ({ ...prev, broker: 'fyers', tradeType: 'stocks' }));
-                          setStep('upload-ledger');
-                          trackStep('upload-ledger');
-                        } else {
-                          setCurrentDraft(prev => ({ ...prev, broker: b.id }));
-                          setStep('trade-type');
-                          trackStep('trade-type');
-                        }
+                        setCurrentDraft(prev => ({ ...prev, broker: b.id }));
+                        setStep('trade-type');
+                        trackStep('trade-type');
                       }}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 16, padding: '18px 20px',
@@ -1565,22 +1556,30 @@ export default function CalculatorPage() {
                     { id: 'stocks' as const,
                       label:    currentDraft.broker === 'groww' ? 'Stocks' : 'Stocks / F&O',
                       sublabel: currentDraft.broker === 'groww' ? 'Equity trades — upload your order history' : 'Equity, derivatives — upload your ledger',
+                      disabled: false,
                       icon: (
                       <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/><polyline points="16 7 22 7 22 13" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></svg>
                     )},
-                    { id: 'mf' as const, label: 'Mutual Funds', sublabel: 'SIPs and lump sum investments', icon: (
+                    { id: 'mf' as const,
+                      label: 'Mutual Funds',
+                      sublabel: currentDraft.broker === 'fyers' ? 'Coming soon' : 'SIPs and lump sum investments',
+                      disabled: currentDraft.broker === 'fyers',
+                      icon: (
                       <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" strokeWidth={2}/><path d="M12 6v6l4 2" strokeWidth={2} strokeLinecap="round"/></svg>
                     )},
                     { id: 'both' as const,
                       label: 'Both',
-                      sublabel: currentDraft.broker === 'groww' ? 'Stocks and mutual funds' : 'Stocks / F&O and mutual funds',
+                      sublabel: currentDraft.broker === 'fyers' ? 'Coming soon' : currentDraft.broker === 'groww' ? 'Stocks and mutual funds' : 'Stocks / F&O and mutual funds',
+                      disabled: currentDraft.broker === 'fyers',
                       icon: (
                       <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" strokeWidth={2}/><path d="M8 21h8M12 17v4" strokeWidth={2} strokeLinecap="round"/></svg>
                     )},
                   ]).map(opt => (
                     <button
                       key={opt.id}
+                      disabled={opt.disabled}
                       onClick={() => {
+                        if (opt.disabled) return;
                         const updated = { ...currentDraft, tradeType: opt.id };
                         setCurrentDraft(updated);
                         const nextSteps = getFlowSteps(updated);
@@ -1590,17 +1589,23 @@ export default function CalculatorPage() {
                       }}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 16, padding: '18px 20px',
-                        border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: 14, cursor: 'pointer',
-                        background: 'rgba(255,255,255,0.03)', textAlign: 'left', fontFamily: 'inherit',
+                        border: `1.5px solid ${opt.disabled ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.1)'}`,
+                        borderRadius: 14,
+                        cursor: opt.disabled ? 'not-allowed' : 'pointer',
+                        background: opt.disabled ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)',
+                        textAlign: 'left', fontFamily: 'inherit',
                         transition: 'all 0.18s', outline: 'none',
                         color: '#94a3b8',
+                        opacity: opt.disabled ? 0.45 : 1,
                       }}
                       onMouseEnter={e => {
+                        if (opt.disabled) return;
                         (e.currentTarget as HTMLButtonElement).style.borderColor = `${brokerColor}88`;
                         (e.currentTarget as HTMLButtonElement).style.background = `${brokerColor}10`;
                         (e.currentTarget as HTMLButtonElement).style.color = brokerColor;
                       }}
                       onMouseLeave={e => {
+                        if (opt.disabled) return;
                         (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)';
                         (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.03)';
                         (e.currentTarget as HTMLButtonElement).style.color = '#94a3b8';
@@ -1610,10 +1615,13 @@ export default function CalculatorPage() {
                         {opt.icon}
                       </div>
                       <div style={{ flex: 1 }}>
-                        <p style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: '#ffffff' }}>{opt.label}</p>
-                        <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#64748b' }}>{opt.sublabel}</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <p style={{ margin: 0, fontWeight: 700, fontSize: '1rem', color: opt.disabled ? '#475569' : '#ffffff' }}>{opt.label}</p>
+                          {opt.disabled && <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: 'rgba(255,255,255,0.06)', color: '#64748b', letterSpacing: '0.04em' }}>COMING SOON</span>}
+                        </div>
+                        <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#475569' }}>{opt.sublabel}</p>
                       </div>
-                      <svg width="18" height="18" fill="none" stroke="#475569" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                      {!opt.disabled && <svg width="18" height="18" fill="none" stroke="#475569" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>}
                     </button>
                   ))}
                 </div>
@@ -1957,10 +1965,7 @@ export default function CalculatorPage() {
 
 
                 <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-                  <button onClick={() => {
-                    if (currentDraft.broker === 'fyers') setStep('broker');
-                    else setStep(currentDraft.tradeType === 'both' ? 'upload-mf' : 'trade-type');
-                  }} style={{ ...btnSecondary, flex: 1, padding: '12px', fontSize: '0.9rem' }}>← Back</button>
+                  <button onClick={() => setStep(currentDraft.tradeType === 'both' ? 'upload-mf' : 'trade-type')} style={{ ...btnSecondary, flex: 1, padding: '12px', fontSize: '0.9rem' }}>← Back</button>
                   <button
                     onClick={() => {
                       const flowSteps = getFlowSteps(currentDraft);
