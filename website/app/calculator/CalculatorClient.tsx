@@ -1899,7 +1899,7 @@ export default function CalculatorPage() {
                     {broker === 'groww' && ([
                       { n: 1, text: <>Go to <strong style={{ color: '#e2e8f0' }}>Reports</strong> → scroll to <strong style={{ color: '#e2e8f0' }}>Transactions</strong> section → click <strong style={{ color: '#e2e8f0' }}>Stocks - Order history</strong></> },
                       { n: 2, text: <>Set date range from <strong style={{ color: '#e2e8f0' }}>before your first stock purchase</strong> to today → click <strong style={{ color: '#e2e8f0' }}>Download</strong></> },
-                      { n: 3, text: <>Upload the <strong style={{ color: '#e2e8f0' }}>XLSX file</strong> — no password needed. Note: charges (STT, brokerage) are excluded from this report.</> },
+                      { n: 3, text: <>Upload the <strong style={{ color: '#e2e8f0' }}>XLSX file</strong> — note: charges (STT, brokerage) are excluded from this report.</> },
                     ] as {n:number, text:React.ReactNode}[]).map(({ n, text }) => (
                       <div key={n} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                         <span style={{ width: 20, height: 20, borderRadius: '50%', background: `${brokerColor}22`, color: brokerColor, fontSize: '0.65rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{n}</span>
@@ -2360,7 +2360,7 @@ export default function CalculatorPage() {
                     ))}
                   </div>
                   <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 7, background: 'rgba(0,0,0,0.2)', fontSize: '0.74rem', color: '#64748b' }}>
-                    ✓ One XLSX covers all years &nbsp;·&nbsp; No password required
+                    ✓ One XLSX covers all years
                   </div>
                 </div>
               )}
@@ -2391,7 +2391,7 @@ export default function CalculatorPage() {
                     ))}
                   </div>
                   <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 7, background: 'rgba(0,0,0,0.2)', fontSize: '0.74rem', color: '#64748b', lineHeight: 1.5 }}>
-                    ✓ One XLSX covers all years &nbsp;·&nbsp; No password required &nbsp;·&nbsp; Note: charges (STT, brokerage) not included
+                    ✓ One XLSX covers all years &nbsp;·&nbsp; Note: charges (STT, brokerage) not included
                   </div>
                 </div>
               )}
@@ -2426,7 +2426,7 @@ export default function CalculatorPage() {
                     ))}
                   </div>
                   <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 7, background: 'rgba(0,0,0,0.2)', fontSize: '0.74rem', color: '#64748b' }}>
-                    ✓ No password required &nbsp;·&nbsp; ⚠ Download one CSV per financial year
+                    ⚠ Download one CSV per financial year
                   </div>
                 </div>
               )}

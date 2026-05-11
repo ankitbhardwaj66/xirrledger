@@ -288,28 +288,28 @@ const faqCategories = [
               <li>Set date range from your very first investment till today</li>
               <li>Click the blue arrow → then click <strong style={{ color: '#e2e8f0' }}>XLSX</strong></li>
             </ol>
-            <p style={{ color: '#10b981', marginBottom: '8px' }}>✓ One XLSX file covers all your years · No password required</p>
+            <p style={{ color: '#10b981', marginBottom: '8px' }}>✓ One XLSX file covers all your years</p>
             <p style={{ color: '#94a3b8' }}>For dividend income: go to Console → Reports → Downloads → Dividend Statement. Download one file per financial year and upload alongside your ledger.</p>
           </div>
         ),
       },
       {
-        question: 'How do I download my ledger from Groww?',
+        question: 'How do I download my statement from Groww?',
         answer: (
           <div>
-            <p style={{ marginBottom: '8px', fontWeight: 600, color: '#e2e8f0' }}>Method 1 — Recommended (single file, all history from Apr 2023):</p>
+            <p style={{ marginBottom: '8px', fontWeight: 600, color: '#e2e8f0' }}>Stocks — Order History XLSX:</p>
             <ol style={{ paddingLeft: '20px', lineHeight: 2, marginBottom: '12px' }}>
               <li><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 600 }}>Open Groww Reports →</a></li>
-              <li>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions → Groww Balance Statement</strong></li>
-              <li>Select <strong style={{ color: '#e2e8f0' }}>PDF</strong> format, set date range → Download</li>
+              <li>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions → Stocks - Order history</strong></li>
+              <li>Set date range from before your first purchase to today → Download</li>
             </ol>
-            <p style={{ marginBottom: '8px', fontWeight: 600, color: '#64748b' }}>Method 2 — For history before Apr 2023:</p>
+            <p style={{ marginBottom: '8px', fontWeight: 600, color: '#e2e8f0' }}>Mutual Funds — Order History XLSX:</p>
             <ol style={{ paddingLeft: '20px', lineHeight: 2, marginBottom: '12px' }}>
-              <li><a href="https://groww.in/user/balance/inr" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 600 }}>Open Groww Balance →</a></li>
-              <li>Click <strong style={{ color: '#e2e8f0' }}>All Transactions → Download statement</strong></li>
-              <li>Select date range (max 1 year) → Repeat for each year</li>
+              <li><a href="https://groww.in/user/profile/report" target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 600 }}>Open Groww Reports →</a></li>
+              <li>Scroll to <strong style={{ color: '#e2e8f0' }}>Transactions → Mutual Funds - Order history</strong></li>
+              <li>Select Custom Date from your first MF purchase to today → Download</li>
             </ol>
-            <p style={{ color: '#94a3b8' }}>Password for all Groww PDFs: your PAN in UPPERCASE (e.g., ABCDE1234F)</p>
+            <p style={{ color: '#10b981' }}>✓ XLSX format · One file covers full history</p>
           </div>
         ),
       },
@@ -323,7 +323,7 @@ const faqCategories = [
               <li>Click <strong style={{ color: '#e2e8f0' }}>Generate</strong> then <strong style={{ color: '#e2e8f0' }}>Download CSV</strong></li>
               <li>Repeat for all years from your first investment</li>
             </ol>
-            <p style={{ color: '#10b981' }}>✓ No password required · One CSV per financial year</p>
+            <p style={{ color: '#10b981' }}>✓ One CSV per financial year</p>
           </div>
         ),
       },

@@ -166,7 +166,7 @@ export default function HowItWorks() {
                   <FaCheckCircle size={13} color='#10b981' /> File type: XLSX
                 </p>
                 <p style={{ fontSize: '0.82rem', color: '#475569', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FaCheckCircle size={13} color='#10b981' /> Password: Not required
+                  <FaCheckCircle size={13} color='#10b981' /> One file covers all your history
                 </p>
               </div>
             </div>
@@ -212,7 +212,7 @@ export default function HowItWorks() {
                   <FaCheckCircle size={13} color='#10b981' /> File type: CSV
                 </p>
                 <p style={{ fontSize: '0.82rem', color: '#475569', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FaCheckCircle size={13} color='#10b981' /> Password: Not required
+                  <FaCheckCircle size={13} color='#10b981' /> One file covers all your history
                 </p>
                 <p style={{ fontSize: '0.82rem', color: '#92400e', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <FaExclamationTriangle size={13} color={GOLD} /> Download one CSV per year for the full period
@@ -232,7 +232,7 @@ export default function HowItWorks() {
                 <div>
                   <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>Groww</h3>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
-                    <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>XLSX Format · No password needed</p>
+                    <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>XLSX Format</p>
                   </div>
                 </div>
               </div>
@@ -263,7 +263,7 @@ export default function HowItWorks() {
                   ))}
                   <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <p style={{ fontSize: '0.82rem', color: '#475569', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <FaCheckCircle size={13} color='#10b981' /> One file covers your full history — no password needed
+                      <FaCheckCircle size={13} color='#10b981' /> One file covers your full history
                     </p>
                     <p style={{ fontSize: '0.82rem', color: '#92400e', margin: 0, display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                       <FaExclamationTriangle size={13} color={GOLD} style={{ marginTop: 2, flexShrink: 0 }} /> Note: brokerage charges and STT are not included in this report. XIRR will be slightly optimistic.

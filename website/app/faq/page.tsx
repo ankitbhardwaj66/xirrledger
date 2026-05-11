@@ -98,15 +98,15 @@ const faqSchema = {
       name: 'How do I download my ledger from Zerodha?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Log in to Zerodha Console and open the Account Statement page. Select All Segments as the category and set the date range from your very first investment to today. Click the download arrow and select XLSX format. One file covers all your years with no password required. For dividend income, go to Console → Reports → Downloads → Dividend Statement and download one file per financial year.',
+        text: 'Log in to Zerodha Console and open the Account Statement page. Select All Segments as the category and set the date range from your very first investment to today. Click the download arrow and select XLSX format. One file covers all your years. For dividend income, go to Console → Reports → Downloads → Dividend Statement and download one file per financial year.',
       },
     },
     {
       '@type': 'Question',
-      name: 'How do I download my ledger from Groww?',
+      name: 'How do I download my statement from Groww?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Method 1 (recommended for history from April 2023 onward): Open Groww Reports, scroll to Transactions → Groww Balance Statement, select PDF format, set the date range and download. Method 2 (for history before April 2023): Open Groww Balance, click All Transactions → Download statement, select a date range of maximum one year and repeat for each year. The password for all Groww PDFs is your PAN number in uppercase — for example, ABCDE1234F.',
+        text: 'For stocks: open Groww Reports, scroll to Transactions → Stocks - Order history, set the date range from before your first purchase to today and download the XLSX file. For mutual funds: open Groww Reports, scroll to Transactions → Mutual Funds - Order history, select Custom Date from your first MF purchase to today and download. Both files are in XLSX format and cover your full history in a single download.',
       },
     },
     {
@@ -114,7 +114,7 @@ const faqSchema = {
       name: 'How do I download my ledger from Fyers?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Log in to Fyers and open the Ledger page under Reports. Select the Financial Year, click Generate and then Download CSV. Repeat for all years from your first investment. No password required — one CSV file per financial year.',
+        text: 'Log in to Fyers and open the Ledger page under Reports. Set the date range to cover one financial year (Apr–Mar), then click CSV to download. Repeat for all years from your first investment — one CSV file per financial year.',
       },
     },
     {
