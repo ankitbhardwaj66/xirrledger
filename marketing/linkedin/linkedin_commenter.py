@@ -17,7 +17,7 @@ import random
 import re
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import anthropic
@@ -97,16 +97,31 @@ def save_seen(seen: set):
         json.dump(list(seen), f)
 
 
-def load_seen_authors() -> set:
+AUTHOR_COOLDOWN_DAYS = 7
+
+
+def load_seen_authors() -> dict:
     if SEEN_AUTHORS_FILE.exists():
         with open(SEEN_AUTHORS_FILE) as f:
-            return set(json.load(f))
-    return set()
+            data = json.load(f)
+        # Backward compat: old format was a list of slugs with no timestamps.
+        # Treat those as commented on long ago so they're immediately eligible again.
+        if isinstance(data, list):
+            return {slug: "2000-01-01T00:00:00" for slug in data}
+        return data
+    return {}
 
 
-def save_seen_authors(seen_authors: set):
+def save_seen_authors(seen_authors: dict):
     with open(SEEN_AUTHORS_FILE, "w") as f:
-        json.dump(list(seen_authors), f)
+        json.dump(seen_authors, f)
+
+
+def author_on_cooldown(seen_authors: dict, slug: str) -> bool:
+    if slug not in seen_authors:
+        return False
+    last = datetime.fromisoformat(seen_authors[slug])
+    return datetime.now() - last < timedelta(days=AUTHOR_COOLDOWN_DAYS)
 
 
 def extract_author_slug(post_url: str) -> str:
@@ -766,8 +781,9 @@ def run(dry_run: bool = False, debug: bool = False):
                 print(f"  Full text: {full_text[:200]}...")
 
                 author_slug = extract_author_slug(post_url)
-                if author_slug and author_slug in seen_authors:
-                    print(f"  [skip] Already commented on {author_slug}'s post before")
+                if author_slug and author_on_cooldown(seen_authors, author_slug):
+                    last_ts = seen_authors[author_slug][:10]
+                    print(f"  [skip] Commented on {author_slug}'s post on {last_ts} — cooldown active")
                     seen.add(post_url)
                     continue
 
@@ -786,7 +802,7 @@ def run(dry_run: bool = False, debug: bool = False):
                     log_comment(post_url, full_text, comment, posted=False)
                     seen.add(post_url)
                     if author_slug:
-                        seen_authors.add(author_slug)
+                        seen_authors[author_slug] = datetime.now().isoformat()
                     comments_posted += 1
                     print("  [dry-run] Not posting.")
                 else:
@@ -796,7 +812,7 @@ def run(dry_run: bool = False, debug: bool = False):
                         print(f"  [ok] Comment posted")
                         seen.add(post_url)
                         if author_slug:
-                            seen_authors.add(author_slug)
+                            seen_authors[author_slug] = datetime.now().isoformat()
                         comments_posted += 1
                     else:
                         print(f"  [fail] Could not post — will retry next run")
