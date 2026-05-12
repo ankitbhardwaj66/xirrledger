@@ -2187,8 +2187,8 @@ export default function CalculatorPage() {
             <div style={{ maxWidth: 480, margin: '0 auto', animation: 'fadeSlideIn 0.3s ease' }}>
               {/* Mini progress — all filled */}
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginBottom: 24 }}>
-                {getFlowSteps(currentDraft).map((s) => (
-                  <div key={s} style={{ height: 6, width: 6, borderRadius: 3, background: '#10b981', transition: 'all 0.3s' }} />
+                {getFlowSteps(currentDraft).map((s, i, arr) => (
+                  <div key={s} style={{ height: 6, width: 6, borderRadius: 3, background: i === arr.length - 1 ? 'transparent' : '#10b981', border: i === arr.length - 1 ? '1.5px solid #10b981' : 'none', transition: 'all 0.3s' }} />
                 ))}
               </div>
 
@@ -2196,20 +2196,21 @@ export default function CalculatorPage() {
                 {/* Completion icon */}
                 <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(16,185,129,0.12)', border: '1.5px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '1.4rem' }}>✓</div>
 
-                <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', lineHeight: 1.2, textAlign: 'center' }}>Account added!</h2>
+                <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', lineHeight: 1.2, textAlign: 'center' }}>Account Added Summary</h2>
                 <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 24px', textAlign: 'center' }}>
-                  Ready to calculate — or add another account
+                  One last step — calculate to see your XIRR
                 </p>
 
                 {/* Summary cards for all accounts */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
                   {allDrafts.map((d, i) => {
                     const c = d.broker === 'zerodha' ? '#f6461a' : d.broker === 'groww' ? '#00d4b4' : '#818cf8';
+                    const brokerLogo = d.broker === 'zerodha' ? '/kite-logo.svg' : d.broker === 'groww' ? '/groww-logo.webp' : '/fyers-logo.webp';
                     const fileCount = d.ledgerFiles.length + d.mfFiles.length + d.dividendFiles.length;
                     return (
                       <div key={d.id} style={{ ...innerCard, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 10, background: `${c}22`, border: `1px solid ${c}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800, color: c, flexShrink: 0 }}>
-                          {d.broker[0].toUpperCase()}
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: `${c}22`, border: `1px solid ${c}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <img src={brokerLogo} alt={d.broker} style={{ width: 22, height: 22, objectFit: 'contain' }} />
                         </div>
                         <div style={{ flex: 1 }}>
                           <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: '#e2e8f0' }}>
