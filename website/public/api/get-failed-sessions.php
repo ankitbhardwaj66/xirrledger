@@ -9,7 +9,7 @@
  *
  * Logic:
  *   - Sessions that are 'error' OR stuck 'pending' (>30 min old) AND support_email_sent_at IS NULL
- *   - Exclude any email that also has a 'done' session in the last 24 hours (succeeded today)
+ *   - Exclude any email whose most recent 'done' session is newer than their most recent failure (already solved it)
  *   - Exclude any email already sent a support email today (UTC date — extra dedup safety net)
  *
  * Required table (run once on Hostinger MySQL):
@@ -71,13 +71,21 @@ try {
                 status = 'error'
                 OR (status = 'pending' AND created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 MINUTE))
             )
-            -- exclude if they succeeded in the last 24 hours (no need to intervene)
+            -- exclude if their most recent done session is newer than their most recent failure
+            -- (they already solved it — no need to intervene regardless of when)
             AND email NOT IN (
                 SELECT DISTINCT email
                 FROM xirr_sessions
-                WHERE
-                    status = 'done'
-                    AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 24 HOUR)
+                WHERE status = 'done'
+                  AND created_at >= (
+                      SELECT MAX(s2.created_at)
+                      FROM xirr_sessions s2
+                      WHERE s2.email = xirr_sessions.email
+                        AND (
+                            s2.status = 'error'
+                            OR (s2.status = 'pending' AND s2.created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 MINUTE))
+                        )
+                  )
             )
             -- extra dedup: never send twice on the same UTC day
             AND email NOT IN (
