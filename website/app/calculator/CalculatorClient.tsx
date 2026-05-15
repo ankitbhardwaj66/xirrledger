@@ -2098,6 +2098,12 @@ export default function CalculatorPage() {
           const canContinue = currentDraft.holdings.trim() !== '';
           const isBoth = currentDraft.tradeType === 'both';
           const brokerColor = currentDraft.broker === 'zerodha' ? '#f6461a' : currentDraft.broker === 'groww' ? '#00d4b4' : '#818cf8';
+          const holdingsUrl: Record<string, string> = {
+            zerodha: 'https://console.zerodha.com/portfolio/holdings',
+            groww:   'https://groww.in/stocks/user/holdings',
+            fyers:   'https://fyers.in/web/portfolio/holdings?holdingType=stocks&holdingSubTab=all',
+          };
+          const holdingsLink = holdingsUrl[currentDraft.broker];
 
           return (
             <div style={{ maxWidth: 480, margin: '0 auto', animation: 'fadeSlideIn 0.3s ease' }}>
@@ -2109,9 +2115,14 @@ export default function CalculatorPage() {
 
               <div style={{ ...card, padding: '36px 28px' }}>
                 <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', lineHeight: 1.2 }}>What&apos;s your portfolio worth today?</h2>
-                <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 28px' }}>
+                <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 10px' }}>
                   Open your broker app and enter the <strong style={{ color: '#94a3b8' }}>current market value</strong> — not what you invested
                 </p>
+                {holdingsLink && (
+                  <a href={holdingsLink} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.78rem', fontWeight: 600, color: brokerColor, textDecoration: 'none', marginBottom: 24, opacity: 0.9 }}>
+                    Open {currentDraft.broker.charAt(0).toUpperCase() + currentDraft.broker.slice(1)} holdings ↗
+                  </a>
+                )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                   <div>
