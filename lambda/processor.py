@@ -212,12 +212,15 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
                 try:
                     obj        = s3_client.get_object(Bucket=uploads_bucket, Key=mk)
                     file_bytes = obj["Body"].read()
-                    if broker == "groww":
+                    # Auto-detect MF file format from sheet/column structure so the
+                    # correct parser is used even if the user selected the wrong broker.
+                    _detected = _detect_mf_format(file_bytes)
+                    if _detected == "groww":
                         mf_o, mf_i = parse_groww_mf_order_history(file_bytes)
-                        logger.info("Parsed Groww MF order history %s — %d purchases, %d redemptions", mk, len(mf_o), len(mf_i))
+                        logger.info("Parsed Groww MF order history %s (detected=groww, broker=%s) — %d purchases, %d redemptions", mk, broker, len(mf_o), len(mf_i))
                     else:
                         mf_o, mf_i = parse_zerodha_mf_tradebook(file_bytes)
-                        logger.info("Parsed MF tradebook %s — %d buys, %d sells", mk, len(mf_o), len(mf_i))
+                        logger.info("Parsed MF tradebook %s (detected=zerodha, broker=%s) — %d buys, %d sells", mk, broker, len(mf_o), len(mf_i))
                     if not mf_o.empty:
                         mf_outflows_all.append(mf_o)
                     if not mf_i.empty:
@@ -713,6 +716,24 @@ def parse_zerodha_dividends_xlsx(file_bytes: bytes):
 
     xirr_df = pd.DataFrame(xirr_rows) if xirr_rows else pd.DataFrame(columns=["date", "amount"])
     return xirr_df, detail_rows
+
+
+def _detect_mf_format(file_bytes: bytes) -> str:
+    """Return 'groww' if this looks like a Groww MF Order History XLSX, else 'zerodha'."""
+    from io import BytesIO
+    import openpyxl
+    try:
+        wb = openpyxl.load_workbook(BytesIO(file_bytes), data_only=True, read_only=True)
+        if 'Transactions' in wb.sheetnames:
+            ws = wb['Transactions']
+            for row in ws.iter_rows(max_row=15, values_only=True):
+                norm = [str(c).lower().strip() if c is not None else "" for c in row]
+                if 'transaction type' in norm:
+                    return "groww"
+        wb.close()
+    except Exception:
+        pass
+    return "zerodha"
 
 
 def parse_zerodha_mf_tradebook(file_bytes: bytes):
@@ -1794,10 +1815,16 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
                                            color=colors.HexColor("#e2e8f0"),
                                            spaceBefore=8, spaceAfter=2))
             elements.append(Paragraph(stats.get("account_name", "Account"), acct_h_s))
+            _portfolio_type_label = {
+                "stocks": "Stocks",
+                "mf":     "Mutual Funds",
+                "both":   "Stocks + Mutual Funds",
+            }.get(trade_type, "Stocks")
             rows = [
                 ["METRIC",            "VALUE"],
                 ["Investment Period",  acc_period],
                 ["Total Transactions", acc_txn],
+                ["Portfolio Type",     _portfolio_type_label],
                 ["Total Invested",     _fmt_inr(stats["total_invested"])],
             ]
             sub_style_rows = []  # list of (row_idx, label_color_hex, bg_color_hex)
