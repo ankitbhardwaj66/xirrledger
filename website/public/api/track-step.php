@@ -60,6 +60,15 @@ $name       = substr($body['name']   ?? '', 0, 100);
 $email      = substr($body['email']  ?? '', 0, 100);
 $broker     = substr($body['broker'] ?? '', 0, 100);
 
+$ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+if (preg_match('/Mobile|iPhone|Windows Phone/i', $ua)) {
+    $device_type = 'mobile';
+} elseif (preg_match('/iPad|Tablet|Android/i', $ua)) {
+    $device_type = 'tablet';
+} else {
+    $device_type = 'desktop';
+}
+
 try {
     $pdo = new PDO(
         'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
@@ -72,8 +81,8 @@ try {
     // one (e.g. session restored to 'upload' when user is already at 'details'),
     // we keep the existing value.
     $stmt = $pdo->prepare("
-        INSERT INTO xirr_sessions (session_id, name, email, broker, status, last_step)
-        VALUES (:sid, :name, :email, :broker, 'pending', :step)
+        INSERT INTO xirr_sessions (session_id, name, email, broker, status, last_step, device_type)
+        VALUES (:sid, :name, :email, :broker, 'pending', :step, :device_type)
         ON DUPLICATE KEY UPDATE
             last_step = CASE
                 WHEN FIELD(VALUES(last_step),
@@ -85,16 +94,18 @@ try {
                 THEN VALUES(last_step)
                 ELSE last_step
             END,
-            name   = CASE WHEN VALUES(name)   != '' THEN VALUES(name)   ELSE name   END,
-            email  = CASE WHEN VALUES(email)  != '' THEN VALUES(email)  ELSE email  END,
-            broker = CASE WHEN VALUES(broker) != '' AND (broker = '' OR broker IS NULL) THEN VALUES(broker) ELSE broker END
+            name        = CASE WHEN VALUES(name)   != '' THEN VALUES(name)   ELSE name   END,
+            email       = CASE WHEN VALUES(email)  != '' THEN VALUES(email)  ELSE email  END,
+            broker      = CASE WHEN VALUES(broker) != '' AND (broker = '' OR broker IS NULL) THEN VALUES(broker) ELSE broker END,
+            device_type = COALESCE(device_type, VALUES(device_type))
     ");
     $stmt->execute([
-        ':sid'    => $session_id,
-        ':name'   => $name,
-        ':email'  => $email,
-        ':broker' => $broker,
-        ':step'   => $step,
+        ':sid'         => $session_id,
+        ':name'        => $name,
+        ':email'       => $email,
+        ':broker'      => $broker,
+        ':step'        => $step,
+        ':device_type' => $device_type,
     ]);
 
     echo json_encode(['ok' => true]);
