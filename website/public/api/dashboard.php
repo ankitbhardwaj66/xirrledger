@@ -236,6 +236,7 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
 .xirr-pos { color: #10b981; font-weight: 700; }
 .xirr-neg { color: #ef4444; font-weight: 700; }
 .filter-bar { display: flex; gap: 0; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 28px; }
+.show-mobile-only { display: none !important; }
 
 @media (max-width: 768px) {
   body { overflow-x: hidden; }
@@ -260,6 +261,8 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
   tbody td { padding: 10px 10px; font-size: 12px; }
   .filter-bar a { padding: 6px 8px; font-size: 12px; }
   .table-wrap { border-radius: 8px; overflow-x: hidden; }
+  table { min-width: 0 !important; }
+  .show-mobile-only { display: flex !important; }
 }
 </style>
 </head>
@@ -406,12 +409,12 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
     <table style="min-width:900px">
       <thead>
         <tr>
-          <th>Time</th>
+          <th class="hide-mobile">Time</th>
           <th>Name</th>
           <th class="hide-mobile">Email</th>
           <th class="hide-mobile">Broker</th>
           <th class="hide-mobile">Device</th>
-          <th class="hide-mobile">Last Step</th>
+          <th>Last Step</th>
           <th>XIRR</th>
           <th class="hide-mobile">Nifty XIRR</th>
           <th class="hide-mobile">PDF</th>
@@ -421,18 +424,38 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
       </thead>
       <tbody>
       <?php foreach ($sessions as $s): ?>
+        <?php
+          $pdf_url = ($s['status'] === 'done' && $s['report_url'])
+            ? "get-report.php?session_id=" . urlencode($s['session_id']) . "&key=" . urlencode($key)
+            : null;
+          $dl_svg = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+        ?>
         <tr>
-          <td style="color:#64748b;white-space:nowrap"><?= time_ago($s['created_at']) ?></td>
-          <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($s['name'] ?: '—') ?></td>
+          <td class="hide-mobile" style="color:#64748b;white-space:nowrap"><?= time_ago($s['created_at']) ?></td>
+          <td style="max-width:140px">
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500"><?= htmlspecialchars($s['name'] ?: '—') ?></span>
+              <?php if ($s['device_type']): ?>
+              <div class="show-mobile-only" style="align-items:center;gap:4px">
+                <?= device_badge($s['device_type']) ?>
+              </div>
+              <?php endif; ?>
+            </div>
+          </td>
           <td class="hide-mobile" style="color:#94a3b8;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($s['email'] ?: '—') ?></td>
           <td class="hide-mobile"><span class="pill"><?= htmlspecialchars($s['broker'] ?: '—') ?></span></td>
           <td class="hide-mobile"><?= device_badge($s['device_type']) ?></td>
-          <td class="hide-mobile"><?= step_badge($s['last_step']) ?></td>
+          <td><?= step_badge($s['last_step']) ?></td>
           <td><?php
             if ($s['xirr'] !== null) {
               $v = round((float)$s['xirr'], 1);
-              echo "<span class='" . ($v >= 0 ? 'xirr-pos' : 'xirr-neg') . "'>{$v}%</span>";
-            } else echo '<span style="color:#475569">—</span>';
+              $cls = $v >= 0 ? 'xirr-pos' : 'xirr-neg';
+              if ($pdf_url) {
+                echo "<a href='{$pdf_url}' target='_blank' class='{$cls}' style='text-decoration:none;border-bottom:1px dashed currentColor'>{$v}%</a>";
+              } else {
+                echo "<span class='{$cls}'>{$v}%</span>";
+              }
+            } else echo '<span style="color:#334155">—</span>';
           ?></td>
           <td class="hide-mobile"><?php
             if ($s['nifty_xirr'] !== null) {
@@ -441,8 +464,8 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
             } else echo '<span style="color:#475569">—</span>';
           ?></td>
           <td class="hide-mobile"><?php
-            if ($s['status'] === 'done' && $s['report_url']) {
-              echo "<a href='get-report.php?session_id=" . urlencode($s['session_id']) . "&key=" . urlencode($key) . "' target='_blank' style='color:#e2c97e;font-size:11px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;font-weight:600' title='Download PDF'><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"7 10 12 15 17 10\"/><line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"/></svg> PDF</a>";
+            if ($pdf_url) {
+              echo "<a href='{$pdf_url}' target='_blank' style='color:#e2c97e;font-size:11px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;font-weight:600' title='Download PDF'>{$dl_svg} PDF</a>";
             } else {
               echo '<span style="color:#475569">—</span>';
             }
