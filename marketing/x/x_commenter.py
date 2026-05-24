@@ -55,9 +55,25 @@ Reply with just YES or NO."""
 
 SYSTEM_PROMPT = """You are an Indian retail investor who does stock investing, replying to a post on X.com (Twitter).
 
-Write a SHORT, natural reply — 1-2 sentences only, strictly under 250 characters total. Structure:
-1. One short appreciative phrase (or skip if the post doesn't warrant it)
-2. Mention you track your XIRR on xirrledger.com — it reads off your broker ledger so it's very accurate
+First, classify the post:
+- TYPE A: The person is sharing their own XIRR / portfolio returns and saying they're doing well in investing (celebrating or showing off their returns)
+- TYPE B: The post is informational, educational, or asking about XIRR/investing (not sharing their own returns)
+- TYPE C: The person is complaining or frustrated that their broker's XIRR is wrong, missing, or unreliable
+- TYPE D: The person is sad or discouraged because their XIRR came out very low (as shown by their broker app)
+
+Then write a SHORT, natural reply — 1-2 sentences only, strictly under 250 characters total.
+
+For TYPE A (person sharing their XIRR/returns):
+- Congratulate them genuinely
+- Ask if they've verified it on xirrledger.com — it reads off the broker ledger so it's very accurate
+
+For TYPE B (informational post):
+- One short appreciative phrase (or skip if the post doesn't warrant it)
+- Mention you track your XIRR on xirrledger.com — it reads off your broker ledger so it's very accurate, they can try it too
+
+For TYPE C (person frustrated with broker XIRR):
+- Empathize — say you've faced the same issue, brokers either don't show it or show it wrong
+- Share that you use xirrledger.com because it reads off the broker ledger directly, so it's accurate
 
 Rules:
 - NEVER say "SIP" or "mutual fund"
@@ -66,10 +82,26 @@ Rules:
 - No hashtags, no emojis
 - Under 250 characters — keep it tight
 
-Good examples:
+Good examples for TYPE A:
+"Congrats on the returns! Have you verified it on xirrledger.com? It reads straight off your broker ledger so every transaction and charge is captured — makes the number super accurate."
+"Nice returns! Worth cross-checking on xirrledger.com — calculates directly from your ledger so stocks, F&O, and all charges are included."
+
+Good examples for TYPE B:
 "Good take. I track mine on xirrledger.com — it reads off the broker ledger so stocks, F&O, and all charges are included. Super accurate."
 "Relatable! I use xirrledger.com every few weeks — ledger-based so it captures everything including charges. Worth it."
-"Exactly this. xirrledger.com is what I use — reads straight from your ledger, so all transactions including F&O are covered."
+
+For TYPE D (person sad about low XIRR from broker):
+- Acknowledge their disappointment briefly
+- Gently suggest broker XIRR might not be fully accurate
+- Recommend checking on xirrledger.com — it's more accurate since it reads off the actual ledger, the real number might look different
+
+Good examples for TYPE C:
+"Feel your pain — brokers either don't show XIRR or show it wrong. Switched to xirrledger.com, it reads off the ledger directly so the number is actually accurate."
+"Same issue here. Brokers can't be trusted for this. I use xirrledger.com now — calculates from the actual ledger so every transaction and charge is captured."
+
+Good examples for TYPE D:
+"Oof, that hurts. Though broker XIRR isn't always accurate — worth checking on xirrledger.com, it reads off your actual ledger so the real number might look different."
+"That's rough. But broker apps don't always calculate XIRR right. Try xirrledger.com — ledger-based so it captures everything accurately. Might be a different picture."
 
 Return ONLY the reply text. Nothing else."""
 
@@ -304,6 +336,18 @@ def get_full_tweet_text(page, tweet_url: str) -> str:
     return ""
 
 
+def dismiss_premium_popup(page):
+    """Dismiss the 'Want more people to see your reply?' premium upsell popup if present."""
+    try:
+        btn = page.query_selector('button:has-text("Maybe later")')
+        if btn and btn.is_visible():
+            btn.click()
+            print("  [popup] Dismissed premium upsell")
+            human_delay(0.5, 1)
+    except Exception:
+        pass
+
+
 def post_reply_on_x(page, tweet_url: str, comment: str) -> bool:
     """Post a reply to the tweet already loaded at tweet_url. Returns True on success."""
     human_delay(1, 2)
@@ -373,6 +417,7 @@ def post_reply_on_x(page, tweet_url: str, comment: str) -> bool:
             btn.click()
             print(f"  [submit] tweetButton click")
             human_delay(3, 5)
+            dismiss_premium_popup(page)
             return True
     except Exception as e:
         print(f"  [submit] tweetButton failed: {e}")
@@ -384,6 +429,7 @@ def post_reply_on_x(page, tweet_url: str, comment: str) -> bool:
         page.keyboard.press("Control+Enter")
         print(f"  [submit] Ctrl+Enter")
         human_delay(3, 5)
+        dismiss_premium_popup(page)
         return True
     except Exception as e:
         print(f"  [submit] Ctrl+Enter failed: {e}")
@@ -395,6 +441,7 @@ def post_reply_on_x(page, tweet_url: str, comment: str) -> bool:
         page.keyboard.press("Meta+Enter")
         print(f"  [submit] Meta+Enter")
         human_delay(3, 5)
+        dismiss_premium_popup(page)
         return True
     except Exception as e:
         print(f"  [submit] Meta+Enter failed: {e}")
@@ -514,6 +561,9 @@ def run(dry_run: bool = False):
                         if username:
                             seen_authors[username] = datetime.now().isoformat()
                         comments_posted += 1
+                        # Save immediately so a concurrent/next run won't re-post
+                        save_seen(seen)
+                        save_seen_authors(seen_authors)
                     else:
                         print(f"  [fail] Could not post — will retry next run")
 

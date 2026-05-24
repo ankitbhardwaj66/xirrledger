@@ -1,0 +1,130 @@
+---
+title: "Always Verify Your Broker's XIRR — But Never Give a Third-Party App Your Login"
+date: "2026-05-24"
+author: "Ankit Bhardwaj"
+excerpt: "Your broker's XIRR is often wrong. Cross-checking it with a third-party tool is a smart habit — but only if that tool works from your uploaded reports, not by connecting directly to your broker account."
+category: "Investment Insights"
+keywords:
+  - verify broker XIRR India
+  - cross check XIRR accuracy
+  - third party XIRR calculator India
+  - XIRR without broker login
+  - upload ledger XIRR calculator
+  - safe XIRR calculator India
+  - broker XIRR wrong
+  - Zerodha Groww XIRR accuracy
+  - XIRR upload report India
+  - accurate XIRR calculator India
+---
+
+There is a good habit most Indian investors skip: verifying the XIRR your broker shows you with an independent calculation.
+
+Your broker's XIRR is not always reliable. Zerodha often shows a dash where the number should be. Groww shows a number, but it is based on trade prices — not the full ledger — so it silently misses every charge deducted on every transaction. Even if the number shows up, it may not be the right one.
+
+![Person reviewing financial reports and documents for accurate investment calculation](/blog/verify-broker-xirr-upload-reports.webp)
+
+<div style={{background:'rgba(245,158,11,0.07)',border:'1px solid rgba(245,158,11,0.2)',borderLeft:'3px solid #f59e0b',borderRadius:'8px',padding:'16px 20px',margin:'1.5rem 0 2rem'}}>
+
+**Quick Answer:** Verifying your broker's XIRR with a third-party tool is a smart practice — but the tool should never connect directly to your broker. The right approach is to download your ledger or statement from your broker yourself, then upload it to the calculator. This is exactly how you share documents with your CA for tax filing: you send the report, not your login credentials. Upload-based tools give accurate results without any security risk.
+
+</div>
+
+## Why Broker XIRR Numbers Are Often Unreliable
+
+XIRR requires two things: every cash flow in and out of your account, and the exact date of each. Most broker apps fall short on at least one of these.
+
+**Zerodha** shows a dash on the Holdings page. They acknowledge the calculation requires complete fund-flow history which they haven't fully implemented. The field is a placeholder.
+
+**Groww** shows a number, but it is calculated from portfolio positions and trade prices — not from actual ledger debits. This means STT, exchange charges, SEBI fees, GST, and stamp duty are all excluded. On a ₹50,000 delivery trade, that is around ₹150 in charges that disappear from the calculation. Over a year of active investing, this gap compounds into a meaningful overstatement of your real returns.
+
+**Other brokers** often have similar limitations. Some show XIRR only for mutual funds or SIPs, ignoring equity trades entirely. Some count dividends correctly, some do not.
+
+The result: **the number your broker shows you has a high chance of being wrong, or missing entirely.** For a metric you use to evaluate your own investing performance, this matters.
+
+## Cross-Checking Is Good Practice — But How You Do It Matters
+
+The natural instinct is to find a tool that connects to your broker and calculates XIRR automatically. Several fintech apps offer this. You authorise them once, and they pull your data directly.
+
+This sounds convenient. But it comes with risks that most investors do not fully think through.
+
+### The Problem With Direct Broker Connections
+
+When you authorise a third-party app to connect to your broker account, you are doing one of two things:
+
+1. **Sharing your login credentials** — you give them your username and password, and they log in on your behalf. This is never a good idea. If that service is ever breached, your broker account is exposed.
+
+2. **Granting API access** — you authorise the app through an official broker API. This is safer than sharing credentials, but it gives the app ongoing read access to your live account, your holdings, your transaction history, and sometimes your personal details. That access persists until you explicitly revoke it, and most people never do.
+
+In both cases, you are giving an external service a continuous window into your financial life. For a one-time calculation, that is a large amount of trust to extend.
+
+## The CA Analogy: Upload the Report, Not the Login
+
+Think about how you handle your taxes every year.
+
+At the end of the financial year, you need to file your ITR. You go to your CA (or use a tax portal). Do you give your CA your Zerodha login and say, "go look at whatever you need"? Of course not.
+
+You download your **P&L statement**, your **capital gains report**, and your **contract notes** from Zerodha or Groww yourself. You upload those documents to your CA or to the tax portal. Your CA works from the reports you provide — not from direct access to your broker account.
+
+This is exactly the right model for XIRR verification too.
+
+- You download the ledger from your broker (you already have access to it — it is your data)
+- You upload it to the XIRR calculator
+- The calculator processes it and gives you the number
+- No credentials are ever shared. No ongoing connection is established. Nothing persists after you close the tab.
+
+You are in full control of what you share and when.
+
+## What the Ledger Contains — And Why It Produces a More Accurate XIRR
+
+When you download your broker's account ledger, you get the complete financial record of your account:
+
+- Every bank transfer in (you deployed capital on this date)
+- Every bank withdrawal out (you recovered capital on this date)
+- Every charge deducted: brokerage, STT, exchange charges, SEBI fees, GST, stamp duty
+- Dividends credited
+- SGB interest received
+- Quarterly settlement amounts
+
+This is not a summary. It is a transaction-by-transaction record, with exact amounts and exact dates.
+
+When an XIRR calculator works from this file, it sees the **net debit** of every trade — not the face value. If you bought ₹1,00,000 in stocks, the ledger shows a debit of ₹1,00,187 because ₹187 in charges was also deducted. That ₹187 is real money that left your account. A ledger-based XIRR captures it. A holdings-based or trade-price-based XIRR does not.
+
+The difference on a single trade is small. Across a full year of investing, it adds up — and the gap between what your broker shows and what a ledger-based calculator shows can easily be 0.3–0.8 percentage points of XIRR. On a ₹20–30 lakh portfolio, that is a meaningful difference.
+
+## A Simple Habit That Takes 5 Minutes
+
+You do not need to do this daily or even monthly. Once a quarter — or before any major financial decision — is enough.
+
+**Step 1:** Log in to your broker and download your account ledger for the period you want to evaluate. In Zerodha, this is under Console → Reports → Ledger. In Groww, it is under Reports → Profit & Loss.
+
+**Step 2:** Open an upload-based XIRR calculator. Upload the file.
+
+**Step 3:** Enter your current portfolio value and available cash balance.
+
+**Step 4:** The calculator shows your actual XIRR — including every charge, every transfer, every dividend.
+
+Compare this number to what your broker shows. In most cases they will differ. The ledger-based number is the one to trust.
+
+## Why This Matters More Than You Might Think
+
+Most investors use their XIRR for one of two things: benchmarking against Nifty 50, or deciding whether to stay invested or change strategy.
+
+If the XIRR you are using is overstated by 0.5–1% because it ignores charges, your benchmarking is off. You might think you are beating the index when you are just matching it. You might think your stock-picking is working when it is not.
+
+A 1% gap in XIRR perception can lead to very different decisions about whether your current approach is worth continuing.
+
+Getting the number right — by cross-checking with an upload-based tool — costs you five minutes once a quarter. It is a small habit with a meaningful payoff in self-awareness.
+
+## The Right Tool for the Job
+
+XIRR Ledger works exactly this way. You upload your broker ledger — no login, no API connection, no ongoing access. The file is processed to calculate your XIRR, and your data is not stored or shared.
+
+It supports Zerodha, Groww, and Fyers, and handles stocks, F&O, dividends, and all transaction charges in a single calculation.
+
+The result is the same kind of number your CA would arrive at if they were computing your investment returns: accurate, complete, and based entirely on what actually moved in and out of your account.
+
+---
+
+**Calculate your actual XIRR from your broker ledger →** [Try XIRR Ledger](https://xirrledger.com/calculator)
+
+**See what a full report looks like →** [Download Sample Report](/sample_report.pdf)
