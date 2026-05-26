@@ -1,15 +1,26 @@
 Options -Indexes
 
-# ─── www → non-www canonical redirect ────────────────────────────────────────
+# ─── URL canonicalisation (single RewriteEngine block — order matters) ───────
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # 1. Strip /index.html — Next.js static export creates page/index.html which
+    #    Apache serves at both /page/ and /page/index.html, causing duplicate pages.
+    #    Redirect the index.html variant to the canonical trailing-slash URL.
+    RewriteCond %{THE_REQUEST} ^[A-Z]+\s/(.*)index\.html[\s?]
+    RewriteRule ^ /%1 [R=301,L]
+
+    # 2. www + no trailing slash + not a file → non-www + trailing slash (1 hop)
+    RewriteCond %{HTTP_HOST} ^www\.xirrledger\.com$ [NC]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_URI} !/$
+    RewriteRule ^(.*)$ https://xirrledger.com/$1/ [R=301,L]
+
+    # 3. www + trailing slash (or a file) → non-www, same path (1 hop)
     RewriteCond %{HTTP_HOST} ^www\.xirrledger\.com$ [NC]
     RewriteRule ^(.*)$ https://xirrledger.com/$1 [R=301,L]
-</IfModule>
 
-# ─── Add trailing slash to non-file, non-directory URLs ──────────────────────
-<IfModule mod_rewrite.c>
-    RewriteEngine On
+    # 4. Non-www, no trailing slash, not a file → add trailing slash
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_URI} !/$
     RewriteRule ^(.*)$ /$1/ [R=301,L]
