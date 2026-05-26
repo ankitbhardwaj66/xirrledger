@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { FaTrophy, FaDumbbell, FaChartLine } from 'react-icons/fa';
+import { FaTrophy, FaDumbbell, FaChartLine, FaPlus, FaArrowRight, FaArrowLeft, FaBolt, FaChartBar, FaCheck } from 'react-icons/fa';
 
 const GOOGLE_CLIENT_ID = '1030081614603-onnmmupafevkn0hojoj4qk023tuohius.apps.googleusercontent.com';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 const JOBS_BASE_URL = process.env.NEXT_PUBLIC_JOBS_BASE_URL || 'https://xirrledger-jobs.s3.ap-south-1.amazonaws.com';
 
-type Step = 'auth' | 'otp' | 'broker' | 'trade-type' | 'upload-mf' | 'upload-ledger' | 'upload-dividend' | 'holdings' | 'account-done' | 'upload' | 'details' | 'processing' | 'results' | 'edit-holdings';
+type Step = 'auth' | 'otp' | 'broker' | 'trade-type' | 'upload-mf' | 'upload-ledger' | 'upload-dividend' | 'holdings' | 'account-done' | 'calculate-ready' | 'upload' | 'details' | 'processing' | 'results' | 'edit-holdings';
 
 interface User {
   name: string;
@@ -364,6 +364,7 @@ function getFlowSteps(draft: AccountDraft): Step[] {
   if (draft.broker === 'zerodha' && (draft.tradeType === 'stocks' || draft.tradeType === 'both')) steps.push('upload-dividend');
   steps.push('holdings');
   steps.push('account-done');
+  steps.push('calculate-ready');
   return steps;
 }
 
@@ -1256,9 +1257,9 @@ export default function CalculatorPage() {
   }
 
   const STEPS_LABELS = ['Sign In', 'Upload', 'Details'];
-  const stepIndex: Record<Step, number> = { auth: 0, otp: 0, broker: 1, 'trade-type': 1, 'upload-mf': 1, 'upload-ledger': 1, 'upload-dividend': 1, holdings: 1, 'account-done': 1, upload: 1, details: 2, processing: 3, results: 4, 'edit-holdings': 4 };
-  const isNewFlowStep = ['broker', 'trade-type', 'upload-mf', 'upload-ledger', 'upload-dividend', 'holdings', 'account-done'].includes(step);
-  const NEW_FLOW_STEPS: Step[] = ['broker', 'trade-type', 'upload-mf', 'upload-ledger', 'upload-dividend', 'holdings', 'account-done'];
+  const stepIndex: Record<Step, number> = { auth: 0, otp: 0, broker: 1, 'trade-type': 1, 'upload-mf': 1, 'upload-ledger': 1, 'upload-dividend': 1, holdings: 1, 'account-done': 1, 'calculate-ready': 2, upload: 1, details: 2, processing: 3, results: 4, 'edit-holdings': 4 };
+  const isNewFlowStep = ['broker', 'trade-type', 'upload-mf', 'upload-ledger', 'upload-dividend', 'holdings', 'account-done', 'calculate-ready'].includes(step);
+  const NEW_FLOW_STEPS: Step[] = ['broker', 'trade-type', 'upload-mf', 'upload-ledger', 'upload-dividend', 'holdings', 'account-done', 'calculate-ready'];
 
   /* ── pan input border helper ── */
   function panBorder(key: string) {
@@ -2205,7 +2206,9 @@ export default function CalculatorPage() {
 
               <div style={{ ...card, padding: '36px 28px' }}>
                 {/* Completion icon */}
-                <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(16,185,129,0.12)', border: '1.5px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '1.4rem' }}>✓</div>
+                <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(16,185,129,0.12)', border: '1.5px solid rgba(16,185,129,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                  <FaCheck size={22} color="#10b981" />
+                </div>
 
                 <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', lineHeight: 1.2, textAlign: 'center' }}>Account Added Summary</h2>
                 <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 24px', textAlign: 'center' }}>
@@ -2249,31 +2252,101 @@ export default function CalculatorPage() {
                   </div>
                 </div>
 
-                {/* Primary CTA: Calculate */}
-                <button
-                  onClick={() => handleDraftCalculate()}
-                  style={{ ...btnPrimary, width: '100%', padding: '15px', fontSize: '1rem', fontWeight: 800, marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-                >
-                  <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-                  Calculate My XIRR
-                </button>
-
-                {/* Secondary: Add another account */}
+                {/* Primary CTA: Add Another Account */}
                 <button
                   onClick={() => {
                     setCompletedAccounts(prev => [...prev, currentDraft]);
                     setCurrentDraft(emptyDraft());
                     setWizardSession(null);
                     setStep('broker');
+                    trackStep('broker');
                   }}
+                  style={{ ...btnPrimary, width: '100%', padding: '15px', fontSize: '1rem', fontWeight: 800, marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                >
+                  <FaPlus size={15} />
+                  Add Another Account
+                </button>
+
+                {/* Secondary: Continue to calculate */}
+                <button
+                  onClick={() => { setStep('calculate-ready'); trackStep('calculate-ready'); }}
                   style={{ ...btnSecondary, width: '100%', padding: '13px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                 >
-                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                  Add Another Account
+                  Skip — Calculate My XIRR
+                  <FaArrowRight size={13} />
                 </button>
 
                 <button onClick={() => setStep('holdings')} style={{ background: 'none', border: 'none', color: '#475569', fontSize: '0.78rem', cursor: 'pointer', width: '100%', marginTop: 12, textDecoration: 'underline' }}>
                   ← Edit holdings
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── CALCULATE READY (wizard flow — final step before processing) ── */}
+        {step === 'calculate-ready' && (() => {
+          const allDrafts = [...completedAccounts, currentDraft];
+          const totalFiles = allDrafts.reduce((n, d) => n + d.ledgerFiles.length + d.mfFiles.length + d.dividendFiles.length, 0);
+
+          return (
+            <div style={{ maxWidth: 480, margin: '0 auto', animation: 'fadeSlideIn 0.3s ease' }}>
+              {/* Mini progress — all filled */}
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginBottom: 24 }}>
+                {getFlowSteps(currentDraft).map((s, i, arr) => (
+                  <div key={s} style={{ height: 6, width: 6, borderRadius: 3, background: '#10b981', border: 'none', transition: 'all 0.3s' }} />
+                ))}
+              </div>
+
+              <div style={{ ...card, padding: '36px 28px' }}>
+                <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(245,158,11,0.12)', border: '1.5px solid rgba(245,158,11,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                  <FaBolt size={22} color="#f59e0b" />
+                </div>
+
+                <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: '0 0 6px', color: '#ffffff', lineHeight: 1.2, textAlign: 'center' }}>Ready to Calculate</h2>
+                <p style={{ color: '#64748b', fontSize: '0.875rem', margin: '0 0 24px', textAlign: 'center' }}>
+                  {allDrafts.length} account{allDrafts.length !== 1 ? 's' : ''} · {totalFiles} file{totalFiles !== 1 ? 's' : ''} ready
+                </p>
+
+                {/* Account summary */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+                  {allDrafts.map((d, i) => {
+                    const c = d.broker === 'zerodha' ? '#f6461a' : d.broker === 'groww' ? '#00d4b4' : '#818cf8';
+                    const brokerLogo = d.broker === 'zerodha' ? '/kite-logo.svg' : d.broker === 'groww' ? '/groww-logo.webp' : '/fyers-logo.webp';
+                    const fileCount = d.ledgerFiles.length + d.mfFiles.length + d.dividendFiles.length;
+                    return (
+                      <div key={d.id} style={{ ...innerCard, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: `${c}22`, border: `1px solid ${c}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <img src={brokerLogo} alt={d.broker} style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: '#e2e8f0' }}>
+                            {d.broker.charAt(0).toUpperCase() + d.broker.slice(1)} #{i + 1}
+                          </p>
+                          <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#64748b' }}>
+                            {d.tradeType} · {fileCount} file{fileCount !== 1 ? 's' : ''} · ₹{parseInt(d.holdings || '0').toLocaleString('en-IN')} portfolio
+                          </p>
+                        </div>
+                        <span style={{ padding: '3px 8px', borderRadius: 20, fontSize: '0.68rem', fontWeight: 700, background: '#10b98122', color: '#10b981' }}>✓</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Primary CTA */}
+                <button
+                  onClick={() => handleDraftCalculate()}
+                  style={{ ...btnPrimary, width: '100%', padding: '16px', fontSize: '1.05rem', fontWeight: 800, marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                >
+                  <FaChartBar size={16} />
+                  Calculate My XIRR
+                </button>
+
+                <button
+                  onClick={() => setStep('account-done')}
+                  style={{ background: 'none', border: 'none', color: '#475569', fontSize: '0.82rem', cursor: 'pointer', width: '100%', marginTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, textDecoration: 'underline' }}
+                >
+                  <FaArrowLeft size={11} /> Add Another Account
                 </button>
               </div>
             </div>
