@@ -176,9 +176,9 @@ async function detectBrokerFromContent(file: File): Promise<Pick<UploadedFile, '
 
   if (isCsv) {
     try {
-      const text = await file.slice(0, 8192).text();
-      // Zerodha: header row contains 'particulars'
-      if (text.split('\n')[0]?.toLowerCase().includes('particulars')) {
+      const text = await file.slice(0, 1024).text();
+      // Zerodha ledger: first row has 'particulars' OR file contains 'Ledger for Equity'
+      if (text.split('\n')[0]?.toLowerCase().includes('particulars') || text.includes('Ledger for Equity')) {
         return { broker: 'zerodha' };
       }
       // Fyers: content contains 'Transaction type' + 'Debit amount'
@@ -204,6 +204,15 @@ async function detectBrokerFromContent(file: File): Promise<Pick<UploadedFile, '
     if (name.startsWith('stocks_order_history_')) {
       return { broker: 'groww' };
     }
+    // Detect Zerodha MF Tradebook uploaded in ledger section — it has a "Mutual Funds" sheet
+    try {
+      const XLSX = await import('xlsx');
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array', bookSheets: true });
+      if (wb.SheetNames.includes('Mutual Funds')) {
+        return { broker: 'zerodha', formatError: 'This is the MF Tradebook — upload it in the Mutual Funds section. This section is for the Ledger (Stocks / F&O).' };
+      }
+    } catch { /* fall through */ }
     return { broker: 'zerodha' };
   }
 
@@ -289,6 +298,17 @@ async function parseMfTradebook(file: File, broker?: string): Promise<{ dateFrom
     if (file.name.toLowerCase().startsWith('stocks_order_history_')) {
       return { dateFrom: '', dateTo: '', tradeCount: 0, error: 'This is the Stocks Order History file — please upload the Mutual Funds - Order history XLSX instead.' };
     }
+    // Detect Zerodha ledger CSV uploaded in MF step
+    if (file.name.toLowerCase().endsWith('.csv')) {
+      try {
+        const text = await file.slice(0, 1024).text();
+        const isZerodhaLedger = text.includes('Ledger for Equity') || text.split('\n')[0]?.toLowerCase().includes('particulars');
+        if (isZerodhaLedger) {
+          return { dateFrom: '', dateTo: '', tradeCount: 0, error: 'Wrong file — this is the Equity Ledger. Remove it and upload the MF Tradebook XLSX.' };
+        }
+      } catch { /* fall through */ }
+      return { dateFrom: '', dateTo: '', tradeCount: 0, error: 'Wrong file — remove it and upload the MF Tradebook XLSX.' };
+    }
 
     const XLSX = await import('xlsx');
     const buf = await file.arrayBuffer();
@@ -320,7 +340,7 @@ async function parseMfTradebook(file: File, broker?: string): Promise<{ dateFrom
     }
 
     const sheet = wb.Sheets['Mutual Funds'];
-    if (!sheet) return { dateFrom: '', dateTo: '', tradeCount: 0, error: broker === 'groww' ? 'Sheet "Transactions" not found — please upload the Groww Mutual Funds - Order history XLSX.' : 'Sheet "Mutual Funds" not found — please upload the Zerodha MF Tradebook XLSX.' };
+    if (!sheet) return { dateFrom: '', dateTo: '', tradeCount: 0, error: broker === 'groww' ? 'Wrong file — remove it and upload the Groww Mutual Funds Order History XLSX.' : 'Wrong file — remove it and upload the Zerodha MF Tradebook XLSX.' };
 
     const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
 
@@ -1587,7 +1607,7 @@ export default function CalculatorPage() {
                         const nextSteps = getFlowSteps(updated);
                         const nextStep = nextSteps[2] as Step;
                         setStep(nextStep);
-                        trackStep(nextStep);
+                        // Don't track upload steps on arrival — only tracked when user completes them
                       }}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 16, padding: '18px 20px',
@@ -1834,7 +1854,10 @@ export default function CalculatorPage() {
                           const flowSteps = getFlowSteps(currentDraft);
                           const nextIdx = flowSteps.indexOf('upload-mf') + 1;
                           const ns = flowSteps[nextIdx] as Step;
-                          setStep(ns); trackStep(ns);
+                          setStep(ns);
+                          // Track upload-mf completion only when user moves forward past it
+                          const uploadSteps: Step[] = ['upload-mf', 'upload-ledger', 'upload-dividend'];
+                          if (!uploadSteps.includes(ns)) trackStep(ns);
                         }}
                         disabled={!canGo}
                         style={{ ...btnPrimary, background: brokerColor, color: brokerColor === "#f6461a" ? "#fff" : "#0a1020", flex: 2, padding: '12px', fontSize: '0.9rem', opacity: canGo ? 1 : 0.4, cursor: canGo ? 'pointer' : 'not-allowed' }}
@@ -1857,7 +1880,8 @@ export default function CalculatorPage() {
           const brokerColor = broker === 'zerodha' ? '#f6461a' : broker === 'groww' ? '#00d4b4' : '#818cf8';
           const hasLedger = currentDraft.ledgerFiles.length > 0;
           const isGroww = broker === 'groww';
-          const canContinue = hasLedger;
+          const hasLedgerFormatErrors = currentDraft.ledgerFiles.some(f => f.formatError);
+          const canContinue = hasLedger && !hasLedgerFormatErrors;
 
           const brokerMeta = {
             zerodha: { accept: '.xlsx', label: 'Zerodha Ledger (XLSX)', hint: 'Console → Funds → Statement → All Segments → XLSX', link: 'https://console.zerodha.com/funds/statement?segment=equity&src=kiteweb' },
@@ -1940,15 +1964,23 @@ export default function CalculatorPage() {
                   {hasLedger ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {currentDraft.ledgerFiles.map((uf, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', ...innerCard }}>
-                          <div style={{ width: 30, height: 30, borderRadius: 7, background: `${brokerColor}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 700, color: brokerColor, flexShrink: 0 }}>
-                            {uf.file.name.endsWith('.pdf') ? 'PDF' : uf.file.name.endsWith('.xlsx') ? 'XLS' : 'CSV'}
+                        <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 0, ...innerCard, overflow: 'hidden' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px' }}>
+                            <div style={{ width: 30, height: 30, borderRadius: 7, background: uf.formatError ? 'rgba(239,68,68,0.15)' : `${brokerColor}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 700, color: uf.formatError ? '#ef4444' : brokerColor, flexShrink: 0 }}>
+                              {uf.file.name.endsWith('.pdf') ? 'PDF' : uf.file.name.endsWith('.xlsx') ? 'XLS' : 'CSV'}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+                              <p style={{ margin: 0, fontWeight: 600, fontSize: '0.845rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{uf.file.name}</p>
+                              <p style={{ margin: 0, fontSize: '0.72rem', color: '#475569' }}>{(uf.file.size / 1024).toFixed(0)} KB</p>
+                            </div>
+                            <button onClick={e => { e.stopPropagation(); setCurrentDraft(prev => ({ ...prev, ledgerFiles: prev.ledgerFiles.filter((_, j) => j !== i) })); }} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '1.1rem', padding: '2px 6px' }}>×</button>
                           </div>
-                          <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
-                            <p style={{ margin: 0, fontWeight: 600, fontSize: '0.845rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{uf.file.name}</p>
-                            <p style={{ margin: 0, fontSize: '0.72rem', color: '#475569' }}>{(uf.file.size / 1024).toFixed(0)} KB{uf.formatError ? ` · ⚠ ${uf.formatError}` : ''}</p>
-                          </div>
-                          <button onClick={e => { e.stopPropagation(); setCurrentDraft(prev => ({ ...prev, ledgerFiles: prev.ledgerFiles.filter((_, j) => j !== i) })); }} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '1.1rem', padding: '2px 6px' }}>×</button>
+                          {uf.formatError && (
+                            <div style={{ background: 'rgba(239,68,68,0.1)', borderTop: '1px solid rgba(239,68,68,0.25)', padding: '8px 12px', display: 'flex', alignItems: 'flex-start', gap: 7 }}>
+                              <span style={{ color: '#ef4444', fontSize: '0.8rem', flexShrink: 0, marginTop: 1 }}>⚠</span>
+                              <p style={{ margin: 0, fontSize: '0.78rem', color: '#fca5a5', lineHeight: 1.45 }}>{uf.formatError}</p>
+                            </div>
+                          )}
                         </div>
                       ))}
                       <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#475569' }}>+ Drop more files or click to add</p>
@@ -1973,12 +2005,14 @@ export default function CalculatorPage() {
                       const flowSteps = getFlowSteps(currentDraft);
                       const nextIdx = flowSteps.indexOf('upload-ledger') + 1;
                       const ns = flowSteps[nextIdx] as Step;
-                      setStep(ns); trackStep(ns);
+                      setStep(ns);
+                      const uploadSteps: Step[] = ['upload-mf', 'upload-ledger', 'upload-dividend'];
+                      if (!uploadSteps.includes(ns)) trackStep(ns);
                     }}
                     disabled={!canContinue}
                     style={{ ...btnPrimary, background: brokerColor, color: brokerColor === "#f6461a" ? "#fff" : "#0a1020", flex: 2, padding: '12px', fontSize: '0.9rem', opacity: canContinue ? 1 : 0.4, cursor: canContinue ? 'pointer' : 'not-allowed' }}
                   >
-                    Continue →
+                    {hasLedgerFormatErrors ? 'Remove wrong file to continue' : 'Continue →'}
                   </button>
                 </div>
               </div>
@@ -1997,7 +2031,8 @@ export default function CalculatorPage() {
             const nextIdx = flowSteps.indexOf('upload-dividend') + 1;
             const nextStep = flowSteps[nextIdx] as Step;
             setStep(nextStep);
-            trackStep(nextStep);
+            const uploadSteps: Step[] = ['upload-mf', 'upload-ledger', 'upload-dividend'];
+            if (!uploadSteps.includes(nextStep)) trackStep(nextStep);
           }
 
           return (
