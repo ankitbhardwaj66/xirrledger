@@ -100,6 +100,12 @@ try {
         FROM xirr_sessions
     ")->fetch(PDO::FETCH_ASSOC);
 
+    // Unique registered users — all time (distinct non-empty emails)
+    $unique_users = (int)$pdo->query("
+        SELECT COUNT(DISTINCT email) FROM xirr_sessions
+        WHERE email IS NOT NULL AND email != ''
+    ")->fetchColumn();
+
 } catch (PDOException $e) {
     die('<pre style="color:red">DB Error: ' . htmlspecialchars($e->getMessage()) . '</pre>');
 }
@@ -293,6 +299,10 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
       <div class="num" style="color:#10b981"><?= (int)($today_row['today_done'] ?? 0) ?></div>
       <div class="lbl">Reports generated today</div>
     </div>
+    <div class="today-card">
+      <div class="num" style="color:#f59e0b"><?= $unique_users ?></div>
+      <div class="lbl">Unique registered users</div>
+    </div>
   </div>
 
   <!-- Funnel cards -->
@@ -417,7 +427,6 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
           <th>Last Step</th>
           <th>XIRR</th>
           <th class="hide-mobile">Nifty XIRR</th>
-          <th class="hide-mobile">PDF</th>
           <th class="hide-mobile">Support Email</th>
           <th class="hide-mobile" style="width:36px;text-align:center">Err</th>
         </tr>
@@ -462,13 +471,6 @@ tbody tr:hover { background: rgba(255,255,255,0.02); }
               $v = round((float)$s['nifty_xirr'], 1);
               echo "<span style='color:#64748b'>{$v}%</span>";
             } else echo '<span style="color:#475569">—</span>';
-          ?></td>
-          <td class="hide-mobile"><?php
-            if ($pdf_url) {
-              echo "<a href='{$pdf_url}' target='_blank' style='color:#e2c97e;font-size:11px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;font-weight:600' title='Download PDF'>{$dl_svg} PDF</a>";
-            } else {
-              echo '<span style="color:#475569">—</span>';
-            }
           ?></td>
           <td class="hide-mobile" style="white-space:nowrap"><?php
             if ($s['support_email_sent_at']) {
