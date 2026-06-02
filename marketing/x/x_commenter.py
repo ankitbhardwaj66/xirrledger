@@ -578,6 +578,11 @@ def run(dry_run: bool = False):
 
 
 def main():
+    # DISABLED — account @jgdankit was locked by X for inauthentic behaviour.
+    # Do not re-enable until account is fully restored and a safer approach is planned.
+    print("X commenter is currently disabled. Exiting.")
+    sys.exit(0)
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--login", action="store_true", help="Open browser for manual X.com login")
     parser.add_argument("--dry-run", action="store_true", help="Draft replies but don't post them")
