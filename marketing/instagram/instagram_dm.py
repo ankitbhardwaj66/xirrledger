@@ -24,6 +24,8 @@ Safety:
     - Requires existing Instagram session from instagram_commenter.py --login
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import random
@@ -31,6 +33,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 import anthropic
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
@@ -379,7 +382,7 @@ def run(dry_run: bool = False, discover: bool = False):
         context = browser.new_context(
             storage_state=str(SESSION_PATH),
             user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            viewport={"width": 1280, "height": 800"},
+            viewport={"width": 1280, "height": 800},
             permissions=["clipboard-read", "clipboard-write"],
         )
         page = context.new_page()
