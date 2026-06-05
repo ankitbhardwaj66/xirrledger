@@ -1,0 +1,7 @@
+# Instagram usernames to DM — one per line, no @ needed
+# Add fintech/investing influencers here
+# Run --discover mode to find more candidates automatically
+
+# Example (uncomment and add real usernames):
+# pranjal_kamra
+# ca_rachanaranade
