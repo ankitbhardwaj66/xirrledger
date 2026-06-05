@@ -152,39 +152,54 @@ def draft_message(client: anthropic.Anthropic, username: str) -> str | None:
 
 
 def get_follower_count(page, username: str) -> int:
-    """Navigate to a profile and return follower count (0 if can't parse)."""
+    """Navigate to a profile and return follower count (-1 if can't parse)."""
     try:
         page.goto(f"https://www.instagram.com/{username}/", wait_until="domcontentloaded", timeout=20000)
-        human_delay(2, 3)
+        # Wait for the stats <ul> (posts / followers / following) to render
+        try:
+            page.wait_for_selector("header section ul li", timeout=8000)
+        except PlaywrightTimeout:
+            pass
+        human_delay(1, 2)
+
         count = page.evaluate("""
             () => {
                 const parseNum = s => {
                     s = (s || '').replace(/,/g, '').trim();
                     if (/[Kk]$/.test(s)) return Math.round(parseFloat(s) * 1000);
                     if (/[Mm]$/.test(s)) return Math.round(parseFloat(s) * 1000000);
-                    return parseInt(s) || 0;
+                    const n = parseInt(s);
+                    return isNaN(n) ? -1 : n;
                 };
-                // Method 1: <li> stats row — Instagram logged-in view
-                for (const li of document.querySelectorAll('li')) {
-                    const t = li.innerText || '';
-                    if (t.toLowerCase().includes('follower')) {
-                        const m = t.match(/([\d,\.]+[KkMm]?)/);
+
+                // Method 1: header stats <ul><li> — "159K followers" in innerText
+                for (const li of document.querySelectorAll('header section ul li, header ul li')) {
+                    const t = (li.innerText || '').toLowerCase();
+                    if (t.includes('follower')) {
+                        const m = li.innerText.match(/([\d,\.]+[KkMm]?)/);
                         if (m) return parseNum(m[1]);
                     }
                 }
-                // Method 2: <a> with followers in href
-                for (const a of document.querySelectorAll('a[href*="followers"]')) {
-                    const t = a.innerText || a.getAttribute('aria-label') || '';
-                    const m = t.match(/([\d,\.]+[KkMm]?)/);
-                    if (m) return parseNum(m[1]);
+
+                // Method 2: any span containing just a number next to a "followers" span
+                const spans = Array.from(document.querySelectorAll('span'));
+                for (let i = 0; i < spans.length; i++) {
+                    const t = (spans[i].innerText || '').trim().toLowerCase();
+                    if (t === 'followers' && i > 0) {
+                        const num = (spans[i - 1].innerText || '').trim();
+                        const n = parseNum(num);
+                        if (n >= 0) return n;
+                    }
                 }
-                // Method 3: meta description (works when not logged in)
+
+                // Method 3: meta description
                 for (const meta of document.querySelectorAll('meta[content]')) {
                     const c = meta.getAttribute('content') || '';
                     const m = c.match(/([\d,\.]+[KkMm]?)\s+Followers/i);
                     if (m) return parseNum(m[1]);
                 }
-                return -1; // -1 = unknown, not 0
+
+                return -1;
             }
         """)
         return count if count is not None else -1
