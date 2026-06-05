@@ -125,6 +125,18 @@ def load_targets() -> list[str]:
     return targets
 
 
+def _append_to_targets(new_usernames: list[str], seen: set):
+    """Append newly discovered usernames to targets.txt, skipping already-seen ones."""
+    existing = set(load_targets())
+    to_add = [u for u in new_usernames if u not in existing and u not in seen]
+    if not to_add:
+        return
+    with open(TARGETS_FILE, "a") as f:
+        for u in to_add:
+            f.write(f"{u}\n")
+    print(f"  Appended {len(to_add)} new usernames to targets.txt")
+
+
 def draft_message(client: anthropic.Anthropic, username: str) -> str | None:
     try:
         resp = client.messages.create(
@@ -399,14 +411,28 @@ def run(dry_run: bool = False, discover: bool = False):
         if discover:
             print("\n── Discovery mode ──────────────────────────────")
             found = discover_influencers(page, seen)
-            print(f"\nFound {len(found)} potential targets:")
-            for u in found:
-                print(f"  @{u}")
-            print("\nAdd these to TARGETS or targets.txt to DM them.")
+            _append_to_targets(found, seen)
+            print(f"\nFound {len(found)} new targets — added to targets.txt.")
             browser.close()
             return
 
+        targets = load_targets()
         pending = [u for u in targets if u not in seen]
+
+        # Auto-discover if nothing left to DM
+        if not pending:
+            print("\nNo pending targets — running discovery first...")
+            found = discover_influencers(page, seen)
+            if found:
+                _append_to_targets(found, seen)
+                targets = load_targets()
+                pending = [u for u in targets if u not in seen]
+                print(f"\n{len(pending)} new targets discovered and added.")
+            else:
+                print("Discovery found no new targets. Try again later.")
+                browser.close()
+                return
+
         print(f"\n{len(pending)} targets pending (of {len(targets)} total)")
 
         for username in pending:
