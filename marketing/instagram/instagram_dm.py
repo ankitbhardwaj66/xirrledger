@@ -337,17 +337,21 @@ def discover_influencers(page, seen: set) -> list[str]:
             post_urls = page.evaluate("""
                 () => {
                     const seen = new Set(); const results = [];
-                    document.querySelectorAll('a[href*="/p/"]').forEach(a => {
+                    // Try both /p/ posts and /reel/ links
+                    document.querySelectorAll('a[href*="/p/"], a[href*="/reel/"]').forEach(a => {
                         const href = (a.href || '').split('?')[0];
-                        if (href.match(/instagram\\.com\\/p\\//) && !seen.has(href)) {
+                        if (href.match(/instagram\\.com\\/(p|reel)\\//) && !seen.has(href)) {
                             seen.add(href); results.push(href);
                         }
                     });
-                    return results.slice(0, 6);
+                    return results.slice(0, 8);
                 }
             """)
-        except Exception:
+        except Exception as e:
+            print(f"  [error] Could not extract post URLs: {e}")
             continue
+
+        print(f"  Found {len(post_urls)} posts")
 
         for post_url in post_urls:
             try:
@@ -355,17 +359,31 @@ def discover_influencers(page, seen: set) -> list[str]:
                 human_delay(2, 3)
                 username = page.evaluate("""
                     () => {
-                        for (const sel of ['header a[href]', 'article header a[href]']) {
+                        // Try multiple selectors — Instagram's DOM changes frequently
+                        const selectors = [
+                            'article header a[href]',
+                            'header a[href]',
+                            'a[role="link"][href^="/"][href$="/"]',
+                            'span[dir="auto"] a[href]',
+                        ];
+                        for (const sel of selectors) {
                             const els = document.querySelectorAll(sel);
                             for (const el of els) {
                                 const href = el.getAttribute('href') || '';
                                 const text = (el.innerText || '').trim();
-                                if (href.match(/^\\/[a-zA-Z0-9._]+\\/$/) && text) return text.replace('@','');
+                                if (
+                                    href.match(/^\\/[a-zA-Z0-9._]+\\/$/) &&
+                                    !href.includes('/p/') &&
+                                    !href.includes('/reel/') &&
+                                    !href.includes('/explore/') &&
+                                    text && text.length < 30
+                                ) return text.replace('@', '');
                             }
                         }
                         return '';
                     }
                 """)
+                print(f"  Post: {post_url[-40:]} → user: '{username}'")
                 if not username or username in seen or username in targets or username in discovered:
                     continue
                 followers = get_follower_count(page, username)
@@ -373,7 +391,8 @@ def discover_influencers(page, seen: set) -> list[str]:
                 print(f"    @{username}: {f_label} followers → added")
                 discovered.append(username)
                 human_delay(1, 2)
-            except Exception:
+            except Exception as e:
+                print(f"  [error] {e}")
                 continue
 
     return discovered
