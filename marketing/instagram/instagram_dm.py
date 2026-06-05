@@ -72,7 +72,7 @@ MESSAGE_SYSTEM = """You are writing a short, genuine Instagram DM from Ankit Bha
 
 Write a natural, personal DM to a fintech/investing influencer. Cover:
 1. Brief intro: you're a software engineer, built xirrledger.com for yourself
-2. The problem it solves: Zerodha's Kite never shows portfolio XIRR properly
+2. The problem it solves: Zerodha's Kite just shows a dash where your portfolio XIRR should be — it never shows a number at all
 3. What it does: free tool that reads your actual broker ledger (Zerodha/Groww) and calculates true XIRR including every charge — ledger-based so it's accurate
 4. The ask: try it, and if they find it useful, share it with their audience
 5. It's free and will always be free — built for the community
