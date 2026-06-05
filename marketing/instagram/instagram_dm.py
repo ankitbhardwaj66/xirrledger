@@ -359,25 +359,34 @@ def discover_influencers(page, seen: set) -> list[str]:
                 human_delay(2, 3)
                 username = page.evaluate("""
                     () => {
-                        // Try multiple selectors — Instagram's DOM changes frequently
-                        const selectors = [
-                            'article header a[href]',
-                            'header a[href]',
-                            'a[role="link"][href^="/"][href$="/"]',
-                            'span[dir="auto"] a[href]',
-                        ];
-                        for (const sel of selectors) {
-                            const els = document.querySelectorAll(sel);
-                            for (const el of els) {
+                        // Method 1: page title — Instagram sets it as "username • ..." or "username on Instagram"
+                        const title = document.title || '';
+                        const titleMatch = title.match(/^([a-zA-Z0-9._]+)\\s*(•|on Instagram)/);
+                        if (titleMatch) return titleMatch[1];
+
+                        // Method 2: og:url meta — "https://www.instagram.com/username/..."
+                        const ogUrl = document.querySelector('meta[property="og:url"]');
+                        if (ogUrl) {
+                            const m = (ogUrl.getAttribute('content') || '').match(/instagram\\.com\\/([a-zA-Z0-9._]+)\\//);
+                            if (m && m[1] !== 'p' && m[1] !== 'reel') return m[1];
+                        }
+
+                        // Method 3: canonical link
+                        const canonical = document.querySelector('link[rel="canonical"]');
+                        if (canonical) {
+                            const m = (canonical.getAttribute('href') || '').match(/instagram\\.com\\/([a-zA-Z0-9._]+)\\//);
+                            if (m && m[1] !== 'p' && m[1] !== 'reel') return m[1];
+                        }
+
+                        // Method 4: header/article links
+                        for (const sel of ['article header a[href]', 'header a[href]']) {
+                            for (const el of document.querySelectorAll(sel)) {
                                 const href = el.getAttribute('href') || '';
                                 const text = (el.innerText || '').trim();
-                                if (
-                                    href.match(/^\\/[a-zA-Z0-9._]+\\/$/) &&
-                                    !href.includes('/p/') &&
-                                    !href.includes('/reel/') &&
-                                    !href.includes('/explore/') &&
-                                    text && text.length < 30
-                                ) return text.replace('@', '');
+                                if (href.match(/^\\/[a-zA-Z0-9._]+\\/$/) &&
+                                    !href.includes('/p/') && !href.includes('/reel/') &&
+                                    !href.includes('/explore/') && text && text.length < 30)
+                                    return text.replace('@', '');
                             }
                         }
                         return '';
