@@ -155,26 +155,41 @@ def get_follower_count(page, username: str) -> int:
     """Navigate to a profile and return follower count (0 if can't parse)."""
     try:
         page.goto(f"https://www.instagram.com/{username}/", wait_until="domcontentloaded", timeout=20000)
-        human_delay(2, 4)
+        human_delay(2, 3)
         count = page.evaluate("""
             () => {
-                const metas = document.querySelectorAll('meta[content]');
-                for (const m of metas) {
-                    const c = m.getAttribute('content') || '';
-                    const match = c.match(/([\d,\.]+[KkMm]?)\s+Followers/i);
-                    if (match) {
-                        let s = match[1].replace(/,/g, '');
-                        if (/k$/i.test(s)) return Math.round(parseFloat(s) * 1000);
-                        if (/m$/i.test(s)) return Math.round(parseFloat(s) * 1000000);
-                        return parseInt(s) || 0;
+                const parseNum = s => {
+                    s = (s || '').replace(/,/g, '').trim();
+                    if (/[Kk]$/.test(s)) return Math.round(parseFloat(s) * 1000);
+                    if (/[Mm]$/.test(s)) return Math.round(parseFloat(s) * 1000000);
+                    return parseInt(s) || 0;
+                };
+                // Method 1: <li> stats row — Instagram logged-in view
+                for (const li of document.querySelectorAll('li')) {
+                    const t = li.innerText || '';
+                    if (t.toLowerCase().includes('follower')) {
+                        const m = t.match(/([\d,\.]+[KkMm]?)/);
+                        if (m) return parseNum(m[1]);
                     }
                 }
-                return 0;
+                // Method 2: <a> with followers in href
+                for (const a of document.querySelectorAll('a[href*="followers"]')) {
+                    const t = a.innerText || a.getAttribute('aria-label') || '';
+                    const m = t.match(/([\d,\.]+[KkMm]?)/);
+                    if (m) return parseNum(m[1]);
+                }
+                // Method 3: meta description (works when not logged in)
+                for (const meta of document.querySelectorAll('meta[content]')) {
+                    const c = meta.getAttribute('content') || '';
+                    const m = c.match(/([\d,\.]+[KkMm]?)\s+Followers/i);
+                    if (m) return parseNum(m[1]);
+                }
+                return -1; // -1 = unknown, not 0
             }
         """)
-        return count or 0
+        return count if count is not None else -1
     except Exception:
-        return 0
+        return -1
 
 
 def send_dm(page, username: str, message: str) -> bool:
@@ -351,14 +366,13 @@ def discover_influencers(page, seen: set) -> list[str]:
                         return '';
                     }
                 """)
-                if not username or username in seen or username in targets:
+                if not username or username in seen or username in targets or username in discovered:
                     continue
                 followers = get_follower_count(page, username)
-                print(f"    @{username}: {followers:,} followers")
-                if followers >= MIN_FOLLOWERS_FOR_DM:
-                    discovered.append(username)
-                    print(f"    → Added to discover list")
-                human_delay(2, 4)
+                f_label = f"{followers:,}" if followers >= 0 else "unknown"
+                print(f"    @{username}: {f_label} followers → added")
+                discovered.append(username)
+                human_delay(1, 2)
             except Exception:
                 continue
 
