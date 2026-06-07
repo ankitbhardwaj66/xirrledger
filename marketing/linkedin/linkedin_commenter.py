@@ -24,7 +24,7 @@ import anthropic
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
 
 SCRIPT_DIR = Path(__file__).parent
-SESSION_PATH = Path("/Users/ankitbhardwaj/Documents/GitHub/contact-job-hunt/.linkedin_session/state.json")
+SESSION_PATH = SCRIPT_DIR / ".linkedin_session" / "state.json"
 SEEN_FILE = SCRIPT_DIR / ".seen_posts.json"
 SEEN_AUTHORS_FILE = SCRIPT_DIR / ".seen_authors.json"
 LOG_FILE = SCRIPT_DIR / "comments_log.jsonl"

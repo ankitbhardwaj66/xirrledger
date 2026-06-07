@@ -1,7 +1,13 @@
 #!/bin/bash
-# Run the LinkedIn commenter using the contact-job-hunt venv
+# Run the LinkedIn commenter
 # Usage: ./run.sh [--dry-run] [--login]
-VENV="/Users/ankitbhardwaj/Documents/GitHub/contact-job-hunt/.venv/bin/python"
+# Requires: pip install anthropic playwright && playwright install chromium
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+VENV="$SCRIPT_DIR/venv/bin/python3"
+
+# Fall back to system python3 if no local venv
+if [ ! -f "$VENV" ]; then
+    VENV="python3"
+fi
 
 exec "$VENV" "$SCRIPT_DIR/linkedin_commenter.py" "$@"

@@ -11,8 +11,7 @@
  * Migration files live in db/migrations/NNNN_description.sql
  * Applied migrations are tracked in the schema_migrations table.
  *
- * Run from the repo root:
- *   ssh -p 65002 u889244618@46.28.45.163
+ * Run from the repo root (SSH into server first):
  *   cd /path/to/repo && php db/migrate.php dev
  */
 

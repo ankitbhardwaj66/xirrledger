@@ -5,6 +5,7 @@ Lists every session folder in xirrledger-reports, generates a fresh 1-year
 presigned URL, and updates the DB via update-session.php.
 """
 
+import os
 import boto3
 import requests
 import sys
@@ -14,7 +15,11 @@ REGION        = "ap-south-1"
 PROFILE       = "ankit"
 EXPIRES_IN    = 365 * 24 * 3600  # 1 year
 UPDATE_URL    = "https://xirrledger.com/api/update-session.php"
-API_SECRET    = "57913263fb8d236d3e3e7e61d8ad91923b94c8b10780f99b720217e6fd464114"
+API_SECRET    = os.environ.get("XIRR_API_SECRET", "")
+
+if not API_SECRET:
+    print("Error: XIRR_API_SECRET env var not set. Run: export XIRR_API_SECRET=<secret>")
+    sys.exit(1)
 
 session = boto3.Session(profile_name=PROFILE)
 s3 = session.client("s3", region_name=REGION)

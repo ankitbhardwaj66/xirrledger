@@ -1,4 +1,6 @@
 # Terraform state and secrets
+tfplan
+*.tfplan
 *.tfstate
 *.tfstate.*
 .terraform/
