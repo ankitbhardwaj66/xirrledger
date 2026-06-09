@@ -161,6 +161,24 @@ The dashboard is blocked from Google indexing via `robots.txt` (`Disallow: /api/
 
 ---
 
+## Lambda Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `S3_UPLOADS_BUCKET` | **hard required** | S3 bucket for file uploads (`xirrledger-uploads`) |
+| `S3_REPORTS_BUCKET` | **hard required** | S3 bucket for PDF reports (`xirrledger-reports`) |
+| `S3_JOBS_BUCKET` | **hard required** | S3 bucket for job status polling (`xirrledger-jobs`) |
+| `HOSTINGER_API_URL` | required | PHP bridge URL e.g. `https://xirrledger.com/api` |
+| `HOSTINGER_API_SECRET` | required | Shared secret for Lambda→PHP auth (set in Terraform tfvars) |
+| `SES_FROM_EMAIL` | optional | Sender address, defaults to `reports@xirrledger.com` |
+| `SEND_EMAIL` | optional | Set to `false` to suppress all outbound email |
+| `TEST_EMAILS` | optional | Comma-separated emails that skip DB writes |
+| `AWS_REGION_NAME` | optional | Defaults to `ap-south-1` |
+
+> **Warning:** `aws lambda update-function-configuration --environment Variables={...}` **replaces** the entire env object — it does not merge. Always include all variables when updating.
+
+---
+
 ## Security
 
 - **`config.php`** — gitignored; credentials managed on server only via SSH. Use `config.example.php` as setup template.

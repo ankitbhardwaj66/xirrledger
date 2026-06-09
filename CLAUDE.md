@@ -132,6 +132,31 @@ rsync -avz --delete --exclude=robots.txt --exclude=api/config.php -e "ssh -p 650
 
 > `--exclude=dev` on main protects the dev subdomain directory from being deleted by `--delete`.
 
+## Lambda Environment Variables
+
+The prod Lambda (`xirr-processor`) and dev Lambda (`xirr-processor-dev`) require these env vars.
+
+| Variable | Required | Prod value |
+|---|---|---|
+| `S3_UPLOADS_BUCKET` | **hard required** | `xirrledger-uploads` |
+| `S3_REPORTS_BUCKET` | **hard required** | `xirrledger-reports` |
+| `S3_JOBS_BUCKET` | **hard required** | `xirrledger-jobs` |
+| `HOSTINGER_API_URL` | required (no default) | `https://xirrledger.com/api` |
+| `HOSTINGER_API_SECRET` | required (no default) | *(rotated secret — in Terraform tfvars)* |
+| `SES_FROM_EMAIL` | optional | `reports@xirrledger.com` |
+| `SEND_EMAIL` | optional | `true` |
+| `TEST_EMAILS` | optional | admin gmail |
+| `AWS_REGION_NAME` | optional | defaults to `ap-south-1` |
+
+> **CRITICAL:** When updating any Lambda env var with `aws lambda update-function-configuration --environment Variables={...}`, AWS **replaces the entire Variables object** — it does NOT merge. Always fetch existing vars first and include all of them in the update:
+> ```bash
+> # Safe pattern — fetch then merge
+> aws --profile ankit lambda get-function-configuration \
+>   --function-name xirr-processor --region ap-south-1 \
+>   --query 'Environment.Variables'
+> # Then include ALL vars in the update, not just the one you're changing
+> ```
+
 ## AWS / Terraform
 
 - Always use `--profile ankit` for AWS CLI commands and set `AWS_PROFILE=ankit` for Terraform.
