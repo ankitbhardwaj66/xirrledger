@@ -28,10 +28,10 @@ variable "hostinger_api_url" {
   default     = "https://xirrledger.com/api"
 }
 
-variable "hostinger_api_secret" {
-  description = "Shared secret between Lambda and PHP bridge"
+variable "hostinger_api_secret_name" {
+  description = "AWS Secrets Manager secret name containing the Lambda→PHP shared secret"
   type        = string
-  sensitive   = true
+  default     = "xirrledger/prod/hostinger_api_secret"
 }
 
 variable "test_emails" {

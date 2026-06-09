@@ -68,7 +68,8 @@ ses = boto3.client("ses", region_name=os.environ.get("AWS_REGION_NAME", "ap-sout
 
 SES_FROM_EMAIL       = os.environ.get("SES_FROM_EMAIL", "reports@xirrledger.com")
 HOSTINGER_API_URL    = os.environ.get("HOSTINGER_API_URL", "")
-HOSTINGER_API_SECRET = os.environ.get("HOSTINGER_API_SECRET", "")
+from secrets import get_hostinger_api_secret
+HOSTINGER_API_SECRET = get_hostinger_api_secret()
 TEST_EMAILS          = {e.strip().lower() for e in os.environ.get("TEST_EMAILS", "").split(",") if e.strip()}
 SEND_EMAIL           = os.environ.get("SEND_EMAIL", "true").lower() == "true"
 

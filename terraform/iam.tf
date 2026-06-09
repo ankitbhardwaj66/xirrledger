@@ -93,6 +93,13 @@ resource "aws_iam_policy" "lambda_custom" {
         Effect = "Allow"
         Action = "lambda:InvokeFunction"
         Resource = aws_lambda_function.xirr_processor.arn
+      },
+      # Read shared secret from Secrets Manager
+      {
+        Sid    = "SecretsManagerRead"
+        Effect = "Allow"
+        Action = "secretsmanager:GetSecretValue"
+        Resource = "arn:aws:secretsmanager:ap-south-1:681745772892:secret:xirrledger/*"
       }
     ]
   })

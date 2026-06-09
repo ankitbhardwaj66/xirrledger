@@ -61,7 +61,7 @@ resource "aws_lambda_function" "xirr_processor" {
       S3_JOBS_BUCKET       = aws_s3_bucket.jobs.id
       SES_FROM_EMAIL       = var.ses_from_email
       HOSTINGER_API_URL    = var.hostinger_api_url
-      HOSTINGER_API_SECRET = var.hostinger_api_secret
+      HOSTINGER_API_SECRET_NAME = var.hostinger_api_secret_name
       AWS_REGION_NAME      = var.aws_region
       TEST_EMAILS          = var.test_emails
       SEND_EMAIL           = "false"
@@ -160,7 +160,7 @@ resource "aws_lambda_function" "support_emailer" {
     variables = {
       SES_FROM_EMAIL       = var.ses_from_email
       HOSTINGER_API_URL    = var.hostinger_api_url
-      HOSTINGER_API_SECRET = var.hostinger_api_secret
+      HOSTINGER_API_SECRET_NAME = var.hostinger_api_secret_name
       AWS_REGION_NAME      = var.aws_region
     }
   }
