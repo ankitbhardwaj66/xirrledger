@@ -34,36 +34,41 @@ rsync -avz --delete --exclude=dev --exclude=api/config.php -e "ssh -p 65002" web
 
 ## Lambda Deploy
 
-Same dev-first rule as frontend — never deploy straight to prod.
+All Lambda deploys go through Terraform (dev first, then prod). **Never use `aws lambda update-function-code` directly** — use `terraform apply`.
 
-### Step 1 — Commit and deploy to dev Lambda
+### When to rebuild the layer
+
+Only rebuild `lambda/dist/layer.zip` when `requirements.txt` changes:
 ```bash
+cd lambda && ./build_layer.sh   # requires Docker
+```
+
+| What changed | Rebuild layer? | Run terraform apply? |
+|---|---|---|
+| `requirements.txt` | **Yes — run build_layer.sh first** | Yes |
+| Lambda code (`handler.py`, `processor.py` etc.) | No | Yes |
+| Env vars / IAM / config only | No | Yes |
+
+> `dist/layer.zip` is gitignored. Never commit it. If it's stale or missing, Terraform will detect the checksum mismatch and replace the Lambda layer with the wrong file — causing import errors.
+
+### Deploy flow (dev first, then prod)
+```bash
+# 1. Commit and push
 git checkout dev
 git add lambda/
 git commit -m "..."
 git push origin dev
 
-zip -j lambda/dist/lambda.zip lambda/handler.py lambda/processor.py lambda/refresher.py
-aws --profile ankit lambda update-function-code \
-  --function-name xirr-processor-dev \
-  --zip-file fileb://lambda/dist/lambda.zip \
-  --region ap-south-1
+# 2. Deploy to dev (rebuilding layer only if requirements.txt changed)
+cd terraform-dev && AWS_PROFILE=ankit terraform apply && cd ..
 ```
 Test at **dev.xirrledger.com** — stop and wait for user to confirm it works.
 
-### Step 2 — Deploy to prod Lambda (only after user confirms)
 ```bash
-git checkout main
-git merge dev
-git push origin main
-
-aws --profile ankit lambda update-function-code \
-  --function-name xirr-processor \
-  --zip-file fileb://lambda/dist/lambda.zip \
-  --region ap-south-1
+# 3. Deploy to prod (only after user confirms)
+git checkout main && git merge dev && git push origin main
+cd terraform && AWS_PROFILE=ankit terraform apply && cd ..
 ```
-
-> The zip from Step 1 can be reused in Step 2 — no need to re-zip if nothing changed.
 
 ## Branches
 
