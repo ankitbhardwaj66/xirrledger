@@ -42,6 +42,7 @@ $valid_steps = [
     'upload-dividend',  // wizard: uploading dividend file
     'holdings',         // wizard: entering portfolio value
     'account-done',     // wizard: ready to calculate (all accounts set)
+    'calculate-ready',  // wizard: final confirmation step before processing
     'upload',           // old flow: uploaded files
     'details',          // old flow: entering holdings details
     'processing',       // calculating XIRR
@@ -87,10 +88,10 @@ try {
             last_step = CASE
                 WHEN FIELD(VALUES(last_step),
                         'broker','trade-type','upload-mf','upload-ledger','upload-dividend',
-                        'holdings','account-done','upload','details','processing','results','edit-holdings')
+                        'holdings','account-done','calculate-ready','upload','details','processing','results','edit-holdings')
                    > FIELD(last_step,
                         'broker','trade-type','upload-mf','upload-ledger','upload-dividend',
-                        'holdings','account-done','upload','details','processing','results','edit-holdings')
+                        'holdings','account-done','calculate-ready','upload','details','processing','results','edit-holdings')
                 THEN VALUES(last_step)
                 ELSE last_step
             END,

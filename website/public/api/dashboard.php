@@ -49,7 +49,7 @@ try {
         SELECT
             COUNT(*) AS total,
             SUM(CASE WHEN last_step IN (
-                    'upload-ledger','upload-mf','upload-dividend','holdings','account-done',
+                    'upload-ledger','upload-mf','upload-dividend','holdings','account-done','calculate-ready',
                     'upload','details','processing','results','edit-holdings'
                 ) OR status = 'done' THEN 1 ELSE 0 END) AS to_details,
             SUM(CASE WHEN last_step IN ('processing','results','edit-holdings') OR status = 'done' THEN 1 ELSE 0 END) AS to_processing,
@@ -125,6 +125,7 @@ function step_badge($step) {
         'upload-dividend'  => '#8b5cf6',
         'holdings'         => '#a78bfa',
         'account-done'     => '#ec4899',
+        'calculate-ready'  => '#f59e0b',
         'edit-holdings'    => '#10b981',
         // Old-flow steps
         'upload'           => '#3b82f6',
@@ -141,6 +142,7 @@ function step_badge($step) {
         'upload-dividend'  => 'Upload div.',
         'holdings'         => 'Holdings',
         'account-done'     => 'Ready',
+        'calculate-ready'  => 'Calc. ready',
         'edit-holdings'    => 'Edit holdings',
         'upload'           => 'Upload',
         'details'          => 'Details',
