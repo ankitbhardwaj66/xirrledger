@@ -148,14 +148,14 @@ The prod Lambda (`xirr-processor`) and dev Lambda (`xirr-processor-dev`) require
 | `TEST_EMAILS` | optional | admin gmail |
 | `AWS_REGION_NAME` | optional | defaults to `ap-south-1` |
 
-> **CRITICAL:** When updating any Lambda env var with `aws lambda update-function-configuration --environment Variables={...}`, AWS **replaces the entire Variables object** — it does NOT merge. Always fetch existing vars first and include all of them in the update:
+> **Always manage Lambda env vars via Terraform, never via AWS CLI.** These variables are declared in `terraform/lambda.tf` and values live in `terraform/terraform.tfvars` (gitignored). To change a value:
 > ```bash
-> # Safe pattern — fetch then merge
-> aws --profile ankit lambda get-function-configuration \
->   --function-name xirr-processor --region ap-south-1 \
->   --query 'Environment.Variables'
-> # Then include ALL vars in the update, not just the one you're changing
+> # 1. Edit terraform/terraform.tfvars with the new value
+> # 2. Plan and apply — dev first, then prod
+> cd terraform-dev && AWS_PROFILE=ankit terraform plan && AWS_PROFILE=ankit terraform apply && cd ..
+> cd terraform    && AWS_PROFILE=ankit terraform plan && AWS_PROFILE=ankit terraform apply && cd ..
 > ```
+> Using `aws lambda update-function-configuration --environment Variables={...}` directly **replaces the entire env object** and causes drift from Terraform state — this broke prod in June 2026.
 
 ## AWS / Terraform
 

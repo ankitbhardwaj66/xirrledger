@@ -175,7 +175,7 @@ The dashboard is blocked from Google indexing via `robots.txt` (`Disallow: /api/
 | `TEST_EMAILS` | optional | Comma-separated emails that skip DB writes |
 | `AWS_REGION_NAME` | optional | Defaults to `ap-south-1` |
 
-> **Warning:** `aws lambda update-function-configuration --environment Variables={...}` **replaces** the entire env object — it does not merge. Always include all variables when updating.
+> **Always manage these via Terraform** (`terraform/lambda.tf` + `terraform/terraform.tfvars`), never via AWS CLI directly. CLI updates replace the entire env object and cause drift from Terraform state.
 
 ---
 
