@@ -6,6 +6,6 @@ environment          = "prod"
 domain_name          = "xirrledger.com"
 ses_from_email       = "reports@xirrledger.com"
 hostinger_api_url    = "https://xirrledger.com/api"
-hostinger_api_secret = "REPLACE_WITH_A_STRONG_RANDOM_SECRET"
+hostinger_api_secret_name = "xirrledger/prod/hostinger_api_secret"
 lambda_memory_mb     = 512
 lambda_timeout_seconds = 120

@@ -23,7 +23,8 @@ AWS_REGION           = os.environ.get("AWS_REGION_NAME", "ap-south-1")
 SES_FROM_EMAIL       = os.environ.get("SES_FROM_EMAIL", "reports@xirrledger.com")
 SES_REPLY_TO         = "contact@xirrledger.com"
 HOSTINGER_API_URL    = os.environ.get("HOSTINGER_API_URL", "")
-HOSTINGER_API_SECRET = os.environ.get("HOSTINGER_API_SECRET", "")
+from secrets import get_hostinger_api_secret
+HOSTINGER_API_SECRET = get_hostinger_api_secret()
 
 ses = boto3.client("ses", region_name=AWS_REGION)
 
