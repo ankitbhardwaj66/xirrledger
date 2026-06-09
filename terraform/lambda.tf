@@ -180,7 +180,7 @@ resource "aws_cloudwatch_event_rule" "support_email_schedule" {
   name                = "support-email-daily"
   description         = "Send support emails to failed-session users at 6pm IST"
   schedule_expression = "cron(30 12 * * ? *)"
-  state               = "DISABLED"
+  state               = "ENABLED"
 }
 
 resource "aws_cloudwatch_event_target" "support_email_target" {
