@@ -13,6 +13,14 @@ resource "aws_s3_bucket_public_access_block" "artifacts" {
   restrict_public_buckets = true
 }
 
+# Versioning — keeps every layer.zip so we can roll back to any previous layer
+resource "aws_s3_bucket_versioning" "artifacts" {
+  bucket = aws_s3_bucket.artifacts.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
 # ─────────────────────────────────────────────────────────────
 # S3 — Uploads bucket (ledger files, no auto-delete)
 # ─────────────────────────────────────────────────────────────
