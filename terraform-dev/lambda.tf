@@ -21,8 +21,8 @@ resource "aws_s3_object" "layer_zip" {
 
 resource "aws_lambda_layer_version" "deps" {
   layer_name          = "xirrledger-deps-dev"
-  compatible_runtimes = ["python3.12"]
-  compatible_architectures = ["arm64"]
+  compatible_runtimes = ["python3.11"]
+  compatible_architectures = ["x86_64"]
 
   s3_bucket         = aws_s3_object.layer_zip.bucket
   s3_key            = aws_s3_object.layer_zip.key
@@ -45,8 +45,8 @@ resource "aws_lambda_function" "xirr_processor" {
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
 
   handler = "handler.lambda_handler"
-  runtime = "python3.12"
-  architectures = ["arm64"]
+  runtime = "python3.11"
+  architectures = ["x86_64"]
 
   role    = aws_iam_role.lambda_exec.arn
   timeout = var.lambda_timeout_seconds
@@ -90,8 +90,8 @@ resource "aws_lambda_function" "nifty_refresher" {
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
 
   handler       = "refresher.lambda_handler"
-  runtime       = "python3.12"
-  architectures = ["arm64"]
+  runtime       = "python3.11"
+  architectures = ["x86_64"]
 
   role        = aws_iam_role.lambda_exec.arn
   timeout     = 300
@@ -147,8 +147,8 @@ resource "aws_lambda_function" "support_emailer" {
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
 
   handler       = "emailer.lambda_handler"
-  runtime       = "python3.12"
-  architectures = ["arm64"]
+  runtime       = "python3.11"
+  architectures = ["x86_64"]
 
   role        = aws_iam_role.lambda_exec.arn
   timeout     = 120
