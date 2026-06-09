@@ -77,6 +77,34 @@ try {
         ':error_message' => $error_message,
     ]);
 
+    // Notify admin on failed XIRR generation
+    if ($status === 'error') {
+        $row = $pdo->prepare('SELECT name, email, broker FROM xirr_sessions WHERE session_id = ?');
+        $row->execute([$session_id]);
+        $s = $row->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        $user_name  = $s['name']   ?? 'Unknown';
+        $user_email = $s['email']  ?? 'Unknown';
+        $broker     = $s['broker'] ?? 'Unknown';
+        $err        = $error_message ?? 'No error message provided';
+        $dashboard  = 'https://xirrledger.com/api/dashboard.php';
+
+        $subject = "⚠ XIRR Ledger — Failed calculation for {$user_name}";
+        $message = "A user's XIRR calculation failed.\n\n"
+                 . "Name:       {$user_name}\n"
+                 . "Email:      {$user_email}\n"
+                 . "Broker:     {$broker}\n"
+                 . "Session:    {$session_id}\n"
+                 . "Error:      {$err}\n\n"
+                 . "Dashboard:  {$dashboard}\n";
+
+        $headers = "From: XIRR Ledger <reports@xirrledger.com>\r\n"
+                 . "Reply-To: reports@xirrledger.com\r\n"
+                 . "Content-Type: text/plain; charset=UTF-8\r\n";
+
+        @mail(ADMIN_EMAIL, $subject, $message, $headers);
+    }
+
     echo json_encode(['ok' => true]);
 } catch (PDOException $e) {
     error_log('update-session.php PDO error: ' . $e->getMessage());
