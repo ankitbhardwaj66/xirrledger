@@ -369,21 +369,64 @@ def post_comment(page, comment: str) -> bool:
     """Post a comment on the currently open YouTube Short. Returns True on success."""
     human_delay(1, 2)
 
-    # Scroll down to reveal comment section
-    for _ in range(3):
-        page.evaluate("window.scrollBy(0, 300)")
-        human_delay(0.8, 1.5)
+    # Step 1: Click the comments button (speech bubble icon on the right side of Shorts)
+    comments_opened = False
+    for sel in [
+        'button[aria-label*="comment" i]',
+        'ytd-button-renderer[aria-label*="comment" i] button',
+        '#comments-button button',
+        'button.yt-spec-button-shape-next[aria-label*="comment" i]',
+        # The icon button on the right panel of Shorts
+        'ytd-reel-player-overlay-renderer button[aria-label*="comment" i]',
+        'ytd-shorts button[aria-label*="comment" i]',
+    ]:
+        try:
+            btn = page.query_selector(sel)
+            if btn and btn.is_visible():
+                btn.click()
+                human_delay(1.5, 2.5)
+                comments_opened = True
+                print("  [comments] Opened comments panel")
+                break
+        except Exception:
+            pass
 
-    # Find the comment input box
+    if not comments_opened:
+        # Try clicking by position — comments icon is typically the 3rd icon on right
+        try:
+            clicked = page.evaluate("""
+                () => {
+                    const btns = [...document.querySelectorAll('button')];
+                    for (const b of btns) {
+                        const aria = (b.getAttribute('aria-label') || '').toLowerCase();
+                        const rect = b.getBoundingClientRect();
+                        if (rect.width > 0 && rect.height > 0 &&
+                            (aria.includes('comment') || aria.includes('replies'))) {
+                            b.click();
+                            return aria;
+                        }
+                    }
+                    return null;
+                }
+            """)
+            if clicked:
+                human_delay(1.5, 2.5)
+                comments_opened = True
+                print(f"  [comments] Opened via JS click: {clicked}")
+        except Exception:
+            pass
+
+    # Step 2: Find the comment placeholder / input area
     comment_box = None
     for sel in [
         '#placeholder-area',
         'ytd-comment-simplebox-renderer #placeholder-area',
-        '[placeholder*="comment"]',
-        '#contenteditable-root',
+        '#simplebox-placeholder',
+        'div#placeholder-area',
+        '[placeholder*="comment" i]',
     ]:
         try:
-            el = page.wait_for_selector(sel, timeout=5000)
+            el = page.wait_for_selector(sel, timeout=6000)
             if el and el.is_visible():
                 comment_box = el
                 break
@@ -403,15 +446,16 @@ def post_comment(page, comment: str) -> bool:
         print(f"  [error] Could not click comment box: {e}")
         return False
 
-    # After clicking, the real editable input appears
+    # Step 3: Find the expanded editor
     editor = None
     for sel in [
         '#contenteditable-root',
         'div[contenteditable="true"]',
-        '#simple-box ytd-commentbox #input',
+        'ytd-comment-simplebox-renderer div[contenteditable="true"]',
+        '#comment-input div[contenteditable="true"]',
     ]:
         try:
-            el = page.wait_for_selector(sel, timeout=5000)
+            el = page.wait_for_selector(sel, timeout=6000)
             if el and el.is_visible():
                 editor = el
                 break
@@ -435,12 +479,13 @@ def post_comment(page, comment: str) -> bool:
 
     human_delay(1, 2)
 
-    # Click the Submit/Comment button
+    # Step 4: Submit
     for sel in [
         '#submit-button button',
         'ytd-button-renderer#submit-button button',
-        'button[aria-label*="Comment"]',
+        'button[aria-label="Comment"]',
         'button:has-text("Comment")',
+        '#submit-button yt-button-shape button',
     ]:
         try:
             btn = page.query_selector(sel)
