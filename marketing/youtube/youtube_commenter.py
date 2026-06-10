@@ -98,6 +98,7 @@ Rules:
 - Casual YouTube comment style
 - No hashtags, no emojis
 - Under 2 sentences
+- NEVER start with "bhai", "yaar", "dost", "sir", "madam" or any direct address
 
 Return ONLY the comment text. Nothing else."""
 
