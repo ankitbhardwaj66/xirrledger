@@ -49,8 +49,16 @@ AUTHOR_COOLDOWN_DAYS = 21  # YouTube is strict — longer cooldown
 
 RELEVANCE_PROMPT = """You are screening YouTube Shorts to decide whether to comment on them for XIRR Ledger (xirrledger.com) — a free tool for Indian investors to calculate true portfolio XIRR from broker ledgers (Zerodha, Groww, etc.).
 
+The videos may be in English, Hindi, or Hinglish (mix of Hindi and English). Common Hindi/Hinglish investing terms:
+- "kitna hona chahiye" = how much should it be
+- "kaise calculate kare" = how to calculate
+- "portfolio returns" / "portfolio kitna" = portfolio performance
+- "share market" / "sharemarket" = stock market
+- "mutual fund" / "SIP" = mutual fund investment
+- "broker ledger" / "P&L" = profit and loss
+
 Reply with YES if the video is about ANY of:
-- XIRR, CAGR, portfolio returns, SIP returns, investment performance
+- XIRR, CAGR, portfolio returns, SIP returns, investment performance (any language)
 - Zerodha, Groww, or other Indian broker P&L topics
 - Mutual fund or stock portfolio tracking
 - Personal finance / investing in India
@@ -201,7 +209,16 @@ def do_login(playwright):
     browser.close()
 
 
+ALWAYS_RELEVANT_KEYWORDS = [
+    "xirr", "zerodha", "groww", "portfolio returns", "cagr",
+    "mutual fund xirr", "sip returns", "broker ledger",
+]
+
 def is_relevant(client: anthropic.Anthropic, text: str) -> bool:
+    # Fast-path: if the title/description contains a key investing term, skip Claude
+    lower = text.lower()
+    if any(kw in lower for kw in ALWAYS_RELEVANT_KEYWORDS):
+        return True
     try:
         resp = client.messages.create(
             model="claude-haiku-4-5-20251001",
