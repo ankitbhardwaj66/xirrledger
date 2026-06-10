@@ -231,8 +231,8 @@ def draft_comment(client: anthropic.Anthropic, video_text: str) -> Optional[str]
 def search_shorts(page, query: str, seen: set) -> list[dict]:
     """Search YouTube for Shorts matching the query and return unseen video info."""
     encoded = query.replace(" ", "+")
-    # Filter for Shorts specifically
-    url = f"https://www.youtube.com/results?search_query={encoded}&sp=EgIYAQ%253D%253D"
+    # EgIYAQ%3D%3D = Shorts filter (single URL-encoded base64 "EgIYAQ==")
+    url = f"https://www.youtube.com/results?search_query={encoded}&sp=EgIYAQ%3D%3D"
     print(f"\n  Searching: {query}")
 
     try:
@@ -244,36 +244,61 @@ def search_shorts(page, query: str, seen: set) -> list[dict]:
 
     dismiss_dialogs(page)
 
+    # Wait for results to render
+    try:
+        page.wait_for_selector("ytd-video-renderer, ytd-reel-item-renderer, a[href*='/shorts/']", timeout=10000)
+    except PlaywrightTimeout:
+        pass
+
     # Scroll to load more results
-    for _ in range(3):
+    for _ in range(4):
         page.evaluate("window.scrollBy(0, window.innerHeight * 0.8)")
         human_delay(1.5, 2.5)
 
     try:
         videos = page.evaluate("""
             () => {
-                const seen = new Set();
+                const seenUrls = new Set();
                 const results = [];
-                // Shorts appear as /shorts/VIDEO_ID links
+
+                // Method 1: direct /shorts/ links
                 document.querySelectorAll('a[href*="/shorts/"]').forEach(a => {
                     const href = (a.href || '').split('?')[0];
-                    if (!href.match(/youtube\\.com\\/shorts\\/[A-Za-z0-9_-]+/)) return;
-                    if (seen.has(href)) return;
-                    seen.add(href);
+                    if (!href.match(/youtube\\.com\\/shorts\\/[A-Za-z0-9_-]{5,}/)) return;
+                    if (seenUrls.has(href)) return;
+                    seenUrls.add(href);
 
-                    // Get title from aria-label or nearby text
                     const label = a.getAttribute('aria-label') || '';
-                    const titleEl = a.querySelector('#video-title, span#video-title');
-                    const title = titleEl ? titleEl.innerText.trim() : label.split(' by ')[0].trim();
-
-                    // Try to get channel name
-                    const channelEl = document.querySelector(`[href="${a.getAttribute('href')}"] ~ * #channel-name, [href="${a.getAttribute('href')}"] ~ * #metadata`);
-                    const channel = channelEl ? channelEl.innerText.trim().split('\\n')[0] : '';
-
+                    // Walk up to find the video card
+                    let node = a;
+                    let title = '', channel = '';
+                    for (let i = 0; i < 10; i++) {
+                        if (!node) break;
+                        const t = node.querySelector && node.querySelector('#video-title, h3, #title');
+                        if (t && t.innerText.trim().length > 3) { title = t.innerText.trim(); }
+                        const c = node.querySelector && node.querySelector('#channel-name, ytd-channel-name, .ytd-channel-name');
+                        if (c && c.innerText.trim()) { channel = c.innerText.trim().split('\\n')[0]; }
+                        node = node.parentElement;
+                    }
+                    if (!title) title = label.split(' by ')[0].trim();
                     if (title || label) {
-                        results.push({ url: href, title: title || label, channel: channel });
+                        results.push({ url: href, title: title || label, channel });
                     }
                 });
+
+                // Method 2: ytd-reel-item-renderer (Shorts shelf on search)
+                if (results.length === 0) {
+                    document.querySelectorAll('ytd-reel-item-renderer').forEach(el => {
+                        const a = el.querySelector('a[href]');
+                        if (!a) return;
+                        const href = (a.href || '').split('?')[0];
+                        if (!href.includes('/shorts/') || seenUrls.has(href)) return;
+                        seenUrls.add(href);
+                        const title = el.querySelector('#video-title, h3')?.innerText?.trim() || '';
+                        results.push({ url: href, title, channel: '' });
+                    });
+                }
+
                 return results.slice(0, 8);
             }
         """)
@@ -281,8 +306,10 @@ def search_shorts(page, query: str, seen: set) -> list[dict]:
         print(f"  [error] Could not extract video links: {e}")
         return []
 
+    # Debug: show total found vs new
+    total = len(videos)
     new_videos = [v for v in videos if v["url"] not in seen]
-    print(f"  Found {len(new_videos)} new Shorts")
+    print(f"  Found {total} Shorts on page, {len(new_videos)} new")
     return new_videos[:MAX_VIDEOS_PER_QUERY]
 
 
