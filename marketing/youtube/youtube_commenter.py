@@ -44,7 +44,7 @@ SEARCH_QUERIES = [
 ]
 
 MAX_VIDEOS_PER_QUERY = 6
-MAX_COMMENTS_PER_RUN = 5
+MAX_COMMENTS_PER_RUN = 10
 AUTHOR_COOLDOWN_DAYS = 21  # YouTube is strict — longer cooldown
 
 RELEVANCE_PROMPT = """You are screening YouTube Shorts to decide whether to comment on them for XIRR Ledger (xirrledger.com) — a free tool for Indian investors to calculate true portfolio XIRR from broker ledgers (Zerodha, Groww, etc.).
