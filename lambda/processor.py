@@ -623,8 +623,7 @@ def parse_zerodha_ledger_xlsx(file_bytes: bytes):
         if tradebook_cols.issubset(all_headers):
             raise ValueError(
                 "You uploaded the Zerodha Tradebook, not the Fund Statement. "
-                "To get the correct file: open Zerodha Console → Reports → Fund Statement → "
-                "select All Segments → set date range from your first investment to today → Download XLSX."
+                "Please download the Fund Statement from console.zerodha.com/funds/statement and upload that instead."
             )
         raise ValueError("Not a valid Zerodha ledger XLSX — 'Particulars' column not found.")
 
