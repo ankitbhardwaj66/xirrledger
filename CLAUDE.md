@@ -155,7 +155,6 @@ The prod Lambda (`xirr-processor`) and dev Lambda (`xirr-processor-dev`) require
 | `HOSTINGER_API_SECRET` | required (no default) | *(rotated secret — in Terraform tfvars)* |
 | `SES_FROM_EMAIL` | optional | `reports@xirrledger.com` |
 | `SEND_EMAIL` | optional | `true` |
-| `TEST_EMAILS` | optional | admin gmail |
 | `AWS_REGION_NAME` | optional | defaults to `ap-south-1` |
 
 > **Always manage Lambda env vars via Terraform, never via AWS CLI.** These variables are declared in `terraform/lambda.tf` and values live in `terraform/terraform.tfvars` (gitignored). To change a value:
