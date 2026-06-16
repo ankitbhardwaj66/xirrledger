@@ -153,7 +153,7 @@ async function hashFile(file: File): Promise<string> {
     .slice(0, 16);
 }
 
-async function detectBrokerFromContent(file: File): Promise<Pick<UploadedFile, 'broker' | 'formatError' | 'fyersClientId'>> {
+async function detectBrokerFromContent(file: File, selectedBroker?: string): Promise<Pick<UploadedFile, 'broker' | 'formatError' | 'fyersClientId'>> {
   const name = file.name.toLowerCase();
   const isPdf  = name.endsWith('.pdf') || file.type === 'application/pdf';
   const isXlsxExt = name.endsWith('.xlsx');
@@ -200,17 +200,37 @@ async function detectBrokerFromContent(file: File): Promise<Pick<UploadedFile, '
         return { broker: 'unknown', formatError: 'Not a valid XLSX file. Please upload the correct statement.' };
       }
     } catch { /* fall through */ }
-    // Groww Stock Order History filename: Stocks_Order_History_<id>_*.xlsx
-    if (name.startsWith('stocks_order_history_')) {
-      return { broker: 'groww' };
-    }
-    // Detect Zerodha MF Tradebook uploaded in ledger section — it has a "Mutual Funds" sheet
+    // Read workbook to detect wrong file types — validate by content, never by filename
     try {
       const XLSX = await import('xlsx');
       const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf, { type: 'array', bookSheets: true });
+      const wb = XLSX.read(buf, { type: 'array' });
       if (wb.SheetNames.includes('Mutual Funds')) {
         return { broker: 'zerodha', formatError: 'This is the MF Tradebook — upload it in the Mutual Funds section. This section is for the Ledger (Stocks / F&O).' };
+      }
+      // Broker-specific content validation. Only enforce when the user actually selected that broker.
+      const firstSheet = wb.Sheets[wb.SheetNames[0]];
+      if (firstSheet && (selectedBroker === 'zerodha' || selectedBroker === 'groww')) {
+        const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: null }) as unknown[][];
+        const cellSet = new Set<string>();
+        for (const row of rows.slice(0, 20)) {
+          for (const c of row as unknown[]) {
+            if (typeof c === 'string') cellSet.add(c.toLowerCase().trim());
+          }
+        }
+        if (selectedBroker === 'zerodha') {
+          // Zerodha Fund Statement must contain a 'Particulars' column
+          if (!cellSet.has('particulars')) {
+            return { broker: 'zerodha', formatError: 'This doesn\'t look like a Zerodha Fund Statement. Please download the Fund Statement from console.zerodha.com/funds/statement and upload that instead.' };
+          }
+        } else if (selectedBroker === 'groww') {
+          // Groww Stock Order History must contain its column headers
+          const isGrowwOrderHistory = ['stock name', 'execution date and time', 'order status'].every(h => cellSet.has(h));
+          if (!isGrowwOrderHistory) {
+            return { broker: 'groww', formatError: 'This doesn\'t look like a Groww Stock Order History. Please download it from Groww → Reports → Stocks - Order history and upload that instead.' };
+          }
+          return { broker: 'groww' };
+        }
       }
     } catch { /* fall through */ }
     return { broker: 'zerodha' };
@@ -1201,9 +1221,11 @@ export default function CalculatorPage() {
   }
 
   async function addLedgerFileToDraft(incoming: File) {
-    const [detected, hash] = await Promise.all([detectBrokerFromContent(incoming), hashFile(incoming)]);
+    const [detected, hash] = await Promise.all([detectBrokerFromContent(incoming, currentDraft.broker), hashFile(incoming)]);
     const uf: UploadedFile = { file: incoming, broker: detected.broker, hash, formatError: detected.formatError, fyersClientId: detected.fyersClientId };
     setCurrentDraft(prev => {
+      // Zerodha and Groww need only one ledger file — skip if already have one
+      if (prev.broker !== 'fyers' && prev.ledgerFiles.length >= 1) return prev;
       const exists = prev.ledgerFiles.some(f => f.hash === hash || f.file.name === incoming.name);
       if (exists) return prev;
       return { ...prev, ledgerFiles: [...prev.ledgerFiles, uf] };
@@ -1946,19 +1968,20 @@ export default function CalculatorPage() {
 
                 {/* Drop zone */}
                 <div
-                  onDragOver={e => { e.preventDefault(); setDraftLedgerDragging(true); }}
+                  onDragOver={e => { e.preventDefault(); if (broker === 'fyers' || !hasLedger) setDraftLedgerDragging(true); }}
                   onDragLeave={() => setDraftLedgerDragging(false)}
                   onDrop={async e => {
                     e.preventDefault(); setDraftLedgerDragging(false);
+                    if (broker !== 'fyers' && hasLedger) return;
                     const fl = Array.from(e.dataTransfer.files);
                     for (const f of fl) await addLedgerFileToDraft(f);
                   }}
-                  onClick={() => ledgerInputRef.current?.click()}
+                  onClick={() => { if (broker === 'fyers' || !hasLedger) ledgerInputRef.current?.click(); }}
                   style={{
                     border: `2px dashed ${draftLedgerDragging ? GOLD : hasLedger ? '#10b981' : `${brokerColor}55`}`,
                     borderRadius: 14, padding: hasLedger ? '20px' : '36px 20px', textAlign: 'center',
                     background: draftLedgerDragging ? 'rgba(245,158,11,0.04)' : 'rgba(255,255,255,0.02)',
-                    cursor: 'pointer', transition: 'all 0.2s',
+                    cursor: (broker !== 'fyers' && hasLedger) ? 'default' : 'pointer', transition: 'all 0.2s',
                   }}
                 >
                   {hasLedger ? (
@@ -1973,7 +1996,9 @@ export default function CalculatorPage() {
                               <p style={{ margin: 0, fontWeight: 600, fontSize: '0.845rem', color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{uf.file.name}</p>
                               <p style={{ margin: 0, fontSize: '0.72rem', color: '#475569' }}>{(uf.file.size / 1024).toFixed(0)} KB</p>
                             </div>
-                            <button onClick={e => { e.stopPropagation(); setCurrentDraft(prev => ({ ...prev, ledgerFiles: prev.ledgerFiles.filter((_, j) => j !== i) })); }} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '1.1rem', padding: '2px 6px' }}>×</button>
+                            <button onClick={e => { e.stopPropagation(); setCurrentDraft(prev => ({ ...prev, ledgerFiles: prev.ledgerFiles.filter((_, j) => j !== i) })); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: uf.formatError ? 'rgba(239,68,68,0.18)' : 'rgba(148,163,184,0.12)', border: `1px solid ${uf.formatError ? 'rgba(239,68,68,0.5)' : 'rgba(148,163,184,0.3)'}`, color: uf.formatError ? '#fca5a5' : '#94a3b8', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, padding: '6px 12px', borderRadius: 8, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: '1rem', lineHeight: 1 }}>×</span> Remove
+                            </button>
                           </div>
                           {uf.formatError && (
                             <div style={{ background: 'rgba(239,68,68,0.1)', borderTop: '1px solid rgba(239,68,68,0.25)', padding: '8px 12px', display: 'flex', alignItems: 'flex-start', gap: 7 }}>
@@ -1983,7 +2008,7 @@ export default function CalculatorPage() {
                           )}
                         </div>
                       ))}
-                      <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#475569' }}>+ Drop more files or click to add</p>
+                      {broker === 'fyers' && <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#475569' }}>+ Drop more files or click to add</p>}
                     </div>
                   ) : (
                     <>
@@ -1994,7 +2019,7 @@ export default function CalculatorPage() {
                       <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, fontFamily: 'monospace', background: `${brokerColor}22`, color: brokerColor }}>{brokerMeta.accept}</span>
                     </>
                   )}
-                  <input ref={ledgerInputRef} type="file" multiple accept={brokerMeta.accept} onChange={async e => { if (e.target.files) for (const f of Array.from(e.target.files)) await addLedgerFileToDraft(f); }} style={{ display: 'none' }} />
+                  <input ref={ledgerInputRef} type="file" accept={brokerMeta.accept} {...(broker === 'fyers' ? { multiple: true } : {})} onChange={async e => { if (e.target.files) for (const f of Array.from(e.target.files)) await addLedgerFileToDraft(f); }} style={{ display: 'none' }} />
                 </div>
 
 
