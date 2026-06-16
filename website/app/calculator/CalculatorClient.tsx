@@ -1197,12 +1197,17 @@ export default function CalculatorPage() {
       );
 
       setCurrentDraft(prev => {
+        // Only Zerodha needs multiple (yearly) MF tradebooks — Groww is a single full-history file
+        const mfMulti = prev.broker === 'zerodha';
+        if (!mfMulti && prev.mfFiles.length >= 1) return prev;
+
         // 1. Reject exact duplicates (same hash already in list)
         const existingHashes = new Set(prev.mfFiles.map(e => e.hash));
         const existingNames = new Set(prev.mfFiles.map(e => e.file.name));
-        const toAdd = parsed.filter(e => !existingHashes.has(e.hash) && !existingNames.has(e.file.name));
+        const toAdd = (parsed.filter(e => !existingHashes.has(e.hash) && !existingNames.has(e.file.name)));
+        const limitedToAdd = mfMulti ? toAdd : toAdd.slice(0, 1);
 
-        const combined = [...prev.mfFiles, ...toAdd];
+        const combined = [...prev.mfFiles, ...limitedToAdd];
 
         // 2. Recompute overlaps across the full combined list
         const valid = combined.filter(e => !e.error && e.dateFrom && e.dateTo);
@@ -1752,23 +1757,27 @@ export default function CalculatorPage() {
                 {(() => {
                   const hasErrors = currentDraft.mfFiles.some(e => e.error);
                   const borderColor = draftMfDragging ? GOLD : hasErrors ? 'rgba(239,68,68,0.5)' : hasMf ? 'rgba(16,185,129,0.5)' : 'rgba(246,70,26,0.3)';
+                  const mfMulti = currentDraft.broker === 'zerodha';
+                  const mfLocked = !mfMulti && hasMf; // single-file broker that already has its one file
+                  const mfClickable = !mfParsing && !mfLocked;
 
                   return (
                     <div>
                       <div
-                        onDragOver={e => { e.preventDefault(); setDraftMfDragging(true); }}
+                        onDragOver={e => { e.preventDefault(); if (mfClickable) setDraftMfDragging(true); }}
                         onDragLeave={() => setDraftMfDragging(false)}
                         onDrop={e => {
                           e.preventDefault(); setDraftMfDragging(false);
+                          if (!mfClickable) return;
                           const incoming = Array.from(e.dataTransfer.files).filter(f => f.name.toLowerCase().endsWith('.xlsx'));
                           addMfFiles(incoming);
                         }}
-                        onClick={() => !mfParsing && mfInputRef.current?.click()}
+                        onClick={() => { if (mfClickable) mfInputRef.current?.click(); }}
                         style={{
                           border: `2px dashed ${borderColor}`,
                           borderRadius: 14, padding: hasMf ? '14px' : '32px 20px', textAlign: 'center',
                           background: draftMfDragging ? 'rgba(245,158,11,0.04)' : 'rgba(255,255,255,0.02)',
-                          cursor: mfParsing ? 'wait' : 'pointer', transition: 'all 0.2s',
+                          cursor: mfParsing ? 'wait' : mfLocked ? 'default' : 'pointer', transition: 'all 0.2s',
                         }}
                       >
                         {mfParsing ? (
@@ -1815,12 +1824,14 @@ export default function CalculatorPage() {
                                         }
                                         return { ...prev, mfFiles: next };
                                       });
-                                    }} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: '1.1rem', padding: '2px 6px', flexShrink: 0 }}>×</button>
+                                    }} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: isErr ? 'rgba(239,68,68,0.18)' : 'rgba(148,163,184,0.12)', border: `1px solid ${isErr ? 'rgba(239,68,68,0.5)' : 'rgba(148,163,184,0.3)'}`, color: isErr ? '#fca5a5' : '#94a3b8', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, padding: '6px 12px', borderRadius: 8, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                                      <span style={{ fontSize: '1rem', lineHeight: 1 }}>×</span> Remove
+                                    </button>
                                   </div>
                                 </div>
                               );
                             })}
-                            <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#475569' }}>+ Drop more yearly files or click to add</p>
+                            {mfMulti && <p style={{ margin: '4px 0 0', fontSize: '0.75rem', color: '#475569' }}>+ Drop more yearly files or click to add</p>}
                           </div>
                         ) : (
                           <>
@@ -1836,7 +1847,7 @@ export default function CalculatorPage() {
                             </span>
                           </>
                         )}
-                        <input ref={mfInputRef} type="file" accept=".xlsx" multiple onChange={e => {
+                        <input ref={mfInputRef} type="file" accept=".xlsx" {...(mfMulti ? { multiple: true } : {})} onChange={e => {
                           if (e.target.files) addMfFiles(Array.from(e.target.files));
                         }} style={{ display: 'none' }} />
                       </div>
