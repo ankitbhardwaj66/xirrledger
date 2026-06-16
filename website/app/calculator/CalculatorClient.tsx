@@ -314,10 +314,6 @@ function emptyDraft(): AccountDraft {
 
 async function parseMfTradebook(file: File, broker?: string): Promise<{ dateFrom: string; dateTo: string; tradeCount: number; error?: string }> {
   try {
-    // Detect wrong file: stock order history uploaded in MF step
-    if (file.name.toLowerCase().startsWith('stocks_order_history_')) {
-      return { dateFrom: '', dateTo: '', tradeCount: 0, error: 'This is the Stocks Order History file — please upload the Mutual Funds - Order history XLSX instead.' };
-    }
     // Detect Zerodha ledger CSV uploaded in MF step
     if (file.name.toLowerCase().endsWith('.csv')) {
       try {
@@ -333,6 +329,22 @@ async function parseMfTradebook(file: File, broker?: string): Promise<{ dateFrom
     const XLSX = await import('xlsx');
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+
+    // Detect a Stocks Order History file uploaded in the MF step — by content, not filename
+    {
+      const firstSheet = wb.Sheets[wb.SheetNames[0]];
+      if (firstSheet) {
+        const headerRows = XLSX.utils.sheet_to_json<unknown[]>(firstSheet, { header: 1, defval: null }) as unknown[][];
+        const cellSet = new Set<string>();
+        for (const row of headerRows.slice(0, 20)) {
+          for (const c of row) if (typeof c === 'string') cellSet.add(c.toLowerCase().trim());
+        }
+        const isStockOrderHistory = ['stock name', 'execution date and time', 'order status'].every(h => cellSet.has(h));
+        if (isStockOrderHistory) {
+          return { dateFrom: '', dateTo: '', tradeCount: 0, error: 'This is the Stocks Order History file — please upload the Mutual Funds - Order history XLSX instead.' };
+        }
+      }
+    }
 
     // Groww MF Order History (sheet "Transactions")
     if (wb.SheetNames.includes('Transactions')) {
