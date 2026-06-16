@@ -346,8 +346,19 @@ async function parseMfTradebook(file: File, broker?: string): Promise<{ dateFrom
       }
     }
 
+    // Reject cross-broker MF files — a Groww MF file has a "Transactions" sheet,
+    // a Zerodha MF Tradebook has a "Mutual Funds" sheet.
+    const hasGrowwMfSheet = wb.SheetNames.includes('Transactions');
+    const hasZerodhaMfSheet = wb.SheetNames.includes('Mutual Funds');
+    if (broker === 'zerodha' && hasGrowwMfSheet && !hasZerodhaMfSheet) {
+      return { dateFrom: '', dateTo: '', tradeCount: 0, error: 'This looks like a Groww MF Order History — upload your Zerodha MF Tradebook XLSX instead.' };
+    }
+    if (broker === 'groww' && hasZerodhaMfSheet && !hasGrowwMfSheet) {
+      return { dateFrom: '', dateTo: '', tradeCount: 0, error: 'This looks like a Zerodha MF Tradebook — upload your Groww Mutual Funds - Order history XLSX instead.' };
+    }
+
     // Groww MF Order History (sheet "Transactions")
-    if (wb.SheetNames.includes('Transactions')) {
+    if (broker !== 'zerodha' && hasGrowwMfSheet) {
       const ws = wb.Sheets['Transactions'];
       const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: false }) as unknown[][];
       let headerIdx = -1, typeCol = -1, dateCol = -1;
