@@ -34,12 +34,6 @@ variable "hostinger_api_secret_name" {
   default     = "xirrledger/prod/hostinger_api_secret"
 }
 
-variable "test_emails" {
-  description = "Comma-separated list of test email addresses — DB entry skipped for these"
-  type        = string
-  default     = ""
-}
-
 variable "lambda_memory_mb" {
   description = "Lambda function memory in MB"
   type        = number

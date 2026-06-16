@@ -70,7 +70,6 @@ SES_FROM_EMAIL       = os.environ.get("SES_FROM_EMAIL", "reports@xirrledger.com"
 HOSTINGER_API_URL    = os.environ.get("HOSTINGER_API_URL", "")
 from secrets import get_hostinger_api_secret
 HOSTINGER_API_SECRET = get_hostinger_api_secret()
-TEST_EMAILS          = {e.strip().lower() for e in os.environ.get("TEST_EMAILS", "").split(",") if e.strip()}
 SEND_EMAIL           = os.environ.get("SEND_EMAIL", "true").lower() == "true"
 
 
@@ -115,8 +114,7 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
         )
 
     def notify_php(payload):
-        is_test = email.lower() in TEST_EMAILS
-        if not (HOSTINGER_API_URL and email and not is_test):
+        if not (HOSTINGER_API_URL and email):
             return
         try:
             requests.post(
