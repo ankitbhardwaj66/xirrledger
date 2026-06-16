@@ -63,7 +63,6 @@ resource "aws_lambda_function" "xirr_processor" {
       HOSTINGER_API_URL    = var.hostinger_api_url
       HOSTINGER_API_SECRET_NAME = var.hostinger_api_secret_name
       AWS_REGION_NAME      = var.aws_region
-      TEST_EMAILS          = var.test_emails
       SEND_EMAIL           = "false"
     }
   }

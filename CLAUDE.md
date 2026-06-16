@@ -20,11 +20,16 @@ rsync -avz --delete --exclude=robots.txt --exclude=api/config.php -e "ssh -p 650
 ```
 Test at **dev.xirrledger.com** — stop here and wait for user to confirm it works.
 
-### Step 3 — Merge to main and deploy to prod (only after user confirms)
+### Step 3 — Merge to main and deploy to prod (only after PR is approved)
+
+**Never deploy to prod until the PR from `dev` → `main` is approved and merged on GitHub.**
+
+1. Push `dev` to remote: `git push origin dev`
+2. Create a PR on GitHub from `dev` → `main`
+3. Wait for PR approval and merge
+4. Then build and rsync to prod:
 ```bash
-git checkout main
-git merge dev
-git push origin main
+git checkout main && git pull origin main
 cd website && rm -rf out/ && npm run build && cd ..
 rsync -avz --delete --exclude=dev --exclude=api/config.php -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
 ```

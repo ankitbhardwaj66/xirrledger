@@ -71,3 +71,4 @@ marketing/x/.x_session/
 marketing/x/.seen_posts.json
 marketing/x/.seen_authors.json
 marketing/x/comments_log.jsonl
+.claude/settings.local.json
