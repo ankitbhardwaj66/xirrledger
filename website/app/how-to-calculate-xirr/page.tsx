@@ -93,6 +93,7 @@ const articleSchema = {
   '@id': 'https://xirrledger.com/how-to-calculate-xirr/#article',
   headline: 'How to Calculate XIRR from Your Broker Ledger',
   description: 'Calculate your true annualised XIRR from a broker ledger file in 5 steps. Works with Zerodha, Groww, and Fyers. Includes all charges, idle cash, and Nifty 50 benchmark comparison.',
+  image: 'https://xirrledger.com/opengraph-image',
   datePublished: '2026-03-02',
   dateModified: '2026-03-02',
   author: {
@@ -269,7 +270,7 @@ export default function HowToCalculateXIRR() {
           </h2>
           <div style={{ maxWidth: '720px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {[
-              { n: '01', title: 'Reads your ledger', body: 'Parses your Zerodha CSV, Groww PDF, or Fyers CSV. Extracts every fund transfer in and out — with exact dates and amounts. All broker charges are already reflected in these cash flows.' },
+              { n: '01', title: 'Reads your ledger', body: 'Parses your Zerodha XLSX, Groww Order History XLSX, or Fyers CSV. Extracts every fund transfer in and out — with exact dates and amounts. All broker charges are already reflected in these cash flows.' },
               { n: '02', title: 'Strips out noise', body: 'Ledger files contain hundreds of rows — stock purchases, sell proceeds, dividends, charges, quarterly settlements. XIRRLedger identifies which rows are actual cash flows into/out of your account and ignores everything else.' },
               { n: '03', title: 'Adds your current value', body: 'You enter today\'s portfolio value — the combined value of all your holdings plus any cash currently sitting idle in your broker account. This becomes the terminal cash inflow, as if you liquidated everything today. This closes the XIRR calculation.' },
               { n: '04', title: 'Runs XIRR', body: 'The algorithm runs the iterative XIRR formula on your complete cash flow timeline. The result is your true annualized return — net of all charges, on exact dates.' },

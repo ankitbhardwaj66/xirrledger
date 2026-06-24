@@ -34,7 +34,7 @@ const faqSchema = {
       name: 'Which brokers are currently supported?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'XIRR Ledger currently supports Zerodha (XLSX format, one file covers all years), Groww (PDF format, password is your PAN in uppercase), and Fyers (CSV format, one file per financial year). You can upload files from all three brokers in the same session for a combined XIRR.',
+        text: 'XIRR Ledger currently supports Zerodha (XLSX format, one file covers all years), Groww (XLSX Order History files — Stocks - Order history and/or Mutual Funds - Order history, no PAN or password needed), and Fyers (CSV format, one file per financial year). You can upload files from all three brokers in the same session for a combined XIRR.',
       },
     },
     {
@@ -42,7 +42,7 @@ const faqSchema = {
       name: 'Does XIRR Ledger support mutual funds?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'No. XIRR Ledger is built specifically for equity investing through broker accounts — Zerodha, Groww, and Fyers. Mutual fund investments use a different cash flow structure and are not supported at this time.',
+        text: 'Yes, for Groww. You can upload the Groww Mutual Funds - Order history XLSX (on its own or alongside the Stocks - Order history file) and XIRR Ledger will calculate your mutual fund XIRR from it. Mutual fund support for the other brokers is not available yet — Zerodha and Fyers are currently for equity and F&O ledgers.',
       },
     },
     {
@@ -151,10 +151,10 @@ const faqSchema = {
     },
     {
       '@type': 'Question',
-      name: 'The password for my Groww PDF is not working. What should I do?',
+      name: 'Which Groww file do I need to upload?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'The password is your PAN number. Make sure all letters are UPPERCASE — for example ABCDE1234F, not abcde1234f. Use the full 10-character PAN with no spaces. If it still does not work, try downloading the file again as Groww sometimes generates a corrupted PDF. If the issue persists, use the alternative download method — the yearly statement instead of the combined one.',
+        text: 'Groww uses XLSX Order History files — there is no PDF and no PAN or password required. For stocks, open Groww Reports and go to Transactions → Stocks - Order history, set the date range from before your first purchase to today, and download the XLSX. For mutual funds, go to Transactions → Mutual Funds - Order history, select a Custom Date range from your first MF purchase to today, and download. Upload the Stocks file, the Mutual Funds file, or both — each one covers your full history in a single download.',
       },
     },
     {

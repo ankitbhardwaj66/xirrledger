@@ -28,7 +28,7 @@ export default function YouTubeFacade({ videoId, title }: { videoId: string; tit
     >
       {/* Thumbnail */}
       <img
-        src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+        src="/video-thumb-xirr.jpg"
         alt={title}
         width={960}
         height={540}

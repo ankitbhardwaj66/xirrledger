@@ -172,7 +172,6 @@ The dashboard is blocked from Google indexing via `robots.txt` (`Disallow: /api/
 | `HOSTINGER_API_SECRET` | required | Shared secret for Lambda→PHP auth (set in Terraform tfvars) |
 | `SES_FROM_EMAIL` | optional | Sender address, defaults to `reports@xirrledger.com` |
 | `SEND_EMAIL` | optional | Set to `false` to suppress all outbound email |
-| `TEST_EMAILS` | optional | Comma-separated emails that skip DB writes |
 | `AWS_REGION_NAME` | optional | Defaults to `ap-south-1` |
 
 > **Always manage these via Terraform** (`terraform/lambda.tf` + `terraform/terraform.tfvars`), never via AWS CLI directly. CLI updates replace the entire env object and cause drift from Terraform state.
