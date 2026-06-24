@@ -4,6 +4,7 @@ date: "2026-04-06"
 author: "Ankit Bhardwaj"
 excerpt: "Zerodha's Holdings page has an XIRR field. It shows '–'. This isn't a bug — it's a fundamental limitation. And even if they fix it someday, the number will still be wrong."
 category: "Investment Insights"
+image: "/blog/zerodha-xirr-dash.webp"
 keywords:
   - Zerodha XIRR not showing
   - Zerodha XIRR not working
@@ -66,11 +67,13 @@ Fair question. Assume Zerodha eventually figures out the engineering and starts 
 Here's why: even if Zerodha correctly accounts for every bank transfer in and out of your account, there's a layer of costs that sits *below* the fund-flow level. These are the charges deducted on every trade:
 
 - **Brokerage** — ₹0 for equity delivery (Zerodha charges nothing), but ₹20 flat per executed order for intraday and F&O
-- **STT** — 0.1% on both buy and sell for delivery; 0.025% on sell side for intraday; 0.02% on F&O futures sell; 0.1% on options sell (on premium)
+- **STT** — 0.1% on both buy and sell for delivery; 0.025% on the sell side for intraday; lower rates on F&O futures, and a separate rate on the sale of options premium (derivative STT rates have been revised in recent Finance Acts, so confirm the current figure)
 - **Exchange transaction charges** — NSE charges ~0.00322% on delivery trades
 - **SEBI charges** — ₹10 per crore traded
 - **GST** — 18% on brokerage + exchange charges
 - **Stamp duty** — 0.015% on the buy side for delivery
+
+These statutory rates are published by the exchange — see the [NSE SEBI turnover fees, STT and other levies page](https://www.nseindia.com/static/invest/first-time-investor-sebi-turnover-fees-stt-other-levies) and the [NSE stamp duty page](https://www.nseindia.com/static/invest/first-time-investor-stamp-duty-charges-taxes).
 
 Even on a delivery trade where Zerodha charges ₹0 brokerage, you're still paying STT, exchange charges, SEBI fees, GST on those, and stamp duty. The brokerage waiver doesn't make the trade free — it just removes one line item.
 
@@ -103,7 +106,7 @@ For an F&O options trade at ₹20 brokerage, add another ₹20 per leg — plus 
 
 On a ₹20 lakh portfolio, ₹7,500 per year in charges works out to a **0.375% annual drag on your returns**. Over 5 years with compounding, that's the difference between 12% XIRR and 11.6% XIRR — and it grows the more actively you trade.
 
-If you're using your XIRR to benchmark against Nifty 50 — which returned roughly 12–14% XIRR over the last decade — a 0.6% gap is meaningful. It can be the difference between "I'm beating the index" and "I'm just matching it."
+If you're using your XIRR to benchmark against Nifty 50 — which has historically delivered returns in the low-to-mid teens over the long run ([Nifty 50 return profile, NSE Indices](https://www.niftyindices.com/market-data/return-profile)) — a 0.6% gap is meaningful. It can be the difference between "I'm beating the index" and "I'm just matching it." (CAGR won't capture this correctly either — here's [why XIRR beats CAGR for real portfolios](/blog/xirr-vs-cagr-which-one-shows-real-returns/).)
 
 ### For F&O Traders, It's Much Worse
 
@@ -123,7 +126,7 @@ This means:
 - Every charge, tax, and fee is captured automatically — because the ledger reflects the net debit, not the gross trade value
 - Dividends, SGB interest, and corporate action credits are inflows
 
-The ledger is the complete financial record. Holdings are a snapshot of one dimension of your portfolio — current positions. Holdings alone cannot give you XIRR.
+The ledger is the complete financial record. Holdings are a snapshot of one dimension of your portfolio — current positions. Holdings alone cannot give you XIRR. (If you want to do this yourself first, here's [how to calculate XIRR in Excel from your ledger vs the wrong way using trade prices](/blog/how-to-calculate-xirr-excel-vs-ledger/).)
 
 ## The Ledger-Based Approach
 

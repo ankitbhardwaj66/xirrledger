@@ -18,9 +18,46 @@ const glass = {
   borderRadius: '16px',
 } as const;
 
+const aboutPageSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'AboutPage',
+  '@id': 'https://xirrledger.com/about/#aboutpage',
+  url: 'https://xirrledger.com/about/',
+  name: 'About — XIRR Ledger',
+  description:
+    'XIRR Ledger was built by Ankit Bhardwaj, a software developer and retail equity investor who built the tool from his own need to know his real, charge-inclusive returns.',
+  inLanguage: 'en-IN',
+  mainEntity: { '@id': 'https://xirrledger.com/#author' },
+  isPartOf: { '@id': 'https://xirrledger.com/#website' },
+};
+
+const personSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  '@id': 'https://xirrledger.com/#author',
+  name: 'Ankit Bhardwaj',
+  jobTitle: 'Software Engineer',
+  description:
+    'Software engineer and retail equity investor who built XIRR Ledger to calculate his own true portfolio returns from his broker ledger — including charges and idle cash that broker dashboards ignore.',
+  url: 'https://ankitbhardwaj.in',
+  sameAs: ['https://ankitbhardwaj.in', 'https://www.youtube.com/@xirrledger'],
+};
+
+const breadcrumbSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://xirrledger.com/' },
+    { '@type': 'ListItem', position: 2, name: 'About', item: 'https://xirrledger.com/about/' },
+  ],
+};
+
 export default function About() {
   return (
     <div style={{ background: NAVY, minHeight: '100vh', paddingTop: '5rem', paddingBottom: '6rem' }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutPageSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <div className="container-custom" style={{ maxWidth: '800px', margin: '0 auto' }}>
 
         {/* Header */}
@@ -72,9 +109,9 @@ export default function About() {
             </div>
             <div style={{ flex: 1, minWidth: '200px' }}>
               <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#e2e8f0', marginBottom: '4px' }}>Ankit Bhardwaj</h2>
-              <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '14px' }}>Developer · Retail investor · Creator of XIRR Ledger</p>
+              <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '14px' }}>Software Engineer · Retail equity investor · Creator of XIRR Ledger</p>
               <p style={{ color: '#94a3b8', fontSize: '0.93rem', lineHeight: 1.8, marginBottom: '14px' }}>
-                I&apos;m a software engineer who invests in Indian equities. I built XIRR Ledger as a side project to solve a problem I had — and kept improving it because the problem turned out to be common.
+                I&apos;m a software engineer and retail equity investor in Indian markets. I built XIRR Ledger from my own need — to know my real returns — as a side project, and kept improving it because the problem turned out to be common. Everything here comes from a builder who actually uses the tool on his own portfolio, not from a financial firm.
               </p>
               <p style={{ color: '#94a3b8', fontSize: '0.93rem', lineHeight: 1.8 }}>
                 The tool is free because the calculation shouldn&apos;t cost you anything. If it helps you understand your real returns, that&apos;s enough.
@@ -99,6 +136,17 @@ export default function About() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Disclaimer */}
+        <div style={{
+          background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)',
+          borderLeft: '3px solid #f59e0b', borderRadius: '12px', padding: '20px 24px', marginBottom: '2rem',
+        }}>
+          <p style={{ color: '#cbd5e1', fontSize: '0.9rem', lineHeight: 1.75, margin: 0 }}>
+            <strong style={{ color: GOLD }}>Disclaimer: </strong>
+            XIRR Ledger is a calculation tool, not financial advice. The author is not a SEBI-registered investment adviser. The numbers it produces are for your own understanding of past returns and should not be treated as a recommendation to buy, sell, or hold any security.
+          </p>
         </div>
 
         {/* What the tool does */}

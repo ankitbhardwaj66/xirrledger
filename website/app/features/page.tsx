@@ -35,13 +35,13 @@ const currentFeatures = [
   {
     icon: <FaFileAlt size={24} color={GOLD} />,
     title: 'Ledger-Based Calculation',
-    description: 'The only calculator that works directly with your broker ledger files. Upload CSV or PDF files for 100% accurate XIRR calculations without manual data entry.',
+    description: 'The only calculator that works directly with your broker statement files. Upload your XLSX or CSV exports for accurate XIRR calculations without manual data entry.',
     badge: 'Core Feature',
   },
   {
     icon: <FaExchangeAlt size={24} color={GOLD} />,
     title: 'Multi-Broker Support',
-    description: 'Currently supports Zerodha (CSV) and Groww (PDF). Combine ledgers from different brokers for consolidated portfolio analysis.',
+    description: 'Currently supports Zerodha (ledger XLSX), Groww (Stocks and Mutual Funds Order History XLSX), and Fyers (ledger CSV). Combine files from different brokers in one session for consolidated portfolio analysis.',
     badge: 'Popular',
   },
   {
@@ -77,8 +77,8 @@ const currentFeatures = [
   },
   {
     icon: <FaLock size={24} color={GOLD} />,
-    title: 'Password-Protected PDFs',
-    description: 'Support for password-protected Groww PDFs. Securely process encrypted files with your PAN number as password.',
+    title: 'Stocks & Mutual Funds',
+    description: 'Calculate XIRR for equity and F&O ledgers, plus mutual fund returns from Groww Order History — all in the same combined report.',
   },
 ];
 

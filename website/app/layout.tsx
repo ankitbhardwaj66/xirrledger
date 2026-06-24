@@ -25,6 +25,12 @@ export const metadata: Metadata = {
   title: 'XIRR Ledger - The Only Ledger-Based XIRR Calculator',
   description: 'Calculate accurate portfolio returns from your actual trading ledger. Multi-broker support with Nifty 50 benchmark comparison. No manual entry required.',
   authors: [{ name: 'Ankit Bhardwaj' }],
+  // Dev build (.env.dev sets NEXT_PUBLIC_NOINDEX=true) emits noindex so
+  // dev.xirrledger.com stays out of Google's index. Prod has no flag → indexable.
+  robots:
+    process.env.NEXT_PUBLIC_NOINDEX === 'true'
+      ? { index: false, follow: false }
+      : undefined,
   openGraph: {
     title: 'XIRR Ledger - Ledger-Based XIRR Calculator',
     description: 'Calculate accurate portfolio returns from your actual trading ledger. Multi-broker support (Zerodha, Groww, Fyers) with Nifty 50 benchmark comparison. Free, no signup required.',
@@ -89,6 +95,7 @@ export default function RootLayout({
           </>
         )}
         <link rel="preconnect" href="https://img.youtube.com" />
+        <link rel="preload" as="image" href="/video-thumb-xirr.jpg" />
       </head>
       <body className={inter.className}>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
@@ -98,9 +105,9 @@ export default function RootLayout({
         {process.env.NEXT_PUBLIC_GA_ID && <>
           <Script
             src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
-            strategy="lazyOnload"
+            strategy="afterInteractive"
           />
-          <Script id="google-analytics" strategy="lazyOnload">
+          <Script id="google-analytics" strategy="afterInteractive">
             {`
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}

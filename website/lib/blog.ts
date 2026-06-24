@@ -11,6 +11,8 @@ export interface Post {
   lastModified: string;
   excerpt: string;
   keywords: string[];
+  image: string;
+  author: string;
   content: string;
 }
 
@@ -37,6 +39,8 @@ export async function getAllPosts(): Promise<Post[]> {
         lastModified: data.lastModified || date,
         excerpt: data.excerpt || '',
         keywords: data.keywords || [],
+        image: data.image || `/blog/${slug}.webp`,
+        author: data.author || 'Ankit Bhardwaj',
         content,
       };
     });
@@ -62,6 +66,8 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
     lastModified: data.lastModified || date,
     excerpt: data.excerpt || '',
     keywords: data.keywords || [],
+    image: data.image || `/blog/${slug}.webp`,
+    author: data.author || 'Ankit Bhardwaj',
     content,
   };
 }

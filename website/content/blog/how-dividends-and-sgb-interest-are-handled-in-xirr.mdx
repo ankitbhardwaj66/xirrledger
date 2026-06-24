@@ -4,6 +4,7 @@ date: "2026-02-27"
 author: "Ankit Bhardwaj"
 excerpt: "Dividends are real income from your investments. But because they land in your bank — not your broker — most XIRR calculators never see them. xirrledger lets you upload your Zerodha dividend report to include them in your XIRR calculation."
 category: "Investment Insights"
+image: "/blog/dividends-sgb-xirr.webp"
 keywords:
   - dividend XIRR calculation India
   - Zerodha dividend report XIRR
@@ -88,7 +89,9 @@ The dividends are automatically matched to your Zerodha account by client ID and
 
 Most investors mentally separate "portfolio performance" (price returns) from "dividend income" (cash in bank). But in reality, both come from the same invested capital. XIRR is designed to measure total return — and total return means everything your capital generated, including dividends.
 
-If your goal is to know whether you're beating an index like Nifty 50, you need to compare like-for-like. Nifty 50 Total Return Index (TRI) includes dividends reinvested. If your XIRR doesn't include dividends, you're comparing an incomplete number to a complete benchmark — and you'll always look worse than you actually are.
+If your goal is to know whether you're beating an index like Nifty 50, you need to compare like-for-like. The Nifty 50 Total Return Index (TRI) reinvests dividends back into the index, which is why SEBI requires mutual funds to be benchmarked against the TRI variant ([Nifty 50 TRI, NSE Indices](https://www.niftyindices.com/market-data/return-profile)). If your XIRR doesn't include dividends, you're comparing an incomplete number to a complete benchmark — and you'll always look worse than you actually are.
+
+The same logic applies to other income that never touches your broker ledger — SGB interest, RBI bond coupons, and other off-ledger assets all need to be added back to get an honest number (more on that in [how broker XIRR misses SGBs, govt bonds and unlisted stocks](/blog/broker-xirr-misses-sgb-govt-bonds-unlisted-stocks/)).
 
 ---
 

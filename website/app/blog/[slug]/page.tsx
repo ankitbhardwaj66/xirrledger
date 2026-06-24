@@ -61,15 +61,16 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
     '@type': 'BlogPosting',
     headline: post.title,
     description: post.excerpt,
+    url: `https://xirrledger.com/blog/${slug}/`,
     datePublished: post.date,
     dateModified: post.lastModified,
     author: {
       '@type': 'Person',
       '@id': 'https://xirrledger.com/#author',
-      name: 'Ankit Bhardwaj',
+      name: post.author,
       url: 'https://ankitbhardwaj.in',
     },
-    image: `https://xirrledger.com/blog/${slug}.webp`,
+    image: `https://xirrledger.com${post.image}`,
     publisher: { '@id': 'https://xirrledger.com/#organization' },
     mainEntityOfPage: {
       '@type': 'WebPage',
@@ -126,6 +127,22 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
               {post.excerpt}
             </p>
           )}
+
+          {/* ── Author byline (E-E-A-T) ── */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '1.5rem' }}>
+            <span style={{ fontSize: '0.9rem', color: '#64748b' }}>By</span>
+            <Link href="/about/" style={{
+              color: '#e2e8f0', fontWeight: 600, fontSize: '0.9rem',
+              textDecoration: 'none',
+            }}>
+              {post.author}
+            </Link>
+            <span style={{ color: '#334155', fontSize: '0.8rem' }}>·</span>
+            <span style={{ fontSize: '0.85rem', color: '#475569' }}>
+              Developer &amp; retail investor · Creator of XIRR Ledger
+            </span>
+          </div>
+
           <div style={{ height: '1px', background: 'rgba(255,255,255,0.07)', marginTop: '2rem' }} />
         </header>
 

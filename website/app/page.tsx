@@ -18,6 +18,8 @@ const videoSchema = {
 };
 
 export const metadata: Metadata = {
+  title: 'Free XIRR Calculator India — Zerodha, Groww, Fyers | XIRR Ledger',
+  description: 'Free XIRR calculator for India. Upload your Zerodha, Groww or Fyers ledger for true after-cost returns with a Nifty 50 benchmark. No signup, files auto-deleted.',
   openGraph: {
     url: 'https://xirrledger.com/',
   },
@@ -40,9 +42,9 @@ const softwareSchema = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
   name: 'XIRR Ledger',
-  url: 'https://xirrledger.com/calculator/',
-  applicationCategory: 'Finance',
-  operatingSystem: 'Web',
+  url: 'https://xirrledger.com/',
+  applicationCategory: 'FinanceApplication',
+  operatingSystem: 'Any',
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
   description: 'Free XIRR calculator for Indian investors. Upload Zerodha, Groww, or Fyers ledger files to get true after-cost annualised returns with Nifty 50 benchmark comparison.',
   featureList: [
