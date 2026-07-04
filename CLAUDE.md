@@ -1,41 +1,47 @@
 # Claude Instructions for xirrcalculator
 
-## Deploy Flow
+## Branch & Deploy Flow
 
-All work happens on `dev` first. Never touch `main` directly.
+**Always create a feature branch before starting new work.** Never commit directly to `dev` or `main`.
 
-### Step 1 — Develop on dev
 ```bash
-git checkout dev
-# make changes, then:
-git add <files>
-git commit -m "..."
-git push origin dev
+git checkout dev && git pull origin dev
+git checkout -b feature/<short-name>   # e.g. feature/xirr-guard
 ```
 
-### Step 2 — Build and deploy to dev server
+### The frontend deploys automatically (GitHub Actions)
+
+`.github/workflows/deploy.yml` deploys the Next.js frontend on every push/merge:
+
+| Merge into | Triggers | Builds with | Deploys to |
+|---|---|---|---|
+| `dev`  | auto | `npm run build:dev` | dev.xirrledger.com (`public_html/dev/`) |
+| `main` | auto | `npm run build`     | xirrledger.com (`public_html/`) |
+
+**You no longer build + rsync the frontend by hand** — merging does it. The workflow uses the `HOSTINGER_SSH_KEY` repo secret (a dedicated deploy key already installed on the server).
+
+### Standard flow
+
+1. Work on `feature/<name>`, commit, push: `git push -u origin feature/<name>`
+2. Open a PR **`feature/<name>` → `dev`**. Merge it → CI auto-deploys **dev**.
+3. Test at **dev.xirrledger.com** — stop and wait for the user to confirm.
+4. Only after confirmation, open a PR **`dev` → `main`**. Merging it → CI auto-deploys **prod**.
+
+> **Prod is gated by the `dev` → `main` PR merge, not a manual rsync.** Merging to `main` deploys to prod immediately. Always confirm with the user before merging `dev` → `main`.
+
+### Manual frontend deploy (fallback only — if CI is down)
 ```bash
+# dev
 cd website && rm -rf out/ && npm run build:dev && cd ..
 rsync -avz --delete --exclude=robots.txt --exclude=api/config.php -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/dev/
-```
-Test at **dev.xirrledger.com** — stop here and wait for user to confirm it works.
-
-### Step 3 — Merge to main and deploy to prod (only after PR is approved)
-
-**Never deploy to prod until the PR from `dev` → `main` is approved and merged on GitHub.**
-
-1. Push `dev` to remote: `git push origin dev`
-2. Create a PR on GitHub from `dev` → `main`
-3. Wait for PR approval and merge
-4. Then build and rsync to prod:
-```bash
-git checkout main && git pull origin main
+# prod
 cd website && rm -rf out/ && npm run build && cd ..
 rsync -avz --delete --exclude=dev --exclude=api/config.php -e "ssh -p 65002" website/out/ u889244618@46.28.45.163:/home/u889244618/domains/xirrledger.com/public_html/
 ```
 
-> `website/out/` is gitignored — never commit it. Always rsync it directly to the server.  
-> `api/config.php` is gitignored — never overwritten by rsync. Edit it on the server via SSH.
+> `website/out/` is gitignored — never commit it (CI rebuilds it).  
+> `api/config.php` is gitignored — never overwritten by rsync/CI. Edit it on the server via SSH.
+> **Lambda / Terraform / DB migrations are NOT automated** — deploy those manually (see below).
 
 ## Lambda Deploy
 
@@ -82,11 +88,11 @@ cd terraform && AWS_PROFILE=ankit terraform apply && cd ..
 | `main` | xirrledger.com | `/home/u889244618/domains/xirrledger.com/public_html/` |
 | `dev` | dev.xirrledger.com | `/home/u889244618/domains/xirrledger.com/public_html/dev/` |
 
-- **ALL work starts on `dev`** — always check `git branch` before making any changes and switch to `dev` if not already there.
-- **Always ask before merging to main or deploying to prod** — even if the user says "deploy", confirm: "Ready to merge to prod and deploy?" and wait for explicit approval.
-- Default flow: commit → push to `dev` → rsync to dev server → stop and ask the user to test → only then merge + rsync to prod.
+- **ALL new work starts on a feature branch off `dev`** — always check `git branch` before making changes; if on `dev`/`main`, create `feature/<name>` first.
+- **Always ask before merging `dev` → `main`** — merging to `main` auto-deploys prod via GitHub Actions. Even if the user says "deploy", confirm: "Ready to merge to prod?" and wait for explicit approval.
+- Default flow: feature branch → commit → push → PR to `dev` → merge (CI auto-deploys dev) → user tests → PR `dev` → `main` → merge (CI auto-deploys prod).
 - When the user says "push" without specifying a branch, push the **current branch** only.
-- **Never commit directly to `main`** — no exceptions. If changes accidentally land on `main`, cherry-pick them back to `dev` to keep branches in sync.
+- **Never commit directly to `dev` or `main`** — no exceptions. Use a feature branch + PR. If changes accidentally land on `main`, cherry-pick them back to a branch to keep history clean.
 
 ## DB Migrations
 
@@ -230,8 +236,8 @@ When writing a new blog post, **do not reuse an existing image** just because it
 
 ## General Rules
 
-- **Never commit `website/out/`** — it is gitignored and deployed via rsync only.
-- Build commands: `npm run build:dev` (dev branch) or `npm run build` (main branch).
-- `deploy.sh` on the server is no longer used — rsync replaces it.
-- **Never commit changes until the user has tested and confirmed they work.** Build → rsync to dev → wait for user to test → only commit after explicit "looks good" / approval.
-- **Always rsync to dev after every build** — never leave a build sitting locally without deploying it to dev.xirrledger.com.
+- **Never commit `website/out/`** — it is gitignored; CI rebuilds and deploys it.
+- Build commands: `npm run build:dev` (dev) or `npm run build` (prod) — CI runs these automatically; only run manually for the fallback deploy.
+- `deploy.sh` on the server is no longer used — GitHub Actions rsync replaces it.
+- **The frontend deploys on merge** — merge a feature branch to `dev` to test on dev.xirrledger.com; get user confirmation before merging `dev` → `main` (which deploys prod).
+- **Lambda changes are still manual** — `terraform apply` (dev then prod); CI does not touch Lambda.
