@@ -5,7 +5,7 @@ data "archive_file" "lambda_zip" {
   type        = "zip"
   source_dir  = "${path.root}/../lambda"
   output_path = "${path.root}/../lambda/dist/lambda.zip"
-  excludes    = ["dist", "*.pyc", "__pycache__", "layer"]
+  excludes    = ["dist", "*.pyc", "__pycache__", "layer", "test_*.py"]
 }
 
 # ─────────────────────────────────────────────────────────────
