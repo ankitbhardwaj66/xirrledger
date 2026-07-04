@@ -80,6 +80,10 @@ interface Results {
   investment_period_days: number | null;
   investment_period_years: number | null;
   report_url: string;
+  xirr_unreliable?: boolean;
+  xirr_unreliable_reason?: string | null;
+  xirr_suspicious?: boolean;
+  xirr_suspicious_note?: string | null;
 }
 
 function formatPeriod(years: number | null): string {
@@ -3144,6 +3148,32 @@ export default function CalculatorPage() {
                         Nifty 50 beat you by {(results.nifty_xirr - results.xirr).toFixed(2)}% — consider index funds
                       </p>
                     )}
+                  </div>
+                )}
+
+                {results.xirr_unreliable && results.xirr_unreliable_reason && (
+                  <div style={{
+                    marginTop: 14, padding: '13px 18px', borderRadius: 10,
+                    background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
+                    display: 'flex', gap: 10, alignItems: 'flex-start',
+                  }}>
+                    <span style={{ color: '#ef4444', fontSize: '1rem', lineHeight: 1.3, flexShrink: 0 }}>⚠</span>
+                    <p style={{ margin: 0, color: '#fca5a5', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                      <strong style={{ color: '#f87171' }}>XIRR not shown.</strong> {results.xirr_unreliable_reason}
+                    </p>
+                  </div>
+                )}
+
+                {!results.xirr_unreliable && results.xirr_suspicious && results.xirr_suspicious_note && (
+                  <div style={{
+                    marginTop: 14, padding: '13px 18px', borderRadius: 10,
+                    background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
+                    display: 'flex', gap: 10, alignItems: 'flex-start',
+                  }}>
+                    <span style={{ color: '#f59e0b', fontSize: '1rem', lineHeight: 1.3, flexShrink: 0 }}>⚠</span>
+                    <p style={{ margin: 0, color: '#fcd34d', fontSize: '0.82rem', lineHeight: 1.5 }}>
+                      <strong style={{ color: '#fbbf24' }}>Double-check this.</strong> {results.xirr_suspicious_note}
+                    </p>
                   </div>
                 )}
               </div>
