@@ -1,0 +1,76 @@
+name: Deploy frontend
+
+# Merge/push to `dev`  -> build with build:dev  -> rsync to dev.xirrledger.com
+# Merge/push to `main` -> build with build      -> rsync to xirrledger.com (prod)
+#
+# Lambda / Terraform / DB migrations are NOT handled here — they stay manual
+# (see CLAUDE.md). Only the static Next.js frontend is deployed by this workflow.
+#
+# Requires repo secret HOSTINGER_SSH_KEY: a private SSH key whose public key is
+# in the server's ~/.ssh/authorized_keys for user u889244618.
+
+on:
+  push:
+    branches: [main, dev]
+
+# Never run two deploys for the same branch at once; a newer push wins.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SSH_HOST: 46.28.45.163
+  SSH_USER: u889244618
+  SSH_PORT: "65002"
+  WEB_ROOT: /home/u889244618/domains/xirrledger.com/public_html
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install dependencies
+        working-directory: website
+        run: npm ci
+
+      - name: Build (${{ github.ref_name }})
+        working-directory: website
+        run: |
+          rm -rf out
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            npm run build
+          else
+            npm run build:dev
+          fi
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy to prod (main)
+        if: github.ref_name == 'main'
+        run: |
+          rsync -avz --delete \
+            --exclude=dev --exclude=api/config.php \
+            -e "ssh -p $SSH_PORT -i ~/.ssh/deploy_key -o IdentitiesOnly=yes" \
+            website/out/ "$SSH_USER@$SSH_HOST:$WEB_ROOT/"
+
+      - name: Deploy to dev (dev)
+        if: github.ref_name == 'dev'
+        run: |
+          rsync -avz --delete \
+            --exclude=robots.txt --exclude=api/config.php \
+            -e "ssh -p $SSH_PORT -i ~/.ssh/deploy_key -o IdentitiesOnly=yes" \
+            website/out/ "$SSH_USER@$SSH_HOST:$WEB_ROOT/dev/"
