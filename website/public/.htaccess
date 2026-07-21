@@ -26,6 +26,16 @@ Options -Indexes
     RewriteRule ^(.*)$ /$1/ [R=301,L]
 </IfModule>
 
+# ─── OG images: force MIME type ──────────────────────────────────────────────
+# Next.js static export emits opengraph-image with NO file extension, so Apache
+# sends no Content-Type. Combined with the nosniff header below, Facebook /
+# Instagram / LinkedIn reject the image and show no link preview card. Force
+# image/png on the extensionless OG image files. FilesMatch matches the basename
+# in any directory → covers / and every /blog/<slug>/.
+<FilesMatch "^opengraph-image$">
+    ForceType image/png
+</FilesMatch>
+
 # ─── Compression ──────────────────────────────────────────────────────────────
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml

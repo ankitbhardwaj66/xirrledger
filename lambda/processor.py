@@ -445,6 +445,10 @@ def run_processing(event, s3_client, uploads_bucket, reports_bucket, jobs_bucket
             "status": "done",
             "xirr": round(xirr_pct, 2) if xirr_pct is not None else None,
             "nifty_xirr": round(nifty_xirr_pct, 2) if nifty_xirr_pct is not None else None,
+            "xirr_unreliable": bool(combined_stats.get("xirr_unreliable")),
+            "xirr_unreliable_reason": combined_stats.get("xirr_unreliable_reason"),
+            "xirr_suspicious": bool(combined_stats.get("xirr_suspicious")),
+            "xirr_suspicious_note": combined_stats.get("xirr_suspicious_note"),
             "total_invested": round(combined_stats["total_invested"], 2),
             "total_withdrawn": round(combined_stats["total_withdrawn"], 2),
             "current_value": round(combined_value, 2),
@@ -1231,6 +1235,36 @@ def calculate_nifty_xirr(outflows, inflows, nifty_data):
 # ─────────────────────────────────────────────────────────────
 # Portfolio stats
 # ─────────────────────────────────────────────────────────────
+# XIRR sanity thresholds — flag results where the money coming back (withdrawals
+# + current value + dividends) massively exceeds the cash actually invested AND
+# the annualised rate is implausibly high. Two ways this happens:
+#   1. Securities entered the account WITHOUT a matching cash "Funds added"
+#      (IPO allotments funded bank-side, buyback tenders, demat transfers) — the
+#      fund-flow model treats their sale payouts as pure returns. Real case
+#      (EHC825): Rs 46,800 in, Rs 10.17L out -> 707%.
+#   2. A mis-entered current holdings value (e.g. an extra zero) inflates the
+#      terminal cashflow -> Rs 1L invested, Rs 1cr entered -> 215%.
+# A legitimate multi-year retail portfolio never sustains >200%/yr, and total
+# recovery rarely exceeds 3x invested at that rate — so both conditions gate it.
+XIRR_SANITY_CEILING_PCT      = 200.0   # annualised % — above this + high recovery => suppress
+RECOVERY_TO_INVESTED_CEILING = 3.0     # (withdrawn + current_value + dividends) / invested
+XIRR_SUSPICIOUS_PCT          = 50.0    # annualised % — above this => soft "please verify" note
+
+
+def _xirr_is_unreliable(xirr_pct, total_invested, total_recovered):
+    """
+    True when a computed XIRR can't be trusted because the money recovered
+    (withdrawals + current value + dividends) massively exceeds cash invested
+    AND the annualised rate is implausibly high. Both conditions must hold, to
+    avoid flagging legitimate high-return accounts (a sane XIRR is never flagged).
+    """
+    if xirr_pct is None or total_invested <= 0:
+        return False
+    if xirr_pct <= XIRR_SANITY_CEILING_PCT:
+        return False
+    return total_recovered > total_invested * RECOVERY_TO_INVESTED_CEILING
+
+
 def compute_portfolio_stats(outflows, inflows, current_value, nifty_data=None, dividend_cashflows=None):
     today = datetime.now()
     total_invested  = -outflows["amount"].sum() if len(outflows) else 0
@@ -1266,7 +1300,60 @@ def compute_portfolio_stats(outflows, inflows, current_value, nifty_data=None, d
     except Exception as e:
         logger.warning("XIRR failed: %s", e)
 
+    # ── Sanity guard (two tiers) ──────────────────────────────
+    # Tier 1 (hard): the number is clearly garbage — suppress it (show N/A).
+    #   Happens when money recovered (withdrawn + current value + dividends) far
+    #   exceeds cash invested AND XIRR is absurd (>200%). Causes: securities in
+    #   without cash (IPO/buyback/transfer), or a mis-entered current value.
+    # Tier 2 (soft): the number is plausible but suspiciously high (>50%) — still
+    #   show it, but attach a "please double-check" note listing common causes.
+    total_recovered = total_withdrawn + current_value + dividend_total
+    xirr_unreliable        = False
+    xirr_unreliable_reason = None
+    xirr_suspicious        = False
+    xirr_suspicious_note   = None
+
+    if _xirr_is_unreliable(xirr_pct, total_invested, total_recovered):
+        xirr_unreliable = True
+        if total_withdrawn >= current_value:
+            # withdrawals dominate -> securities entered without cash
+            xirr_unreliable_reason = (
+                "Cash withdrawn (Rs {:,.0f}) far exceeds cash deposited (Rs {:,.0f}). "
+                "This usually means shares entered this account without a matching cash "
+                "transfer — e.g. IPO allotments funded from your bank, buyback tenders, "
+                "or shares moved in from another demat. A ledger-only XIRR cannot measure "
+                "returns on those, so the figure is not shown. Upload your tradebook / "
+                "holdings statement for an accurate XIRR."
+            ).format(total_withdrawn, total_invested)
+        else:
+            # current value dominates -> likely a mis-entered holdings value
+            xirr_unreliable_reason = (
+                "The current value entered (Rs {:,.0f}) is far larger than the cash "
+                "invested (Rs {:,.0f}), which produces an unrealistic return. Please "
+                "re-check the holdings / cash value you entered — if it is correct, some "
+                "shares likely entered this account without a matching cash transfer "
+                "(IPO, buyback, or demat transfer)."
+            ).format(current_value, total_invested)
+        logger.warning(
+            "XIRR hard guard tripped: xirr=%.1f%% invested=%.2f recovered=%.2f — suppressing",
+            xirr_pct, total_invested, total_recovered,
+        )
+        xirr_pct = None
+    elif xirr_pct is not None and xirr_pct > XIRR_SUSPICIOUS_PCT:
+        xirr_suspicious = True
+        xirr_suspicious_note = (
+            "This XIRR is unusually high ({:.0f}%) — worth double-checking. Common causes: "
+            "(1) the current holdings/cash value entered is too high (an extra zero); "
+            "(2) IPO allotments or share buybacks — shares that entered without a cash "
+            "transfer inflate returns; (3) a short holding period, where a few months' gain "
+            "annualises to a large number; (4) your ledger not covering when you first added "
+            "funds. If everything looks right, this is genuinely your return."
+        ).format(xirr_pct)
+        logger.info("XIRR soft warning: xirr=%.1f%% flagged suspicious", xirr_pct)
+
     nifty = compute_nifty_stats(outflows, inflows, nifty_data) if nifty_data is not None else None
+    if xirr_unreliable:
+        nifty = None   # same broken cashflows -> benchmark is meaningless too
 
     return {
         "total_invested":          total_invested,
@@ -1276,6 +1363,10 @@ def compute_portfolio_stats(outflows, inflows, current_value, nifty_data=None, d
         "net_gain":                net_gain,          # broker + dividends
         "simple_return":           simple_return,
         "xirr_percentage":         xirr_pct,
+        "xirr_unreliable":         xirr_unreliable,
+        "xirr_unreliable_reason":  xirr_unreliable_reason,
+        "xirr_suspicious":         xirr_suspicious,
+        "xirr_suspicious_note":    xirr_suspicious_note,
         "nifty_xirr_percentage":   nifty["xirr_percentage"]   if nifty else None,
         "nifty_current_value":     nifty["current_value"]     if nifty else None,
         "nifty_units_held":        nifty["units_held"]        if nifty else None,
@@ -1505,6 +1596,23 @@ def generate_pdf_report(individual_stats, combined_stats, user_name, manual_entr
             "True XIRR has no mathematical solution — value shown is a "
             "simple annualised return: (total recovered / total invested)^(1/years) - 1.",
             note_s
+        ))
+
+    # ── Unreliable XIRR note (hard) ───────────────────────────
+    if cs.get("xirr_unreliable") and cs.get("xirr_unreliable_reason"):
+        warn_s = ParagraphStyle("WARN", parent=note_s,
+                                textColor=colors.HexColor("#b71c1c"))
+        elements.append(Paragraph(
+            "&#9888; XIRR not shown — " + cs["xirr_unreliable_reason"].replace("Rs ", "Rs."),
+            warn_s
+        ))
+    # ── Suspicious XIRR note (soft) ───────────────────────────
+    elif cs.get("xirr_suspicious") and cs.get("xirr_suspicious_note"):
+        caution_s = ParagraphStyle("CAUTION", parent=note_s,
+                                   textColor=colors.HexColor("#92400e"))
+        elements.append(Paragraph(
+            "&#9888; " + cs["xirr_suspicious_note"].replace("Rs ", "Rs."),
+            caution_s
         ))
 
     # ── Manual entries note ───────────────────────────────────
